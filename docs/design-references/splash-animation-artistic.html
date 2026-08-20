@@ -1,0 +1,66 @@
+<!--
+  Referência exata compartilhada pelo usuário (2026-08-01, mesma sessão, complemento a
+  splash-animation.html), preservada verbatim. Ver docs/DESIGN-SYSTEM.md item 17 do inventário —
+  esta é a variante recomendada como alvo de implementação (mais refinada e já traz o padrão de
+  prefers-reduced-motion embutido, ao contrário da variante simples). Nome do arquivo original:
+  stakevault_splash_animation_artistica.html
+-->
+<style>
+.sv2-stage{animation:sv2-cycle 5.4s linear infinite}
+.sv2-dial{transform-box:view-box;transform-origin:200px 78px;opacity:0;animation:sv2-dialin 5.4s linear infinite,sv2-spin 14s linear infinite}
+.sv2-ring{stroke-dasharray:227;stroke-dashoffset:227;animation:sv2-draw 5.4s cubic-bezier(.45,0,.25,1) infinite}
+.sv2-comet{transform-box:view-box;transform-origin:200px 78px;opacity:0;animation:sv2-orbit 5.4s cubic-bezier(.45,0,.25,1) infinite,sv2-cfade 5.4s linear infinite}
+.sv2-spokes{transform-box:view-box;transform-origin:200px 78px;animation:sv2-turn 5.4s cubic-bezier(.2,.9,.25,1) infinite}
+.sv2-spoke{stroke-dasharray:19;stroke-dashoffset:19;animation:sv2-sdraw 5.4s ease-out infinite}
+.sv2-bar{transform-box:fill-box;transform-origin:bottom;transform:scaleY(0);animation:sv2-grow 5.4s cubic-bezier(.2,1.3,.4,1) infinite}
+.sv2-b2{animation-delay:.13s}.sv2-b3{animation-delay:.26s}
+.sv2-icon{transform-box:view-box;transform-origin:200px 78px;animation:sv2-pop 5.4s ease-out infinite}
+.sv2-pulse{transform-box:view-box;transform-origin:200px 78px;opacity:0;animation:sv2-ripple 5.4s cubic-bezier(.1,.6,.3,1) infinite}
+.sv2-p2{animation-delay:.35s}
+.sv2-wipe{transform-box:view-box;animation:sv2-sweep 5.4s cubic-bezier(.3,0,.2,1) infinite}
+.sv2-word{opacity:0;animation:sv2-lift 5.4s ease-out infinite}
+@keyframes sv2-cycle{0%,93%{opacity:1}100%{opacity:0}}
+@keyframes sv2-dialin{0%{opacity:0}12%{opacity:1}100%{opacity:1}}
+@keyframes sv2-spin{to{transform:rotate(360deg)}}
+@keyframes sv2-draw{0%,4%{stroke-dashoffset:227}35%{stroke-dashoffset:0}100%{stroke-dashoffset:0}}
+@keyframes sv2-orbit{0%,4%{transform:rotate(0)}35%{transform:rotate(360deg)}100%{transform:rotate(360deg)}}
+@keyframes sv2-cfade{0%,3%{opacity:0}6%{opacity:1}34%{opacity:1}40%{opacity:0}100%{opacity:0}}
+@keyframes sv2-turn{0%,33%{transform:rotate(-40deg)}46%{transform:rotate(0)}100%{transform:rotate(0)}}
+@keyframes sv2-sdraw{0%,33%{stroke-dashoffset:19}46%{stroke-dashoffset:0}100%{stroke-dashoffset:0}}
+@keyframes sv2-grow{0%,44%{transform:scaleY(0)}60%{transform:scaleY(1)}100%{transform:scaleY(1)}}
+@keyframes sv2-pop{0%,58%{transform:scale(1)}63%{transform:scale(1.05)}70%{transform:scale(1)}100%{transform:scale(1)}}
+@keyframes sv2-ripple{0%,58%{transform:scale(1);opacity:.55}80%{transform:scale(2);opacity:0}100%{opacity:0}}
+@keyframes sv2-sweep{0%,62%{transform:translateX(-420px)}82%{transform:translateX(0)}100%{transform:translateX(0)}}
+@keyframes sv2-lift{0%,62%{opacity:0;transform:translateY(8px)}78%{opacity:1;transform:translateY(0)}100%{opacity:1;transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){
+.sv2-stage,.sv2-dial,.sv2-ring,.sv2-comet,.sv2-spokes,.sv2-spoke,.sv2-bar,.sv2-icon,.sv2-pulse,.sv2-wipe,.sv2-word{animation:none}
+.sv2-ring,.sv2-spoke{stroke-dashoffset:0}.sv2-bar{transform:scaleY(1)}
+.sv2-dial,.sv2-word{opacity:1}.sv2-comet,.sv2-pulse{opacity:0}.sv2-wipe{transform:translateX(0)}}
+</style>
+<div style="background:#0B1622;border-radius:12px;padding:28px 20px;display:flex;justify-content:center">
+<svg width="100%" viewBox="0 0 400 220" style="max-width:340px" role="img" aria-label="Animação artística de carregamento que forma o logo StakeVault"><title>Splash animado StakeVault</title><desc>Um ponto de luz percorre e desenha o anel do cofre, os raios giram até encaixar, as barras sobem em cascata, um pulso se expande e o nome é revelado por uma varredura.</desc>
+<defs><mask id="sv2-mask"><rect class="sv2-wipe" x="0" y="140" width="420" height="70" fill="#ffffff"/></mask></defs>
+<g class="sv2-stage">
+<circle class="sv2-dial" cx="200" cy="78" r="53" fill="none" stroke="#2C3B49" stroke-width="1.5" stroke-dasharray="2 9" stroke-linecap="round"/>
+<circle class="sv2-pulse" cx="200" cy="78" r="36" fill="none" stroke="#3EC46D" stroke-width="2"/>
+<circle class="sv2-pulse sv2-p2" cx="200" cy="78" r="36" fill="none" stroke="#3EC46D" stroke-width="1.5"/>
+<g class="sv2-icon">
+<circle class="sv2-ring" cx="200" cy="78" r="36" fill="none" stroke="#3EC46D" stroke-width="6" transform="rotate(-90 200 78)"/>
+<g class="sv2-spokes" stroke="#3EC46D" stroke-width="6" stroke-linecap="round">
+<line class="sv2-spoke" x1="219.8" y1="58.2" x2="232.5" y2="45.5"/>
+<line class="sv2-spoke" x1="180.2" y1="58.2" x2="167.5" y2="45.5"/>
+<line class="sv2-spoke" x1="219.8" y1="97.8" x2="232.5" y2="110.5"/>
+<line class="sv2-spoke" x1="180.2" y1="97.8" x2="167.5" y2="110.5"/>
+</g>
+<rect class="sv2-bar" x="182" y="82" width="8" height="14" rx="3" fill="#F2F7F5" opacity="0.45"/>
+<rect class="sv2-bar sv2-b2" x="196" y="72" width="8" height="24" rx="3" fill="#F2F7F5" opacity="0.75"/>
+<rect class="sv2-bar sv2-b3" x="210" y="62" width="8" height="34" rx="3" fill="#F2F7F5"/>
+</g>
+<g class="sv2-comet"><circle cx="200" cy="42" r="5" fill="#F2F7F5"/></g>
+<g class="sv2-word" mask="url(#sv2-mask)">
+<text class="t" x="200" y="172" fill="#FFFFFF" font-size="30" font-weight="400" letter-spacing="-0.5" text-anchor="middle">Stake<tspan fill="#3EC46D" font-weight="500">Vault</tspan></text>
+<text class="ts" x="200" y="194" fill="#7A8A93" font-size="11" letter-spacing="2.2" text-anchor="middle">GESTAO DE BANCA</text>
+</g>
+</g>
+</svg>
+</div>

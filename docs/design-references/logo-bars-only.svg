@@ -1,0 +1,9 @@
+<!-- StakeVault - marca simplificada (so as barras, sem o anel do cofre).
+     Uso explicito pelo usuario (2026-08-01): favicon, loaders e estados vazios, onde o anel
+     completo nao caberia/nao leria bem em tamanho pequeno. Cor unica (brand green) - sem a
+     tecnica de opacidade ascendente da marca completa, para permanecer legivel em ~16-32px. -->
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="StakeVault">
+  <rect x="24" y="54" width="16" height="28" rx="5" fill="#3EC46D"/>
+  <rect x="44" y="38" width="16" height="44" rx="5" fill="#3EC46D"/>
+  <rect x="64" y="22" width="16" height="60" rx="5" fill="#3EC46D"/>
+</svg>

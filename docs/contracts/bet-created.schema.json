@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://docs/contracts/bet-created.schema.json",
+  "title": "BetCreated",
+  "description": "Evento publicado pelo bets-service no RabbitMQ apos o registro inicial de uma aposta (RF04/RF05), sempre com status 'pending'. Nao carrega profit/settledAt - esses so existem apos liquidacao, ver bet-settled.schema.json (evento BetSettled). Consumido pelo stats-service. Ver docs/API-CONTRACTS.md. Nomenclatura em ingles - decisao explicita do usuario (rotas de API e eventos sempre em ingles), consistente com os nomes de entidade (BET, USER etc.) que ja eram em ingles.",
+  "type": "object",
+  "required": ["eventId", "eventType", "schemaVersion", "occurredAt", "tenantId", "userId", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identificador unico do evento (nao da aposta) - usado para idempotencia no consumidor."
+    },
+    "eventType": {
+      "type": "string",
+      "const": "BetCreated"
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Incrementa em qualquer mudanca incompativel do payload."
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Propagado do header X-Correlation-Id da requisicao original (ver docs/OBSERVABILITY-AND-CONFIG.md)."
+    },
+    "tenantId": {
+      "type": "string",
+      "description": "Slug do tenant (X-Tenant-Id injetado pelo api-gateway) - NAO e o userId de quem fez a chamada. Ver docs/DECISIONS-LOG.md 2026-08-02 'Modelo de tenant multiusuario': ate 2026-08-01 tenantId era igual a X-User-Id (tenant = usuario individual); desde a introducao do modelo de tenant multiusuario (organizacao com varios usuarios), os dois deixaram de ser o mesmo valor."
+    },
+    "userId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "uuid do usuario que fez a chamada (X-User-Id injetado pelo api-gateway) - trilha de auditoria de quem registrou a aposta dentro do tenant. Corresponde a BET.createdByUserId em bets-service. Ver docs/DECISIONS-LOG.md 2026-08-02."
+    },
+    "payload": {
+      "type": "object",
+      "required": [
+        "betId", "bettingHouseId", "sportId", "leagueId", "marketId",
+        "stake", "odd", "status", "betDate"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "betId": { "type": "string", "format": "uuid" },
+        "bettingHouseId": { "type": "string", "format": "uuid" },
+        "sportId": { "type": "string", "format": "uuid" },
+        "leagueId": { "type": "string", "format": "uuid" },
+        "marketId": { "type": "string", "format": "uuid" },
+        "tipsterId": { "type": ["string", "null"], "format": "uuid" },
+        "ticketNumber": { "type": ["string", "null"] },
+        "team1": { "type": ["string", "null"] },
+        "team2": { "type": ["string", "null"] },
+        "description": { "type": ["string", "null"] },
+        "betType": { "type": ["string", "null"] },
+        "playType": { "type": ["string", "null"] },
+        "stake": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "RN07: nunca negativo ou zero."
+        },
+        "odd": {
+          "type": "number",
+          "exclusiveMinimum": 1.0,
+          "description": "RN07: estritamente maior que 1.00."
+        },
+        "status": {
+          "type": "string",
+          "const": "pending",
+          "description": "BetCreated so e publicado no registro inicial - status sempre 'pending' aqui (RN06/RF12 'pendente' na especificacao original, ver docs/REQUIREMENTS.md). Mudancas de status/liquidacao publicam BetSettled (ver bet-settled.schema.json), nao um novo BetCreated."
+        },
+        "betDate": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

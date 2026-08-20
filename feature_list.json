@@ -1,0 +1,110 @@
+{
+  "features": [
+    {
+      "id": "epic-001",
+      "name": "Infraestrutura base (Docker Compose)",
+      "description": "infra/docker-compose.yml com PostgreSQL, RabbitMQ (com DLQ configurada) e Redis. Todos os demais epics dependem deste. Repositorio proprio 'infra' (7o repositorio, criado em 2026-08-02 - ver docs/DECISIONS-LOG.md 'Topologia'), sem servico de aplicacao (nao e Java/Python/Angular) mas com harness completo igual aos demais. Backlog granular em infra/feature_list.json (feat-001). Definicao de pronto: 'docker compose config' valido e 'docker compose up' com todos os healthchecks passando (ver docs/OBSERVABILITY-AND-CONFIG.md); evidencia registrada no campo evidence deste epic e em infra/feature_list.json.",
+      "dependencies": [],
+      "status": "done",
+      "evidence": "Fechado em 2026-08-03 por infra/feat-001 (ver evidencia detalhada em infra/feature_list.json). docker-compose.yml com 3 containers Postgres (5432/5433/5434), RabbitMQ 4 com DLQ configurada desde o inicio, Redis com senha e n8n - todos com healthcheck passando em 'docker compose up -d'. Topologia RabbitMQ (exchange bets.events, fila quorum stats.bet-events com x-delivery-limit 3 + DLX, fila stats.bet-events.dlq) versionada em infra/rabbitmq/definitions.json e documentada como contrato em docs/API-CONTRACTS.md. Quatro decisoes registradas em docs/DECISIONS-LOG.md (2026-08-03).",
+      "harness": "infra/"
+    },
+    {
+      "id": "epic-009",
+      "name": "Bootstrap dos repositorios e setup de qualidade (SonarCloud)",
+      "description": "Deixar os 7 repositorios em estado onde a pipeline de CI roda de verdade, ANTES de qualquer implementacao de servico (decisao do usuario, 2026-08-17). Duas frentes: (a) bootstrap dos 6 repositorios de aplicacao, hoje com 'main' vazio e zero commits - .gitignore/.gitattributes por stack, commit inicial do harness em main, criacao e push de develop; (b) setup do SonarCloud - organizacao, 6 projetos (chave = nome do repositorio), token como secret SONAR_TOKEN e org key como variable SONAR_ORGANIZATION em cada repositorio. Nao pertence a nenhum servico de aplicacao: vive no harness infra/, mesmo precedente de epic-001/epic-007 (ver docs/DECISIONS-LOG.md 'Topologia'). Backlog granular em infra/feature_list.json (feat-003). Definicao de pronto: os 6 repositorios com main e develop publicados, CI verde no push inicial de cada um, 6 projetos criados no SonarCloud com credencial configurada; evidencia registrada no campo evidence deste epic e em infra/feature_list.json.",
+      "dependencies": [],
+      "status": "done",
+      "evidence": "Fechado em 2026-08-17 por infra/feat-003 (ver evidencia detalhada em infra/feature_list.json). Os 7 repositorios com main e develop publicados e CI verde; os 6 de aplicacao com SONAR_TOKEN/SONAR_ORGANIZATION configurados e projeto criado no SonarCloud sob a organizacao 'eimmig'. Guarda por arquivo-marcador nos 6 ci.yml mantem a pipeline verde ate cada servico ter projeto, e liga o gate sozinho no feat-001 de cada um. Story SV-1 no Jira.",
+      "harness": "infra/"
+    },
+    {
+      "id": "epic-002",
+      "name": "auth-service",
+      "description": "Cadastro e autenticacao (RF01, RF02), reinterpretados em 2026-08-02 para modelo de tenant multiusuario: tenant = organizacao com varios usuarios (role admin/member), schema-per-tenant tambem neste servico, criacao de tenant via rota admin restrita ao operador da plataforma (X-Admin-Api-Key), login exige slug do tenant alem de email/senha. Pontos antes em aberto ja fechados em 2026-08-02 (ver docs/DECISIONS-LOG.md itens 3 e 15): autenticacao da rota admin (X-Admin-Api-Key), orquestracao cross-service (3 chamadas manuais separadas do operador, uma por servico), senha padrao (aleatoria + mustChangePassword), lookup de TELEGRAM_ACCOUNT (diretorio TELEGRAM_LINK no schema public). Backlog granular e harness completo em services/auth-service/.",
+      "dependencies": [
+        "epic-009",
+        "epic-001"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "services/auth-service/"
+    },
+    {
+      "id": "epic-003",
+      "name": "bets-service",
+      "description": "Casas de apostas, ciclo de vida da aposta, bankroll, movimentacoes, eventos BetCreated/BetSettled (RF03, RF04, RF06, RF07, RF08, RF12, RF13). Backlog granular e harness completo em services/bets-service/.",
+      "dependencies": [
+        "epic-009",
+        "epic-002"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "services/bets-service/"
+    },
+    {
+      "id": "epic-004",
+      "name": "stats-service",
+      "description": "Consumidor de eventos, modelo OLAP, cache Redis, geracao de metricas (RF09, RF10 backend, RF11). Backlog granular e harness completo em services/stats-service/.",
+      "dependencies": [
+        "epic-009",
+        "epic-003"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "services/stats-service/"
+    },
+    {
+      "id": "epic-008",
+      "name": "api-gateway",
+      "description": "Unico ponto de entrada HTTP publico: valida token PASETO emitido por auth-service e injeta X-User-Id/X-Tenant-Id (claims distintos desde 2026-08-02, ver docs/DECISIONS-LOG.md - tenant e organizacao, nao mais sinonimo de usuario); autentica chamadas internas de servico-a-servico (telegram-integration) via credencial de servico (X-Service-Key) e resolve telegramUserId -> userId/tenantId via auth-service antes de rotear para bets-service (lookup resolvido em 2026-08-02 via diretorio TELEGRAM_LINK no schema public de auth-service, ver docs/DECISIONS-LOG.md item 15). Nao roteia a criacao de tenant (rota admin de cada servico, X-Admin-Api-Key, fora da tabela de roteamento - ver docs/API-CONTRACTS.md). Roteia para auth-service/bets-service/stats-service. Sem RF proprio - existe para viabilizar o modelo de confianca descrito em docs/API-CONTRACTS.md. Backlog granular e harness completo em services/api-gateway/.",
+      "dependencies": [
+        "epic-009",
+        "epic-002"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "services/api-gateway/"
+    },
+    {
+      "id": "epic-005",
+      "name": "telegram-integration",
+      "description": "Captura automatica de apostas via bot Telegram (RF05), incluindo o fluxo de vinculacao da conta Telegram a conta web (popula TELEGRAM_ACCOUNT e o diretorio TELEGRAM_LINK em auth-service). Lookup telegramUserId -> tenant resolvido em 2026-08-02 - ver docs/DECISIONS-LOG.md item 15 e docs/services/auth-service.md secao 'Vinculo de conta Telegram'. Backlog granular e harness completo em services/telegram-integration/.",
+      "dependencies": [
+        "epic-009",
+        "epic-003",
+        "epic-008"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "services/telegram-integration/"
+    },
+    {
+      "id": "epic-006",
+      "name": "web",
+      "description": "SPA Angular: autenticacao, casas de apostas, registro manual, historico, dashboards e filtros (RF01-04, RF08, RF10, RF11 UI; RNF01, RNF02). Backlog granular e harness completo em apps/web/.",
+      "dependencies": [
+        "epic-009",
+        "epic-002",
+        "epic-003",
+        "epic-004",
+        "epic-008"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "apps/web/"
+    },
+    {
+      "id": "epic-007",
+      "name": "Resiliencia ponta a ponta (DLQ e retries)",
+      "description": "Confirmar que falhas consecutivas no consumo de BetCreated/BetSettled vao para a Dead Letter Queue em vez de travar o stats-service ou perder a mensagem. Teste cross-service: derrubar stats-service, publicar eventos via bets-service, subir de novo, confirmar reprocessamento. Nao cita RNF06: verificado no PDF do TCC1 em 2026-08-17 que a tabela original tem exatamente 6 RNFs e nenhum e sobre tolerancia a falha - RNF06 e Escalabilidade (volume), criterio diferente do testado aqui. A base deste epic no TCC1 e a prosa da abertura da secao 4.1 (p.30, 'reentrega automatica de mensagens (retries) e isolamento de falhas por meio de uma fila de mensagens mortas (DLQ) [...] impedindo que erros isolados travem o fluxo do sistema') e o capitulo de arquitetura ('nenhuma mensagem de aposta seja descartada sem ser processada') - requisito de infraestrutura sem ID proprio. Nenhum RNF novo foi criado, por decisao do usuario. Ver docs/REQUIREMENTS.md (nota apos a tabela de RNF) e docs/DECISIONS-LOG.md (2026-08-17). Nao pertence a um unico servico de aplicacao - vive no mesmo repositorio 'infra' de epic-001 (ver docs/DECISIONS-LOG.md 'Topologia'). Backlog granular em infra/feature_list.json (feat-002). Definicao de pronto: teste cross-service documentado acima executado com sucesso, evidencia registrada no campo evidence deste epic e em infra/feature_list.json.",
+      "dependencies": [
+        "epic-004",
+        "epic-005"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "infra/"
+    }
+  ]
+}

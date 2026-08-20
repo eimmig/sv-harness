@@ -1,0 +1,39 @@
+<!--
+  Referência exata compartilhada pelo usuário na sessão de definição de identidade visual
+  (2026-08-01), preservada verbatim. Ver docs/DESIGN-SYSTEM.md para as regras de produção
+  extraídas daqui (não usar loop infinito em produção, respeitar prefers-reduced-motion).
+  Nome do arquivo original: stakevault_splash_animation.html
+-->
+<style>
+.sv-stage{animation:sv-cycle 4.2s linear infinite}
+.sv-ring{stroke-dasharray:227;stroke-dashoffset:227;animation:sv-draw 4.2s ease-in-out infinite}
+.sv-spoke{stroke-dasharray:19;stroke-dashoffset:19;animation:sv-spoke 4.2s ease-out infinite}
+.sv-bar{transform-box:fill-box;transform-origin:bottom;transform:scaleY(0);animation:sv-grow 4.2s cubic-bezier(.2,.8,.2,1) infinite}
+.sv-b2{animation-delay:.1s}.sv-b3{animation-delay:.2s}
+.sv-word{opacity:0;animation:sv-fade 4.2s ease-out infinite}
+@keyframes sv-cycle{0%,92%{opacity:1}100%{opacity:0}}
+@keyframes sv-draw{0%{stroke-dashoffset:227}28%{stroke-dashoffset:0}100%{stroke-dashoffset:0}}
+@keyframes sv-spoke{0%,28%{stroke-dashoffset:19}40%{stroke-dashoffset:0}100%{stroke-dashoffset:0}}
+@keyframes sv-grow{0%,40%{transform:scaleY(0)}56%{transform:scaleY(1)}100%{transform:scaleY(1)}}
+@keyframes sv-fade{0%,56%{opacity:0}70%{opacity:1}100%{opacity:1}}
+</style>
+<div style="background:#0B1622;border-radius:12px;padding:32px 20px;display:flex;justify-content:center">
+<svg width="100%" viewBox="0 0 400 190" style="max-width:340px" role="img" aria-label="Animação de carregamento que desenha o logo StakeVault"><title>Splash animado StakeVault</title><desc>O anel do cofre é traçado, os raios surgem, as barras crescem e o nome aparece.</desc>
+<g class="sv-stage">
+<circle class="sv-ring" cx="200" cy="60" r="36" fill="none" stroke="#3EC46D" stroke-width="6" transform="rotate(-90 200 60)"/>
+<g stroke="#3EC46D" stroke-width="6" stroke-linecap="round">
+<line class="sv-spoke" x1="219.8" y1="40.2" x2="232.5" y2="27.5"/>
+<line class="sv-spoke" x1="180.2" y1="40.2" x2="167.5" y2="27.5"/>
+<line class="sv-spoke" x1="219.8" y1="79.8" x2="232.5" y2="92.5"/>
+<line class="sv-spoke" x1="180.2" y1="79.8" x2="167.5" y2="92.5"/>
+</g>
+<rect class="sv-bar" x="182" y="64" width="8" height="14" rx="3" fill="#F2F7F5" opacity="0.45"/>
+<rect class="sv-bar sv-b2" x="196" y="54" width="8" height="24" rx="3" fill="#F2F7F5" opacity="0.75"/>
+<rect class="sv-bar sv-b3" x="210" y="44" width="8" height="34" rx="3" fill="#F2F7F5"/>
+<g class="sv-word">
+<text class="t" x="200" y="145" fill="#FFFFFF" font-size="30" font-weight="400" letter-spacing="-0.5" text-anchor="middle">Stake<tspan fill="#3EC46D" font-weight="500">Vault</tspan></text>
+<text class="ts" x="200" y="168" fill="#7A8A93" font-size="11" letter-spacing="2.2" text-anchor="middle">GESTAO DE BANCA</text>
+</g>
+</g>
+</svg>
+</div>

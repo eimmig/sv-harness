@@ -1,0 +1,32 @@
+# --- Repositorios independentes (cada servico tem seu proprio repo/remote) ---
+/services/
+/infra/
+/apps/
+
+# --- Segredos ---
+*.env
+.env.*
+!*.env.example
+!.env.example
+
+# --- Python (tools/) ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# --- Obsidian (docs/) : estado local de janela/cache, nao conteudo ---
+**/.obsidian/workspace.json
+**/.obsidian/workspace-mobile.json
+**/.obsidian/cache
+.trash/
+
+# --- Claude Code local ---
+**/.claude/settings.local.json
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~

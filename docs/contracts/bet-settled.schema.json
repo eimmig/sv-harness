@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://docs/contracts/bet-settled.schema.json",
+  "title": "BetSettled",
+  "description": "Evento publicado pelo bets-service no RabbitMQ quando uma aposta e liquidada (RF06/RF12 - status muda para ganha/perdida/devolvida na especificacao original, ver docs/REQUIREMENTS.md). Distinto de BetCreated (registro inicial, ver bet-created.schema.json). Consumido pelo stats-service para popular/atualizar FACT_BET (upsert por betId) e so entao contar a aposta nas metricas (RN06). Ver docs/API-CONTRACTS.md.",
+  "type": "object",
+  "required": ["eventId", "eventType", "schemaVersion", "occurredAt", "tenantId", "userId", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identificador unico do evento (nao da aposta) - usado para idempotencia no consumidor (PROCESSED_EVENT, ver docs/services/stats-service.md)."
+    },
+    "eventType": {
+      "type": "string",
+      "const": "BetSettled"
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Incrementa em qualquer mudanca incompativel do payload."
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Propagado do header X-Correlation-Id da requisicao original (ver docs/OBSERVABILITY-AND-CONFIG.md)."
+    },
+    "tenantId": {
+      "type": "string",
+      "description": "Slug do tenant (X-Tenant-Id injetado pelo api-gateway) - NAO e o userId de quem fez a chamada. Ver docs/DECISIONS-LOG.md 2026-08-02 'Modelo de tenant multiusuario': ate 2026-08-01 tenantId era igual a X-User-Id (tenant = usuario individual); desde a introducao do modelo de tenant multiusuario (organizacao com varios usuarios), os dois deixaram de ser o mesmo valor."
+    },
+    "userId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "uuid do usuario que fez a chamada (X-User-Id injetado pelo api-gateway) - trilha de auditoria de quem liquidou a aposta dentro do tenant (pode ser diferente do usuario que criou). Corresponde a BET_RESULT.settledByUserId em bets-service. Ver docs/DECISIONS-LOG.md 2026-08-02."
+    },
+    "payload": {
+      "type": "object",
+      "required": [
+        "betId", "bettingHouseId", "sportId", "leagueId", "marketId",
+        "stake", "odd", "status", "profit", "settledAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "betId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Correlaciona com o betId do BetCreated original - stats-service faz upsert em FACT_BET por este campo, nao insert."
+        },
+        "bettingHouseId": { "type": "string", "format": "uuid" },
+        "sportId": { "type": "string", "format": "uuid" },
+        "leagueId": { "type": "string", "format": "uuid" },
+        "marketId": { "type": "string", "format": "uuid" },
+        "tipsterId": { "type": ["string", "null"], "format": "uuid" },
+        "stake": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "RN07: repetido aqui (nao so no BetCreated) para o upsert em FACT_BET nao depender de BetCreated ja ter sido processado."
+        },
+        "odd": {
+          "type": "number",
+          "exclusiveMinimum": 1.0
+        },
+        "status": {
+          "type": "string",
+          "enum": ["won", "lost", "void"],
+          "description": "RN06: nunca 'pending' aqui - esse e o proprio evento que marca a transicao para fora do estado pendente. Corresponde a ganha/perdida/devolvida na especificacao original (ver docs/REQUIREMENTS.md)."
+        },
+        "profit": {
+          "type": "number",
+          "description": "RN02 (vitoria: stake*odd-stake), RN03 (derrota: -stake) ou 0 (devolvida/void)."
+        },
+        "settledAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}
