@@ -81,7 +81,9 @@ Aplicam-se aos 6 repositórios de serviço (`api-gateway`, `auth-service`, `bets
 
 1. **Changelog**: falha o PR se `CHANGELOG.md` (na raiz do repositório) não foi tocado no diff
    contra a branch base. Script: `.github/scripts/validate-changelog.sh` (dentro do próprio
-   repositório). Só roda em `pull_request` (não há branch base num push direto).
+   repositório). Só roda em `pull_request`, e só quando a base é `develop`/`main` (ver seção
+   "Changelog por serviço" abaixo — a linha de cada subtask já existe antes da branch dela
+   nascer, então cobrar o toque também no PR de subtask quebraria por sequenciamento).
 2. **Validador de chaves de tradução**: confere que os 3 arquivos de locale (`pt-BR`/`en-US`/
    `es`) do serviço têm exatamente o mesmo conjunto de chaves — nenhum idioma "para trás" (ver
    [[CONVENTIONS]] seção "Internacionalização (i18n)": os três sempre em sincronia é requisito
@@ -129,12 +131,31 @@ esperada).
 
 `CHANGELOG.md` na **raiz de cada repositório** (`services/<nome>/CHANGELOG.md`,
 `apps/web/CHANGELOG.md`, `infra/CHANGELOG.md` — na cópia de trabalho local, vira a raiz de
-verdade quando cada pasta virar seu próprio repositório), formato
-[Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/): seção `## [Unreleased]` acumula
-entradas até um release, categorizadas em `Added`/`Changed`/`Fixed`/etc. **Cada subtask** adiciona
-uma linha em `[Unreleased]` no PR dela — as linhas se acumulam na branch da story até o merge em
-`develop`. É isso que o passo 1 (changelog) verifica automaticamente, nos 7 repositórios, em
-**todo** PR: tanto `subtask/` → branch da story quanto story → `develop`.
+verdade quando cada pasta virar seu próprio repositório). **Não** é Keep a Changelog com prosa
+categorizada em `Added`/`Changed`/`Fixed` (decisão revista em 2026-09-03) — cada linha de
+`## [Unreleased]` é só um link para a issue do Jira que a gerou, sem descrição:
+
+```
+- [SV-10](https://stakevault.atlassian.net/browse/SV-10) - Setup do projeto
+- [SV-11](https://stakevault.atlassian.net/browse/SV-11) - Bootstrap do pom.xml e esqueleto hexagonal
+```
+
+Uma linha por issue (story **e** cada subtask), `[chave](url) - título`, nada além disso — sem
+data, sem categoria, sem corpo. **Escrita automaticamente por `tools/jira_story.py`**, no exato
+momento em que cada issue é criada (chamada simples cria a story + todas as subtasks já
+planejadas pelo `Plan Reviewer` de uma vez; `--update` acrescenta a linha de uma subtask
+descoberta depois). A sessão nunca escreve essa linha à mão — o formato vem sempre do script,
+idempotente (rodar de novo não duplica). O texto que explicava a mudança agora vive só na issue
+do Jira (`description` da story/subtask) e na mensagem de commit — o `CHANGELOG.md` é apenas o
+índice rastreável, o Jira é onde o "porquê" mora.
+
+Consequência de sequenciamento: como a linha de cada subtask nasce **antes** da branch daquela
+subtask existir (a chave só existe depois que `jira_story.py` roda, e a branch só nasce depois de
+ter a chave — ver [[CONVENTIONS]] seção "Git"), o próprio diff de uma PR `subtask/` → branch da
+story **nunca** toca `CHANGELOG.md` — a linha já estava lá quando a branch foi criada. Por isso o
+passo 1 (changelog) só roda de fato na PR story → `develop` (guarda por `github.base_ref`, mesmo
+mecanismo já usado no passo 5/Sonar) — exigir o toque também no PR de subtask quebraria por
+sequenciamento, não por esquecimento real.
 
 ### Quais passos rodam em qual PR
 
@@ -143,7 +164,7 @@ sentido em todo PR:
 
 | Passo | `subtask/` → story | story → `develop` | push em `main`/`develop` |
 |---|---|---|---|
-| Changelog | sim | sim | não (só em PR) |
+| Changelog | **não** | sim | não (só em PR) |
 | i18n / build / testes | sim | sim | sim |
 | SonarCloud | **não** | sim | sim |
 
@@ -151,7 +172,9 @@ O SonarCloud é pulado no PR de subtask (condição sobre `github.base_ref` no `
 quality gate mede **código novo**: uma feature pela metade — código já escrito, testes ainda na
 subtask seguinte — reprovaria sem indicar defeito real, e bloquearia o merge por um motivo que
 não é qualidade. A análise acontece na story, onde a feature está completa. `infra/` não usa
-SonarCloud, então a coluna não se aplica lá.
+SonarCloud, então a coluna não se aplica lá. O Changelog é pulado no PR de subtask pelo motivo
+oposto (não é sobre qualidade, é sequenciamento): a linha daquela subtask já existe desde antes
+da branch nascer — ver seção anterior.
 
 ## Setup pendente (uma vez por repositório, quando cada um for criado)
 

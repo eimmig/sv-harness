@@ -68,6 +68,41 @@ def save(path: pathlib.Path, data: dict) -> None:
         handle.write("\n")
 
 
+def append_changelog_lines(harness: str, base_url: str, entries: list[tuple[str, str]]) -> None:
+    """Acrescenta uma linha `- [CHAVE](url) - titulo` em [Unreleased] por entrada nova.
+
+    Cada entrada e (chave-jira, titulo) — story ou subtask, escrito no exato momento
+    em que a issue e criada, para ninguem precisar lembrar do formato depois. So a
+    linha e apensada; nada mais no arquivo e reescrito. Idempotente: chave ja
+    presente no arquivo e pulada (permite rodar de novo sem duplicar).
+    """
+    path = ROOT / harness / "CHANGELOG.md"
+    if not path.exists() or not entries:
+        return
+    text = path.read_text(encoding="utf-8")
+    new_lines = [
+        f"- [{key}]({base_url}/browse/{key}) - {title}"
+        for key, title in entries
+        if f"[{key}]" not in text
+    ]
+    if not new_lines:
+        return
+
+    marker = "## [Unreleased]"
+    idx = text.find(marker)
+    if idx == -1:
+        return
+    section_start = idx + len(marker)
+    next_heading = text.find("\n## ", section_start)
+    insert_at = len(text) if next_heading == -1 else next_heading
+    existing = text[:insert_at]  # marcador + linhas ja presentes na secao
+    rest = text[insert_at:]  # proxima secao (ou vazio, se [Unreleased] for a ultima)
+    text = existing.rstrip("\n") + "\n" + "\n".join(new_lines) + (
+        "\n\n" + rest.lstrip("\n") if rest.strip() else "\n"
+    )
+    path.write_text(text.rstrip("\n") + "\n", encoding="utf-8", newline="\n")
+
+
 def load_feature(harness: str, feature_id: str) -> tuple[pathlib.Path, dict, dict]:
     path = ROOT / harness / "feature_list.json"
     if not path.exists():
@@ -279,6 +314,7 @@ def rewrite_issues(env, feature, subtasks, story_payload, subtask_payload, path,
     base = env["JIRA_URL"].rstrip("/")
     print(f"Story atualizada: {story_key}  {base}/browse/{story_key}")
 
+    new_entries: list[tuple[str, str]] = []
     for subtask in subtasks:
         key = subtask.get("jira")
         if key:
@@ -290,8 +326,14 @@ def rewrite_issues(env, feature, subtasks, story_payload, subtask_payload, path,
             )["key"]
             subtask["jira"] = key
             save(path, data)  # grava uma a uma: falha no meio nao deixa issue orfa
+            new_entries.append((key, subtask["name"]))
             note = "  (nova)"
         print(f"  {key:10s} {subtask['id']}  {tpl.subtask_summary(subtask)[:52]}{note}")
+
+    if new_entries:
+        harness = str(path.parent.relative_to(ROOT))
+        append_changelog_lines(harness, base, new_entries)
+        print(f"Linhas do CHANGELOG.md acrescentadas para {len(new_entries)} subtarefa(s) nova(s)")
 
 
 def main() -> None:
@@ -398,10 +440,16 @@ def main() -> None:
         save(path, data)
 
     base = env["JIRA_URL"].rstrip("/")
+    entries = [(story_key, feature["name"])] + [
+        (subtask["jira"], subtask["name"]) for subtask in subtasks
+    ]
+    append_changelog_lines(args.harness, base, entries)
+
     print(f"Story criada: {story_key}  {base}/browse/{story_key}")
     for subtask in subtasks:
         print(f"  {subtask['jira']:10s} {subtask['id']}  {subtask['name'][:60]}")
     print(f"\nChaves gravadas em {path.relative_to(ROOT)} :: {feature['id']}")
+    print(f"Linhas do CHANGELOG.md acrescentadas em {args.harness}/CHANGELOG.md")
     print()
     print(f"Proximo passo, dentro de {args.harness}/:")
     print("  git checkout develop")

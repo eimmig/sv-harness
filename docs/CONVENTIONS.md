@@ -244,9 +244,11 @@ O merge sobe um nível por vez, sempre `--no-ff`: `subtask/SV-13` → `feature/S
   preenchida), skills de revisão rodadas (ver [[AGENT-SKILLS]]) e a pipeline de CI inteira,
   **incluindo SonarCloud** (changelog, i18n, build, testes, Sonar nos 6 de aplicação; changelog +
   validação do compose em `infra/`) — ver [[CI-CD]].
-- **`CHANGELOG.md`**: cada subtask adiciona a própria linha em `[Unreleased]`, no PR dela. As
-  linhas se acumulam na branch da story até o merge em `develop`. A validação de changelog roda
-  em **todo** PR, inclusive os de subtask.
+- **`CHANGELOG.md`**: uma linha por issue do Jira (story e cada subtask), formato
+  `- [chave](url) - título`, nada além disso — sem prosa, sem categoria Added/Fixed. Escrita
+  automaticamente por `tools/jira_story.py` no momento em que cada issue é criada, nunca à mão
+  pela sessão (ver [[CI-CD]] seção "Changelog por serviço" para o racional completo e o motivo
+  de a validação de changelog só rodar na PR story → `develop`, não nas de subtask).
 - **Merge de `develop` → `main`**: quando o conjunto de features acumuladas em `develop` estiver
   estável o suficiente para ser considerado uma entrega (não há cadência fixa definida — critério
   é estabilidade, não calendário).
