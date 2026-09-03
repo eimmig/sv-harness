@@ -66,6 +66,12 @@ seleção), mas nem todas têm papel definido no fluxo deste projeto — mapeame
 - **Plan Reviewer** (Review Suite): antes de começar a implementar uma feature `in-progress`,
   validar o plano contra evidência do repositório — prioritário sobre simplesmente começar a
   escrever código a partir da leitura do `feature_list.json`.
+- **`/code-review` (ou `/simplify`)** — não é do pacote `claude-code-skills`, é a skill builtin
+  do Claude Code: decisão de 2026-09-03, roda contra o diff **de cada subtask antes de abrir o
+  PR dela** (ver [[CONVENTIONS]] seção "Git"), não só no gate completo de `feature/` → `develop`.
+  Motivo: pega comentário ruidoso e prosa redundante no código cedo, antes de virar histórico do
+  Git — as skills de revisão de `claude-code-skills` abaixo (`Delivery Reviewer`,
+  `Test Suite Auditor` etc.) só rodam no merge final, tarde demais para esse tipo de ajuste.
 - **Codebase Auditor**: saúde geral de código/segurança/manutenibilidade — rodar
   periodicamente, não só no fim.
 - **Dependency Upgrader** / **Code Modernizer** / **Performance Optimizer** / **Benchmark

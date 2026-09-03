@@ -232,13 +232,19 @@ O merge sobe um nível por vez, sempre `--no-ff`: `subtask/SV-13` → `feature/S
     `bugfix/SV-31-odd-negativa`, chave da issue + descrição curta).
   - `spike/<slug>` — investigação/prova de conceito sem issue associada (ex.:
     `spike/avaliar-testcontainers-rabbitmq`), kebab-case, sem chave.
+- **Antes de abrir o PR da subtask, rode a skill `code-review` (ou `simplify`) contra o diff**
+  (decisão de 2026-09-03) — pega comentário ruidoso, prosa redundante no código e más práticas
+  antes de virarem histórico do Git, sem depender só das skills de revisão de `claude-code-skills`
+  (essas só rodam no gate completo, `feature/` → `develop`, tarde demais para um ajuste pequeno de
+  estilo). Corrija os achados e só então abra o PR.
 - **Merge `subtask/` → branch da story**: `--no-ff`, via PR, com a **pipeline de CI daquele PR
-  passando** (changelog, i18n, build, testes) e a subtask marcada `done` no `feature_list.json`.
-  **Não** exige `./init.sh` local nem as skills de revisão: um estado intermediário raramente
-  passa no gate de cobertura (um `docker-compose.yml` sem o RabbitMQ ainda não sobe; `mvn verify`
-  num serviço pela metade também não). O **SonarCloud é pulado** nesses PRs — cobertura parcial
-  de uma feature em andamento reprovaria o quality gate de código novo sem indicar defeito real
-  (condição `github.base_ref` no `ci.yml`, ver [[CI-CD]]).
+  passando** (i18n, build, testes — não changelog, ver [[CI-CD]] seção "Changelog por serviço")
+  e a subtask marcada `done` no `feature_list.json`. **Não** exige `./init.sh` local nem as
+  skills de revisão de `claude-code-skills`: um estado intermediário raramente passa no gate de
+  cobertura (um `docker-compose.yml` sem o RabbitMQ ainda não sobe; `mvn verify` num serviço pela
+  metade também não). O **SonarCloud é pulado** nesses PRs — cobertura parcial de uma feature em
+  andamento reprovaria o quality gate de código novo sem indicar defeito real (condição
+  `github.base_ref` no `ci.yml`, ver [[CI-CD]]).
 - **Merge de `feature/`/`bugfix`/`spike/` → `develop`**: gate completo — `./init.sh` daquele
   repositório passando, `feature_list.json` atualizado (todas as `subtasks` `done`, `evidence`
   preenchida), skills de revisão rodadas (ver [[AGENT-SKILLS]]) e a pipeline de CI inteira,
