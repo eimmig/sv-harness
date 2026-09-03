@@ -806,3 +806,16 @@ rodado ao final (PASS), com verificação cruzada dos 6 repositórios — guarda
 código de aplicação para entregar.
 
 **Próximo**: `epic-002` (`auth-service`) — agora com todas as dependências `done`.
+
+## Regra nova: análise de skills sempre em português (2026-09-03)
+
+Usuário pediu explicitamente: saída das skills de análise (Plan Reviewer, Delivery Reviewer,
+Test Suite Auditor, Persistence Auditor, Documentation Auditor, Codebase Auditor etc.) deve ser
+sempre em português, mesmo quando o output contract da skill é documentado em inglês — motivado
+pelo `Plan Review` de `auth-service feat-001` desta sessão, respondido em inglês por seguir
+literalmente o template da skill. Adicionada seção "Idioma das análises" em
+`docs/AGENT-SKILLS.md` (rótulos técnicos estáveis do output contract, ex. `BLOCKER`/`READY`,
+podem continuar em inglês; texto narrativo é sempre português) e referência em `CLAUDE.md`
+(raiz), bullet de skills prioritárias. Não registrada em `docs/DECISIONS-LOG.md` — não é
+divergência do TCC1, é regra de processo/ferramenta, fora do escopo daquele log (ver sua própria
+nota introdutória).

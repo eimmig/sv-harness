@@ -16,6 +16,22 @@ configuração do próprio agente (`~/.claude/` ou equivalente).
 > Uma sessão que não enxergar as skills disponíveis provavelmente só precisa ser reiniciada
 > (plugin instalado depois que a sessão já estava rodando não é carregado até reiniciar).
 
+## Idioma das análises — sempre português
+
+Decisão de 2026-09-03: toda saída dessas skills apresentada ao usuário (Plan Reviewer, Delivery
+Reviewer, Test Suite Auditor, Persistence Auditor, Documentation Auditor, Codebase Auditor, e
+qualquer outra da claude-code-skills) é escrita em **português**, mesmo quando a skill/template
+documenta seu output contract em inglês (ex.: `review-suite:ln-11-plan-reviewer`). Consistente
+com a regra já existente em `CLAUDE.md` (raiz) de que toda documentação de projeto — vault,
+`CHANGELOG.md`, `progress.md`, `feature_list.json` — é em português, entregável de TCC; a única
+exceção documentada é a mensagem de commit (ver `docs/CONVENTIONS.md` seção "Git"). Um template
+de skill em inglês é um detalhe do marketplace instalado, não uma decisão deste projeto.
+
+Rótulos técnicos estáveis do próprio output contract da skill (ex.: `BLOCKER`/`MAJOR`/`MINOR`,
+`READY`/`REVISE`/`BLOCKED`) podem continuar em inglês — são identificadores, mesmo padrão do
+`type` em RFC 7807 (ver [[API-CONTRACTS]]). O texto narrativo (achados, evidência, veredito em
+prosa, plano corrigido) é sempre português.
+
 ## Caveman — todas as etapas, sempre
 
 [github.com/JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman). Comprime as

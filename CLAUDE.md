@@ -85,6 +85,9 @@ qualquer escopo novo.
   não as enxergar disponíveis, reinicie a sessão do Claude Code antes de assumir que precisam
   ser reinstaladas. Mapeamento completo (qual skill em qual etapa, e a ressalva de nunca deixar
   a Architecture Suite gerar decisão/diagrama paralelo a este vault) em `docs/AGENT-SKILLS.md`.
+  **A análise dessas skills é sempre apresentada em português** ao usuário, mesmo quando o
+  output contract da skill é documentado em inglês — ver `docs/AGENT-SKILLS.md` seção "Idioma
+  das análises".
 - **WIP máximo 1 por lane de serviço — paralelismo entre serviços é permitido (multi-agent)**:
   mesmo princípio do WIP máximo 1 usado no TCC 1 (ver `docs/REQUIREMENTS.md` seção "Método de
   trabalho"), aplicado por serviço em vez de globalmente, para permitir várias sessões/agentes
