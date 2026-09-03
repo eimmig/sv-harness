@@ -237,6 +237,14 @@ O merge sobe um nível por vez, sempre `--no-ff`: `subtask/SV-13` → `feature/S
   antes de virarem histórico do Git, sem depender só das skills de revisão de `claude-code-skills`
   (essas só rodam no gate completo, `feature/` → `develop`, tarde demais para um ajuste pequeno de
   estilo). Corrija os achados e só então abra o PR.
+- **Título do PR**: `[chave] título`, mesma chave e título da linha correspondente em
+  `CHANGELOG.md` (ex.: `[SV-11] Bootstrap do pom.xml e esqueleto hexagonal`) — não a mensagem do
+  commit.
+- **Comentário em código, minimalista** (decisão de 2026-09-03, corrige excesso desta mesma
+  sessão): no máximo uma linha, só quando o porquê não é óbvio pelo nome/estrutura. Racional
+  extenso (por que uma decisão foi tomada, o que um code review pegou, gotcha de biblioteca) vai
+  na mensagem de commit, na descrição da issue do Jira ou na nota do vault — nunca em bloco de
+  comentário no código.
 - **Merge `subtask/` → branch da story**: `--no-ff`, via PR, com a **pipeline de CI daquele PR
   passando** (i18n, build, testes — não changelog, ver [[CI-CD]] seção "Changelog por serviço")
   e a subtask marcada `done` no `feature_list.json`. **Não** exige `./init.sh` local nem as
