@@ -55,6 +55,11 @@ nasce junto com o schema, via rota administrativa restrita ao operador da plataf
 (`X-Admin-Api-Key`, senha aleatória + `mustChangePassword = true` — ver [[DECISIONS-LOG]] item 3
 para o racional completo).
 
+**Nome físico da tabela diverge do nome lógico do ERD** (implementado em `auth-service feat-002`):
+`users`/`telegram_accounts` no banco, não `user`/`telegram_account` — `USER` é palavra reservada
+no Postgres. Achado do `Plan Reviewer` daquela feature, registrado aqui para quem comparar o ERD
+acima com o schema real não confundir com divergência não intencional.
+
 ### Diretório global (schema `public`, fora de qualquer tenant)
 
 Duas tabelas adicionadas em 2026-08-02 (ver [[DECISIONS-LOG]] item 15) para resolver
