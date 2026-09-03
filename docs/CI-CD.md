@@ -211,6 +211,46 @@ gate liga sozinho no `feat-001` de cada serviço, quando o marcador passar a exi
 workflow nenhum. Isso é diferente de `continue-on-error`, que esconderia falha real depois que o
 projeto existir.
 
+**Gotcha encontrado em `sv-auth-backend` (2026-09-03, durante `feat-001.1`)**: o desenho acima
+assume `feat-001` como unidade atômica — pom.xml e os arquivos de mensagem de i18n nascendo no
+mesmo commit. Mas o `Plan Reviewer` (ver `plan_review` de `services/auth-service/feature_list.json`
+`feat-001`) dividiu a feature em 8 subtasks incrementais, cada uma com PR/gate de CI próprio
+(`subtask/SV-* → feature/SV-10`) — e `pom.xml` nasce na primeira subtask (esqueleto), enquanto
+`messages_pt_BR.properties` só nasce numa subtask bem mais à frente (scaffold de i18n). Com o
+passo 2 guardado só por `pom.xml`, os PRs das subtasks intermediárias quebrariam na validação de
+i18n por **sequenciamento**, não por defeito real. Corrigido em `sv-auth-backend/.github/workflows/ci.yml`:
+o passo 2 ganhou marcador **próprio** (`messages_pt_BR.properties`), independente do `pom.xml`
+que guarda os passos 3–5. **Mesma armadilha latente ainda não corrigida nos outros 3 repositórios
+Java** (`sv-api-gateway`, `sv-bets-backend`, `sv-stats-backend`) e potencialmente em
+`sv-frontend`/`sv-telegram-integration-backend` se o `feat-001` deles também for dividido em
+subtasks incrementais — cada um deve aplicar a mesma correção (marcador do passo de i18n = o
+primeiro arquivo de tradução daquele stack, não o marcador geral do repositório) quando chegar a
+vez de bootstrapar seu próprio `feat-001`, não só copiar o `ci.yml` atual do `auth-service` sem
+essa correção.
+
+**Segunda armadilha do mesmo dia**: o passo 4 chamava `mvn test jacoco:report` — um goal solto
+que exige o plugin JaCoCo já declarado no `pom.xml`. Como o plugin só entra numa subtask
+posterior (gate de cobertura), o mesmo desalinhamento pom.xml-nasce-antes se repetiu, agora
+quebrando o passo 4 em vez do passo 2. Corrigido trocando para `mvn -B verify`: os testes rodam
+normalmente desde a primeira subtask com `pom.xml`, e quando o plugin JaCoCo for configurado
+(vinculado às fases do lifecycle via `<executions>`, não invocado como goal solto), `mvn verify`
+passa a gerar e checar a cobertura sozinho — sem precisar tocar no workflow de novo. Lição geral
+para os outros repositórios: qualquer passo de CI que dependa de uma ferramenta/plugin
+configurada numa subtask posterior à que introduz o `pom.xml`/`pyproject.toml`/`package-lock.json`
+precisa do mesmo tratamento — goal solto ou verificação de conteúdo específico quebra por
+sequenciamento, não por defeito.
+
+**Terceira armadilha, esta pré-existente desde `epic-009`, não causada pela divisão em
+subtasks**: o passo 5 chamava `mvn sonar:sonar` (atalho de prefixo). Esse atalho só resolve se
+`org.sonarsource.scanner.maven` estiver em `<pluginGroups>` do `settings.xml` do runner ou já
+referenciado em algum `<plugin>` do `pom.xml` — nenhum dos dois é o caso em nenhum dos 6
+repositórios, então o erro é sempre `No plugin found for prefix 'sonar'`, nunca uma falha real de
+análise. Passou despercebido em `epic-009` porque o passo nunca chegou a rodar de fato (nenhum
+repositório tinha `pom.xml`/testes reais ainda). Corrigido em `sv-auth-backend` para as
+coordenadas completas do plugin (`org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar`,
+versão pinada) em vez do atalho — não depende de nada estar declarado no `pom.xml`. **Mesma
+correção pendente nos outros 5 `ci.yml`** quando cada repositório chegar ao próprio `feat-001`.
+
 Os scripts em `.github/scripts/` são versionados como `100755`. O Windows reporta
 `core.fileMode=false`, então o bit precisa ser posto no índice (`git update-index --chmod=+x`); sem
 isso o `run:` que os invoca direto quebra com *Permission denied* no primeiro PR. `init.sh` tem o

@@ -50,8 +50,9 @@ sistema de build diferente. `pom.xml` na raiz de cada serviço (não é um monor
 multi-módulo — cada serviço é buildado e versionado de forma independente, coerente com a
 arquitetura de microsserviços).
 
-GroupId sugerido: `com.eduardoimmig.betting`, artifactId = nome do serviço
-(`auth-service`, `bets-service`, `stats-service`).
+GroupId: `com.stakevault.betting` (nome do produto, ver [[DESIGN-SYSTEM]] — corrigido em
+2026-09-03, era `com.eduardoimmig.betting` até `auth-service feat-001`), artifactId = nome do
+serviço (`auth-service`, `bets-service`, `stats-service`).
 
 **Geração inicial do `pom.xml`** (decisão de 2026-08-02, vale também para `api-gateway`): via
 **Spring Initializr** (`curl` para a API do `start.spring.io`, não preenchido manualmente) — no

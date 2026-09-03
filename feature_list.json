@@ -26,7 +26,7 @@
         "epic-009",
         "epic-001"
       ],
-      "status": "not-started",
+      "status": "in-progress",
       "evidence": "",
       "harness": "services/auth-service/"
     },
