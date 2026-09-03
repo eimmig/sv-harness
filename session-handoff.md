@@ -3,54 +3,56 @@
 > Estado atual, não histórico. O diário cronológico é o `progress.md` — este arquivo é reescrito
 > a cada sessão para responder "o que a próxima sessão precisa saber agora".
 
-**Última atualização:** 2026-08-17
+**Última atualização:** 2026-09-03
 
 ## Objetivo atual
 
-- Fechar as pendências de harness acumuladas e destravar `epic-002` (`auth-service`), o primeiro
-  epic de serviço de aplicação do projeto.
-- Situação: 1 de 8 epics `done` (`epic-001`, infra). **Nenhum código de aplicação escrito ainda**
-  — os 6 repositórios de serviço têm `main` vazio, sem nenhum commit.
+- `epic-002` (`auth-service`) iniciado — `feat-001` (setup do projeto) entregue e mergeado em
+  `develop`. RF01/RF02 e o resto do backlog de `auth-service` (`feat-002`..`feat-006`) seguem
+  `not-started`.
+- Situação: 2 de 9 epics `done` (`epic-001` infra, `epic-009` bootstrap+SonarCloud). `epic-002`
+  é o primeiro epic de serviço de aplicação com código real — os outros 5 serviços (`bets-service`,
+  `stats-service`, `api-gateway`, `telegram-integration`, `web`) continuam com `main`/`develop`
+  vazios, só o commit de bootstrap.
 
-## Concluído nesta sessão (2026-08-17)
+## Concluído nesta sessão (2026-09-03)
 
-- [x] `infra/` saiu do estado sujo: campos `jira`/`subtasks` commitados (`c7c89ed`), correção do
-      RNF06 commitada (`5c7582c`), ambos publicados em `origin/develop`. Working tree limpo.
-- [x] **Conventional Commits 1.0.0, sempre em inglês** — decisão do usuário. Formato completo
-      (tipos, imperativo, footers `Refs:`/`Feature:`, `!` + `BREAKING CHANGE:`) em
-      `docs/CONVENTIONS.md` seção "Git". O inglês vale **só** para a mensagem de commit; vault,
-      `CHANGELOG.md` e `progress.md` seguem em português.
-- [x] **RNF06 / `epic-007` resolvido** (pendência aberta desde 2026-08-01): PDF do TCC 1 lido, a
-      tabela tem 6 RNFs e nenhum é de tolerância a falha. Citação removida; a base do epic passou
-      a ser a prosa da seção 4.1 (p. 30) e do capítulo de arquitetura. Nenhum RNF novo criado.
-- [x] **SonarCloud** deixou de ser pendência aberta e virou passo agendado para
-      `services/auth-service/feat-001`.
-- [x] Corrigidos dois `sonar-project.properties` (`apps/web`, `services/telegram-integration`) que
-      citavam caminhos de workflow da era monorepo.
-- [x] Verificado que o item 11 do `DECISIONS-LOG.md` **já estava resolvido** desde 2026-08-02 — a
-      nota do `progress.md` que o dava como aberto estava stale.
+- [x] **`auth-service feat-001` implementado e mergeado em `develop`** — Spring Boot 4.1.1,
+      layout hexagonal, conexão Postgres por profile, provisionamento de schema de tenant +
+      migração lazy por requisição, gate JaCoCo 80%, i18n, health checks, logging JSON
+      estruturado. 9 subtasks (SV-11..SV-19). Evidência completa em
+      `services/auth-service/feature_list.json` e `services/auth-service/progress.md`.
+- [x] **`groupId` corrigido**: `com.eduardoimmig.betting` → `com.stakevault.betting`, em
+      `docs/CONVENTIONS.md` e nos arquivos já commitados de `auth-service`.
+- [x] **`CHANGELOG.md` de todo repositório de aplicação virou índice de issues do Jira** (uma
+      linha `- [chave](url) - título` por story/subtask, escrita automaticamente por
+      `tools/jira_story.py`), não mais Keep a Changelog com prosa. Gate de changelog na CI mudou
+      de "todo PR" para "só PR story→develop". `docs/CONVENTIONS.md`, `docs/CI-CD.md`,
+      `tools/jira_story.py` atualizados.
+- [x] **`/code-review` (skill builtin) vira etapa obrigatória antes de cada PR de subtask** —
+      `docs/CONVENTIONS.md`, `docs/AGENT-SKILLS.md`. Achou e corrigiu problemas reais em 5 das 9
+      subtasks desta sessão (ver evidência de `feat-001`).
+- [x] **Análise das skills sempre em português** — `docs/AGENT-SKILLS.md` seção "Idioma das
+      análises", registrado antes de iniciar `feat-001`.
+- [x] 3 gotchas de guarda-por-marcador na CI, reais e documentados em `docs/CI-CD.md` para os
+      outros 5 repositórios (i18n, goal `jacoco:report` solto, atalho `sonar:sonar`).
 
 ## Bloqueios / Riscos
 
 | Item | Estado |
 |---|---|
-| `tools/.jira.env` não existe | **Bloqueia `epic-002`.** O nome da branch vem da chave do Jira, então a story precisa existir antes da branch. `tools/.jira.env.example` está completo; o script foi validado com `--dry-run` (funciona, só falta credencial). Usuário optou por configurar. |
 | DLQ local usa `at-most-once` | Aberto **por desenho**. Só reavaliável quando `infra/feat-002` rodar, que depende de `epic-004`/`epic-005`. Ver `docs/DECISIONS-LOG.md` (2026-08-03). |
-| Topologia RabbitMQ é contrato | `bets-service` e `stats-service` publicam/consomem **sem redeclarar** exchange ou fila — redeclaração divergente derruba o canal com `PRECONDITION_FAILED` em loop. Armadilha de runtime, ver `docs/API-CONTRACTS.md`. |
-| 6 repositórios sem commit inicial | Cada um precisa de commit em `main` + `develop` no início do seu primeiro epic. Passo 1 do setup em `docs/CI-CD.md`. |
-| `infra`: `main` está atrás de `develop` | `origin/main` ainda no bootstrap; os 5 commits (incluindo a entrega de `epic-001`) estão só em `develop`. Merge `develop` → `main` não feito — decisão pendente do usuário, não é defeito. |
-| `gh` CLI não instalado | Não dá para conferir resultado de pipeline de CI a partir daqui. Verificar em github.com/eimmig/sv-infra-backend/actions. |
+| Topologia RabbitMQ é contrato | `bets-service` e `stats-service` publicam/consomem **sem redeclarar** exchange ou fila. Ver `docs/API-CONTRACTS.md`. |
+| 5 repositórios ainda sem código de aplicação | `bets-service`, `stats-service`, `api-gateway`, `telegram-integration`, `web` — só o commit de bootstrap do `epic-009`. |
+| `infra`: `main` está atrás de `develop` | Merge `develop` → `main` não feito — decisão pendente do usuário, não é defeito. |
+| GitGuardian só escaneia `pull_request` | Achado real em `auth-service feat-001.9`: um valor de exemplo em `.env.example` só foi flagado no PR final, não nas 8 PRs de subtask anteriores. Ver `services/auth-service/progress.md`. Vale revisar `.env.example` de cada novo serviço com placeholder sem formato de senha real (`CHANGE_ME`) antes da primeira PR que o toque. |
 
 ## Próxima sessão — por onde começar
 
-1. Confirmar se `tools/.jira.env` já existe e está preenchido
-   (`python tools/jira_story.py --harness services/auth-service --feature feat-001 --dry-run`
-   valida o payload sem gastar credencial).
-2. Rodar `./init.sh` na raiz (deve sair `0`) e `services/auth-service/init.sh`
-   (falha esperada: sem `pom.xml` ainda).
-3. Iniciar **`epic-002` (`auth-service`)** — único epic elegível: dependia só de `epic-001`.
-   Ordem obrigatória antes de codificar, ver `CLAUDE.md` da raiz:
-   `Plan Reviewer` → preencher `plan_review` **e** `subtasks` → `tools/jira_story.py` →
-   `git checkout -b feature/<chave>`.
-4. Junto de `auth-service/feat-001`: commit inicial em `main` + `develop`, e o setup do
-   SonarCloud (passos 2–4 de `docs/CI-CD.md`), agora agendado para este momento.
+1. Rodar `./init.sh` na raiz (deve sair `0`).
+2. Continuar `epic-002` (`auth-service`): `feat-002` (entidades `USER`/`TELEGRAM_ACCOUNT`,
+   primeiras migrations Flyway reais) é a próxima feature elegível — `Plan Reviewer` antes de
+   codificar, mesmo fluxo já validado ponta a ponta em `feat-001`.
+3. `epic-008` (`api-gateway`) **ainda não é elegível** — depende de `epic-002` `done` (regra de
+   WIP em `CLAUDE.md` raiz: dependências precisam estar `done`, não apenas `in-progress`), e
+   `epic-002` só tem `feat-001` de um backlog de 6 features feito. Continuar em `auth-service`.

@@ -807,6 +807,48 @@ código de aplicação para entregar.
 
 **Próximo**: `epic-002` (`auth-service`) — agora com todas as dependências `done`.
 
+## `auth-service feat-001` entregue (2026-09-03)
+
+Sessão completa de implementação, do zero até merge em `develop` — primeiro código de aplicação
+de qualquer um dos 6 serviços Java/Python/Angular do projeto (`infra` já tinha código desde
+`epic-001`, mas nenhum serviço com regra de negócio). Fluxo completo do harness rodou ponta a
+ponta pela primeira vez num serviço de aplicação: `Plan Reviewer` (veredito REVISE, 4 achados
+MAJOR corrigidos antes do código) → `jira_story.py` (story SV-10 + 8 subtasks) → `feature/SV-10`
+→ 9 subtasks (a 9ª descoberta só no gate final) → `Delivery Reviewer`/`Test Suite
+Auditor`/`Persistence Auditor` → merge em `develop`. Evidência completa em
+`services/auth-service/feature_list.json` (campo `evidence` de `feat-001`) e
+`services/auth-service/progress.md`.
+
+**Duas mudanças de convenção do harness, feitas a meio da sessão, a pedido do usuário**:
+
+1. **`groupId` corrigido**: `com.eduardoimmig.betting` (nome do autor) → `com.stakevault.betting`
+   (nome do produto). `docs/CONVENTIONS.md` atualizado para os próximos serviços Java nascerem
+   certos.
+2. **`CHANGELOG.md` deixou de ser Keep a Changelog com prosa** e virou um índice — uma linha por
+   issue do Jira (`- [chave](url) - título`), escrita automaticamente por `tools/jira_story.py`
+   no momento em que a issue é criada, nunca à mão. Como a linha nasce antes da branch da
+   subtask, o gate de changelog na CI mudou de "todo PR" para "só PR story→develop" (mesma
+   guarda por `github.base_ref` já usada no passo do Sonar). `docs/CONVENTIONS.md` e
+   `docs/CI-CD.md` atualizados; `tools/jira_story.py` ganhou a função `append_changelog_lines`.
+
+**Terceira mudança, de processo**: `/code-review` (skill builtin, não a suíte `claude-code-skills`)
+passou a rodar contra o diff de cada subtask **antes** de abrir a PR dela — as skills de revisão
+de `claude-code-skills` só rodam no gate completo (`feature/`→`develop`), tarde demais para pegar
+comentário ruidoso ou má prática pequena. Registrado em `docs/CONVENTIONS.md` e
+`docs/AGENT-SKILLS.md`. Rodou 9 vezes nesta sessão, achou e corrigiu problemas reais em 5
+(detalhe em `services/auth-service/feature_list.json`).
+
+**3 gotchas de CI descobertos em produto real pela primeira vez** (guarda por arquivo-marcador
+presumia `feat-001` atômico; dividir em subtasks quebrou essa premissa 2 vezes; a 3ª já existia
+desde `epic-009`, só nunca tinha rodado): documentados em `docs/CI-CD.md` para os outros 5
+repositórios evitarem o mesmo problema quando chegarem ao próprio `feat-001`.
+
+**epic-002 continua `in-progress`** (não `done`) — `feat-001` é só o esqueleto; RF01/RF02 e o
+resto do backlog de `auth-service` (`feat-002`..`feat-006`) seguem `not-started`.
+
+`./init.sh` da raiz não precisou rodar de novo (nenhuma mudança em `CLAUDE.md`/`feature_list.json`/
+scripts de harness além da correção de `groupId` no texto de `CONVENTIONS.md` e do `epic-002`).
+
 ## Regra nova: análise de skills sempre em português (2026-09-03)
 
 Usuário pediu explicitamente: saída das skills de análise (Plan Reviewer, Delivery Reviewer,
