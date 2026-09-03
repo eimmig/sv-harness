@@ -398,28 +398,54 @@ mudam com o idioma da interface).
   `logo-bars-only.svg` (contextos que precisam só do símbolo em tamanho pequeno).
 - Estados vazios/loaders inline: `logo-bars-only.svg`.
 
-## QA visual: Impeccable e taste-skill — prioritárias (decisão de 2026-08-02, reforçada)
+## QA visual e prototipagem: Impeccable, taste-skill e huashu-design — prioritárias (decisão de 2026-08-02, estendida em 2026-09-03)
 
-Duas ferramentas de *design guidance para agentes de IA* — [Impeccable](https://github.com/pbakaus/impeccable)
-e [taste-skill](https://github.com/leonxlnx/taste-skill) — **prioritárias** em `apps/web`, igual
-ao Caveman/claude-code-skills (ver [[AGENT-SKILLS]]) — não uma opção entre outras, a ferramenta
-padrão de QA visual. Usadas **só como auditoria/polish** do que for implementado, nunca como
-fonte de novas decisões de design:
+Três ferramentas de *design guidance para agentes de IA* — [Impeccable](https://github.com/pbakaus/impeccable),
+[taste-skill](https://github.com/leonxlnx/taste-skill) e [huashu-design](https://github.com/alchaincyf/huashu-design)
+— **prioritárias** em `apps/web`, igual ao Caveman/claude-code-skills (ver [[AGENT-SKILLS]]) —
+não uma opção entre outras, o conjunto padrão para qualquer tarefa de frontend. Usadas **só como
+auditoria/polish/prototipagem** do que for implementado, nunca como fonte de novas decisões de
+design:
 
 - **Este documento (`DESIGN-SYSTEM.md`) continua sendo a única fonte de verdade de design** —
-  marca StakeVault, paleta, layout em painéis, tema, tipografia, já fechados. Não rodar
-  `/impeccable init` (gera `DESIGN.md` próprio) nem aceitar que o taste-skill gere um design
-  language paralelo — ambos duplicariam/divergiriam do que já está decidido aqui.
+  marca StakeVault, paleta, layout em painéis, tema, tipografia, já fechados. O taste-skill não
+  pode gerar um design language paralelo, e o huashu-design não pode usar sua própria "filosofia
+  de design"/review em 5 dimensões para *decidir* aparência — ambos duplicariam a fonte de
+  verdade. Gerar prototipagem/mockup/slide com o huashu-design é permitido (é o ponto forte da
+  ferramenta), desde que a paleta/tipografia/layout do prompt venham deste documento, não do
+  default da ferramenta — o resultado nunca é aceito como especificação, só como rascunho
+  descartável.
+- **`/impeccable init` é seguro e não é a mesma coisa que gerar `DESIGN.md`** — correção de
+  2026-09-03 a uma leitura errada da ferramenta em 2026-08-02: `init` só escreve `PRODUCT.md`
+  (público, propósito, restrições, voz) e, segundo o próprio `SKILL.md` do Impeccable, *"does
+  not invent a visual world and does not write DESIGN.md"* nem oferece criar um durante `init`.
+  Quem escreve `DESIGN.md` é `/impeccable document` (extrai do código) ou o fluxo `new-work`
+  (workshop interativo) — comandos distintos, nunca acionados por `init`.
+  **Mecanismo real para não duplicar a fonte de verdade**: `apps/web/DESIGN.md` é **pré-escrito
+  a partir deste documento**, no [formato oficial `DESIGN.md`](https://github.com/google-labs-code/design.md)
+  — front-matter YAML com os tokens (`colors`, `typography`, `rounded`, `spacing`, `components`)
+  seguido das 8 seções canônicas na ordem (`Overview`, `Colors`, `Typography`, `Layout`,
+  `Elevation & Depth`, `Shapes`, `Components`, `Do's and Don'ts`; seções não aplicáveis podem ser
+  omitidas). Feito isso, `document`/`new-work` **não sobrescrevem sozinhos**: o próprio skill diz
+  *"If a DESIGN.md already exists, do not silently overwrite it. STOP and call AskUserQuestion.
+  The choice is refresh, overwrite, or merge"* — a sessão futura escolhe `merge`/recusa
+  `overwrite`. `context.mjs` carrega `PRODUCT.md` + `DESIGN.md` uma vez por sessão antes de
+  qualquer comando de auditoria, então audit/polish passam a avaliar contra os nossos tokens.
 - Uso pretendido: comandos de auditoria (ex.: `/impeccable audit`, `/impeccable polish`) rodados
   contra componentes já implementados, comparando o resultado com o que este documento descreve
   (detectar "cara de IA genérica" — gradiente roxo-azul, cards aninhados, fontes padrão — que
   não tem nada a ver com a identidade StakeVault). O taste-skill entra pelo mesmo motivo:
   refinar layout/tipografia/animação de componentes já implementados, não desenhar do zero.
-  Instalação: `npx impeccable install` / `npx skills add https://github.com/leonxlnx/taste-skill`.
-- **Ainda não instalado** — `apps/web` não tem `package.json` ainda (`feat-001` não iniciado).
-  Instalação prevista para `feat-001`, junto com Angular/Playwright — ver `apps/web/CLAUDE.md` e
-  `apps/web/feature_list.json`.
-- **Playwright** (Microsoft) é diferente das duas acima — teste E2E **funcional**, não QA visual.
+  huashu-design entra numa etapa diferente das outras duas — **antes** da implementação, não
+  depois: gerar um protótipo HTML clicável ou mockup de uma tela nova a partir da paleta/tema
+  deste documento, para servir de referência visual rápida ao implementar o componente Angular
+  de verdade — nunca é o artefato final, nunca é commitado em `apps/web/src`.
+  Instalação: `npx impeccable install` / `npx skills add https://github.com/leonxlnx/taste-skill`
+  / `npx skills add https://github.com/alchaincyf/huashu-design`.
+- **Ainda não instaladas** — `apps/web` não tem `package.json` ainda (`feat-001` não iniciado).
+  Instalação das três prevista para `feat-001`, junto com Angular/Playwright — ver
+  `apps/web/CLAUDE.md` e `apps/web/feature_list.json`.
+- **Playwright** (Microsoft) é diferente das três acima — teste E2E **funcional**, não QA visual.
   Já estava planejado antes desta decisão (ver [[TESTING]]).
 
 ## Ver também
@@ -429,4 +455,4 @@ fonte de novas decisões de design:
 - [[TESTING]] — Playwright deve cobrir os fluxos críticos nos dois temas (claro/escuro), não só
   no padrão.
 - [[DECISIONS-LOG]] — decisão de 2026-08-02 sobre Impeccable/taste-skill como QA visual, não
-  fonte de design.
+  fonte de design, estendida em 2026-09-03 para incluir huashu-design sob a mesma restrição.

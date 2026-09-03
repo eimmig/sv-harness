@@ -14,18 +14,31 @@ conteudo: os templates so formatam os campos que a feature/subtask ja tem.
 
 Campos lidos de cada feature:
     name          titulo curto (vira o summary da story)
-    goal          1-2 frases: o que esta story entrega. Opcional; cai para description.
+    goal          1-2 frases: o que esta story entrega. Opcional; cai para as
+                  primeiras frases de `description`.
     description   contexto completo
     scope         lista de itens que entram no escopo. Opcional.
     dependencies  lista de ids no mesmo harness
-    plan_review   texto do Plan Reviewer (recolhido num expand)
+    plan_review   texto do Plan Reviewer. NAO aparece na story quando preenchido —
+                  os achados ja foram absorvidos pelas subtarefas, repeti-los seria
+                  a mesma decisao contada duas vezes. Vazio faz a story nascer com
+                  o aviso de "Plan Review pendente".
+    evidence      evidencia de conclusao (vira comentario). Texto simples ou,
+                  preferido, objeto legivel:
+                      {"resumo": "uma frase",
+                       "secoes": [{"titulo": ..., "itens": [...]}, ...]}
+                  O comentario sai com resumo e um subtitulo por secao — nao como
+                  um paragrafo unico concatenado.
     subtasks      lista de subtasks
 
 Campos lidos de cada subtask:
     name          titulo curto (vira o summary da sub-task)
     detail        1-2 frases explicando o passo. Opcional.
     checklist     lista de passos verificaveis. Opcional.
+    validation    como validar o passo. Opcional.
     owner         "agente" (default) ou "usuario" — sinaliza acao manual.
+
+Em qualquer campo de texto, trecho entre `crases` vira codigo na issue.
 """
 
 from __future__ import annotations
@@ -48,9 +61,25 @@ def link(value: str, href: str) -> dict:
     }
 
 
+def rich(value: str) -> list[dict]:
+    """Quebra `crase` em nos de codigo — nome de arquivo, comando, id.
+
+    Sem isto, `feature_list.json` e `git checkout -b` saem como prosa e o passo
+    vira um paragrafo cinza onde nada se destaca.
+    """
+    partes = str(value).split("`")
+    return [
+        text(parte, ["code"] if i % 2 else None)
+        for i, parte in enumerate(partes)
+        if parte
+    ]
+
+
 def paragraph(*nodes) -> dict:
-    """Aceita str (vira texto simples) ou nos ADF ja montados."""
-    content = [text(n) if isinstance(n, str) else n for n in nodes]
+    """Aceita str (crases viram codigo) ou nos ADF ja montados."""
+    content: list[dict] = []
+    for node in nodes:
+        content += rich(node) if isinstance(node, str) else [node]
     return {"type": "paragraph", "content": content}
 
 
@@ -134,35 +163,6 @@ def _first_sentences(value: str, count: int = 2) -> str:
     return _clip(". ".join(parts[:count]).rstrip(".") + ".", 400)
 
 
-def _split_review(review: str) -> tuple[str, list[str]]:
-    """Separa o veredito dos achados no texto do Plan Reviewer.
-
-    Formato produzido pelas sessoes: "<data>, Plan Reviewer ... Veredito: X.
-    Achados corrigidos ...: (BLOCKER) ...; (MAJOR) ...;"
-    Sem regex fragil: quebra pelos marcadores de severidade, que sao a unica
-    convencao estavel do texto. Se nao encontrar nenhum, devolve o texto inteiro.
-    """
-    flat = " ".join(review.split())
-    verdict = ""
-    for marker in ("Veredito:", "Verdict:"):
-        if marker in flat:
-            verdict = flat.split(marker, 1)[1].split(".", 1)[0].strip()
-            break
-
-    findings: list[str] = []
-    for severity in ("(BLOCKER)", "(MAJOR)", "(MINOR)"):
-        chunk = flat
-        while severity in chunk:
-            _, _, rest = chunk.partition(severity)
-            end = len(rest)
-            for stop in ("; (BLOCKER)", "; (MAJOR)", "; (MINOR)"):
-                if stop in rest:
-                    end = min(end, rest.index(stop))
-            findings.append(f"{severity[1:-1]} — {rest[:end].strip().rstrip(';')}")
-            chunk = rest
-    return verdict, findings
-
-
 def story_summary(harness_label: str, feature: dict) -> str:
     return _clip(f"[{harness_label}] {feature['name']}")
 
@@ -174,66 +174,66 @@ def subtask_summary(subtask: dict) -> str:
 # --- templates ------------------------------------------------------------------
 
 
-def _review_section(feature: dict) -> list[dict]:
-    """Veredito e achados do Plan Reviewer; texto completo recolhido."""
-    review = (feature.get("plan_review") or "").strip()
-    if not review:
-        return [
-            panel(
-                "warning",
-                "Plan Review pendente — rodar o Plan Reviewer antes de mover esta "
-                "story para In Progress (CLAUDE.md da raiz, passo 9).",
-            )
-        ]
+def _texto(titulo: str, valor) -> list[dict]:
+    """Seção de texto corrido. Vazia vira lista vazia — não gera título órfão."""
+    conteudo = (valor or "").strip() if isinstance(valor, str) else ""
+    return [heading(titulo), paragraph(conteudo)] if conteudo else []
 
-    verdict, findings = _split_review(review)
-    nodes = [heading("Revisão do plano")]
-    if verdict:
-        nodes.append(
-            panel(
-                "success" if verdict.upper().startswith("READY") else "note",
-                paragraph(text("Veredito: ", ["strong"]), text(verdict)),
-            )
+
+def _lista(titulo: str, itens, numerada: bool = False) -> list[dict]:
+    """Seção de lista. Vazia vira lista vazia — não gera título órfão."""
+    itens = [i for i in (itens or []) if i]
+    if not itens:
+        return []
+    return [heading(titulo), (ordered_list if numerada else bullet_list)(itens)]
+
+
+def _passos_section(subtasks: list[dict]) -> list[dict]:
+    """As subtarefas já criadas, com a chave do Jira ao lado quando existir."""
+    if not subtasks:
+        return []
+    return [
+        heading("Passos"),
+        ordered_list(
+            [
+                paragraph(
+                    text(s["name"]),
+                    text(f"  ({s['jira']})" if s.get("jira") else "", ["code"]),
+                )
+                for s in subtasks
+            ]
+        ),
+    ]
+
+
+def _review_section(feature: dict) -> list[dict]:
+    """Só o aviso de Plan Review pendente. Revisão feita não aparece na issue.
+
+    Os achados do Plan Reviewer já foram absorvidos pelas subtarefas — repeti-los
+    na descrição seria a mesma decisão contada duas vezes, e a segunda cópia
+    envelhece calada. O texto integral continua em `plan_review`, no
+    `feature_list.json`, que é onde a rastreabilidade vive.
+    """
+    if (feature.get("plan_review") or "").strip():
+        return []
+    return [
+        panel(
+            "warning",
+            "Plan Review pendente — rodar o Plan Reviewer antes de mover esta "
+            "story para In Progress (CLAUDE.md da raiz, passo 9).",
         )
-    if findings:
-        nodes.append(paragraph("Corrigido no plano antes de escrever qualquer código:"))
-        nodes.append(bullet_list(findings))
-    nodes.append(expand("Texto completo da revisão", paragraph(review)))
-    return nodes
+    ]
 
 
 def story_description(harness: str, feature: dict) -> dict:
     goal = feature.get("goal") or _first_sentences(feature.get("description", ""))
     nodes: list[dict] = [panel("info", paragraph(text(goal, ["strong"])))]
 
-    scope = feature.get("scope") or []
-    if scope:
-        nodes += [heading("O que entra"), bullet_list(scope)]
-
-    subtasks = feature.get("subtasks") or []
-    if subtasks:
-        nodes.append(heading("Passos"))
-        nodes.append(
-            ordered_list(
-                [
-                    paragraph(
-                        text(s["name"]),
-                        text(
-                            f"  ({s['jira']})" if s.get("jira") else "",
-                            ["code"],
-                        ),
-                    )
-                    for s in subtasks
-                ]
-            )
-        )
+    nodes += _lista("O que entra", feature.get("scope"))
+    nodes += _passos_section(feature.get("subtasks") or [])
 
     deps = feature.get("dependencies") or []
-    if deps:
-        nodes += [
-            heading("Depende de"),
-            bullet_list([f"{harness} :: {dep}" for dep in deps]),
-        ]
+    nodes += _lista("Depende de", [f"{harness} :: {dep}" for dep in deps])
 
     nodes += _review_section(feature)
 
@@ -291,14 +291,47 @@ def story_description(harness: str, feature: dict) -> dict:
 def evidence_marker(harness: str, feature: dict) -> str:
     """Marcador estavel no rodape do comentario de evidencia.
 
-    Carrega um hash do proprio texto: rodar o sync de novo nao duplica o
+    Carrega um hash do proprio conteudo: rodar o sync de novo nao duplica o
     comentario, mas uma evidencia editada no harness gera um comentario novo em
     vez de a issue ficar com a versao velha.
     """
     import hashlib
+    import json
 
-    digest = hashlib.sha256((feature.get("evidence") or "").encode("utf-8")).hexdigest()[:8]
+    evidence = feature.get("evidence") or ""
+    canonico = (
+        evidence
+        if isinstance(evidence, str)
+        else json.dumps(evidence, ensure_ascii=False, sort_keys=True)
+    )
+    digest = hashlib.sha256(canonico.encode("utf-8")).hexdigest()[:8]
     return f"harness-evidence:{harness}:{feature['id']}:{digest}"
+
+
+def _evidence_body(evidence) -> list[dict]:
+    """Corpo do comentário de evidência, em blocos legíveis.
+
+    Evidência costuma ter perguntas distintas — o que foi entregue, como isso foi
+    verificado, o que fugiu do plano. Concatenar tudo num parágrafo único produz
+    um bloco que ninguém lê no board, então cada seção vira um subtítulo com sua
+    lista, no mesmo formato das descrições das tarefas.
+    """
+    if isinstance(evidence, str):
+        blocos = evidence.split("\n\n")
+        return [paragraph(bloco.strip()) for bloco in blocos if bloco.strip()]
+
+    nodes: list[dict] = []
+    resumo = (evidence.get("resumo") or "").strip()
+    if resumo:
+        nodes.append(paragraph(resumo))
+    for secao in evidence.get("secoes") or []:
+        titulo = (secao.get("titulo") or "").strip()
+        itens = [item for item in (secao.get("itens") or []) if str(item).strip()]
+        if titulo:
+            nodes.append(heading(titulo, 4))
+        if itens:
+            nodes.append(bullet_list(itens))
+    return nodes
 
 
 def evidence_comment(harness: str, feature: dict) -> dict:
@@ -315,7 +348,8 @@ def evidence_comment(harness: str, feature: dict) -> dict:
                 text("."),
             ),
         ),
-        paragraph(feature.get("evidence") or ""),
+        *_evidence_body(feature.get("evidence") or ""),
+        rule(),
         paragraph(text(evidence_marker(harness, feature), ["code"])),
     )
 
@@ -335,13 +369,8 @@ def subtask_description(harness: str, feature: dict, subtask: dict) -> dict:
             )
         )
 
-    checklist = subtask.get("checklist") or []
-    if checklist:
-        nodes += [heading("Passos"), ordered_list(checklist)]
-
-    validation = subtask.get("validation")
-    if validation:
-        nodes += [heading("Como validar"), paragraph(validation)]
+    nodes += _lista("Passos", subtask.get("checklist"), numerada=True)
+    nodes += _texto("Como validar", subtask.get("validation"))
 
     nodes.append(rule())
     nodes.append(

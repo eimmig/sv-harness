@@ -40,6 +40,8 @@ que não devem ser reinterpretadas" para as decisões já consolidadas como defi
 - [2026-08-17 — DLQ/retry não é RNF06: requisito de prosa, sem ID](#2026-08-17-dlqretry-nao-e-rnf06-requisito-de-prosa-sem-id)
 - [2026-08-17 — SonarCloud adiado até o primeiro repositório ter código](#2026-08-17-sonarcloud-adiado-ate-o-primeiro-repositorio-ter-codigo)
 - [2026-08-17 — Templates de issue do Jira, separados do script](#2026-08-17-templates-de-issue-do-jira-separados-do-script)
+- [2026-09-03 — huashu-design adicionado; correção sobre `/impeccable init`](#2026-09-03-huashu-design-adicionado-correcao-sobre-impeccable-init)
+- [2026-09-03 — Templates do Jira alinhados ao padrão de `oficina/tools`](#2026-09-03-templates-do-jira-alinhados-ao-padrao-de-oficinatools)
 - [2026-08-19 — Raiz vira o 8º repositório (`sv-harness`), reverte "a raiz nunca vai para o GitHub"](#2026-08-19-raiz-vira-o-8-repositorio-sv-harness-reverte-a-raiz-nunca-vai-para-o-github)
 
 ---
@@ -778,6 +780,104 @@ o anterior — o histórico da issue preserva as duas versões, que é o comport
 registro de rastreabilidade. Testado ponta a ponta em `SV-1` (publicação, idempotência e
 versionamento após edição), com os comentários de teste removidos ao final via
 `DELETE /rest/api/3/issue/{key}/comment/{id}`.
+
+## 2026-09-03 — huashu-design adicionado; correção sobre `/impeccable init`
+
+**O que mudou**: usuário pediu que Impeccable, taste-skill e **huashu-design** (terceira
+ferramenta, nova neste projeto — protótipos/slides/animação HTML com "20 filosofias de design"
+e review em 5 dimensões próprios) sejam usadas sempre que houver tarefa de frontend, e pediu
+para rodar `/impeccable init`.
+
+huashu-design entrou sob a **mesma restrição** já valendo para as outras duas desde 2026-08-02:
+prototipagem/QA permitida, decisão de design não — a paleta/tema do prompt vem de
+`docs/DESIGN-SYSTEM.md`, nunca da filosofia default da ferramenta, e o resultado nunca é
+especificação, só rascunho descartável.
+
+**Correção real, não extensão**: a regra de 2026-08-02 dizia *"não rodar `/impeccable init` (gera
+`DESIGN.md` próprio)"* — presunção nunca verificada contra a ferramenta. Consultado o `SKILL.md`
+oficial do Impeccable (`pbakaus/impeccable`, `.claude/skills/impeccable/SKILL.md` e
+`reference/init.md`) via `gh api`: **`init` não escreve `DESIGN.md`**, nunca escreveu — grava só
+`PRODUCT.md` (contexto de produto: público, propósito, restrições, voz). Citação literal do
+skill: *"init captures durable product truth in PRODUCT.md. It does not invent a visual world and
+does not write DESIGN.md"*, e *"Never silently overwrite an existing file or offer DESIGN.md
+during init."* Quem escreve `DESIGN.md` é `/impeccable document` (extrai do código) ou o fluxo
+`new-work` (workshop interativo) — comandos distintos, nunca acionados por `init`.
+
+Isso significa que o risco real nunca esteve em `init` — estava em deixar `document`/`new-work`
+rodarem **sem** um `DESIGN.md` nosso já existindo. O próprio skill resolve isso sozinho, desde
+que o arquivo já exista: *"If a DESIGN.md already exists, do not silently overwrite it. Show the
+user the existing file first. STOP and call AskUserQuestion. The choice is refresh, overwrite, or
+merge."* — nunca sobrescreve em silêncio.
+
+**Decisão nova, substituindo a proibição de `init`**: `apps/web/DESIGN.md` é **pré-escrito** a
+partir de `docs/DESIGN-SYSTEM.md`, no [formato oficial `DESIGN.md`](https://github.com/google-labs-code/design.md)
+— front-matter YAML (`colors`, `typography`, `rounded`, `spacing`, `components`) seguido das 8
+seções canônicas na ordem fixa (`Overview`, `Colors`, `Typography`, `Layout`,
+`Elevation & Depth`, `Shapes`, `Components`, `Do's and Don'ts`; seções não aplicáveis podem ser
+omitidas). Com o arquivo já existindo, qualquer tentativa futura de `document`/`new-work` gerar
+um `DESIGN.md` cai no fluxo `refresh/overwrite/merge` — a sessão recusa `overwrite`. `init` passa
+a ser seguro de rodar sem ressalva.
+
+**Por quê**: honestidade de fonte prevalece sobre manter uma regra já escrita — a proibição de
+`init` estava resolvendo um problema que `init` não causa, e não resolvia o problema real (que é
+`document`/`new-work` sem `DESIGN.md` prévio). Verificado contra o `SKILL.md` primário do
+repositório, não memória/suposição.
+
+**Impacto**: [[DESIGN-SYSTEM]] seção "QA visual e prototipagem" (reescrita — 3 ferramentas, regra
+de `init` corrigida, mecanismo do `DESIGN.md` pré-escrito documentado), `apps/web/CLAUDE.md`
+(mesmo bullet), `apps/web/feature_list.json` (`feat-001` — instalação das 3 + pré-escrita do
+`DESIGN.md` como passo explícito, logo após `npx impeccable install`).
+
+**Em aberto**: a pré-escrita de fato (converter o conteúdo de `DESIGN-SYSTEM.md` para o formato
+`DESIGN.md`) só acontece quando `feat-001` de `apps/web` for implementado — `.impeccable/` e
+`DESIGN.md` vivem dentro daquele projeto Angular, que ainda não existe.
+
+## 2026-09-03 — Templates do Jira alinhados ao padrão de `oficina/tools`
+
+**O que mudou**: usuário apontou `D:\UTFPR\oficina\tools` — outro projeto (roadify) com uma
+versão mais madura dos mesmos dois scripts (`jira_story.py`/`jira_templates.py`, mesmo desenho de
+2026-08-17) — e pediu que a criação de tarefas e o comentário de evidência seguissem o mesmo
+leiaute, por legibilidade. Comparado os dois arquivos linha a linha e portados os ganhos que
+fazem sentido no nosso schema (não portados: `_ficha`/`design_link`/`track`/`sprint`/`estimate_h`
+— campos daquele projeto sem equivalente aqui):
+
+1. **`rich()`**: trecho entre `crases` em qualquer parágrafo vira nó de código automaticamente.
+   Antes, `` `./init.sh` `` saía como texto plano — o comando não se destacava da prosa ao redor.
+2. **`evidence` aceita objeto estruturado** — `{"resumo": ..., "secoes": [{"titulo": ...,
+   "itens": [...]}]}` — além da string simples já suportada (mantida para não quebrar evidência
+   já registrada). O comentário sai com um subtítulo por seção em vez de um parágrafo único
+   concatenado. `evidence_marker()` passa a fazer hash de JSON canônico quando o campo é objeto.
+3. **`_review_section` simplificado**: a story deixa de repetir veredito + achados do
+   `plan_review` quando ele está preenchido — não mostra nada nessa seção. Motivo (comentário no
+   próprio `oficina/tools`, adotado aqui): os achados do Plan Reviewer já viraram subtask (é
+   assim que este harness já trabalha desde 2026-08-03), então repeti-los na story duplicaria a
+   mesma decisão. O aviso "Plan Review pendente" continua aparecendo quando o campo está vazio.
+   Texto integral do `plan_review` continua no `feature_list.json` — não perdido, só não
+   duplicado na issue.
+4. **`_texto()`/`_lista()`**: helpers que evitam título órfão quando o campo está vazio,
+   substituindo blocos `if scope: nodes += [...]` repetidos por chamada única.
+
+**Não portado, por não ter equivalente no nosso schema**: `_ficha()` (sprint/trilha/estimativa —
+este harness não tem conceito de sprint), `design`/`design_link` (canvas de design do roadify —
+nós já temos `docs/DESIGN-SYSTEM.md` como fonte única), `REPO_TAG`/`short_title()` (o
+equivalente aqui já existe via `--harness` + label, um `feature_list.json` por repositório em vez
+de um só cross-repo), `snippet`/`language` (bloco de código longo em subtask — nenhuma subtask
+deste harness precisou disso até agora; adicionar o campo fica para quando surgir necessidade
+real).
+
+**Por quê**: usuário apontou a implementação de referência explicitamente — não é escolha
+estética minha, é alinhar com um padrão já em uso em outro projeto dele.
+
+**Impacto**: `tools/jira_templates.py` (`rich()`, `_texto`/`_lista`/`_passos_section` novos,
+`_split_review` removido — ficou morto), `tools/jira_story.py` (`post_evidence` corrigido para
+aceitar `evidence` como objeto, não só string), `CLAUDE.md` da raiz (bullet reescrito).
+`infra/feature_list.json` (`feat-003.evidence` convertida de string para o formato estruturado,
+como demonstração real — não é obrigatório converter evidência antiga, só feito aqui para
+validar o comentário no Jira de verdade). Aplicado em produção: `SV-1`…`SV-9` reescritas com
+`--update`, evidência republicada com `--sync-status` (nova versão do comentário, já que o
+conteúdo mudou de string para objeto — comportamento correto de versionamento, não bug).
+Verificado via `GET /rest/api/3/issue` que os blocos ADF (`panel`/`heading`/`bulletList`) saíram
+como esperado antes de considerar a tarefa concluída.
 
 ## Ver também
 

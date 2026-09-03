@@ -217,8 +217,9 @@ def post_evidence(env, harness: str, feature: dict) -> str:
     historico de comentarios preserva as duas versoes, que e o comportamento
     desejado num registro de rastreabilidade.
     """
-    evidence = (feature.get("evidence") or "").strip()
-    if not evidence:
+    evidence = feature.get("evidence") or ""
+    empty = not evidence.strip() if isinstance(evidence, str) else not evidence
+    if empty:
         return "sem evidence preenchida — nada publicado"
 
     key = feature["jira"]

@@ -147,8 +147,14 @@ qualquer escopo novo.
   na subtask, `detail` (por que este passo existe), `checklist` (passos verificáveis),
   `validation` (como saber que terminou) e `owner` (`agente` ou `usuario` — passo manual ganha
   aviso na issue). **`name` é título curto** (o que aparece no board); o texto longo vai nos
-  outros campos, nunca no título. O `plan_review` completo entra recolhido, com veredito e
-  achados resumidos acima dele. Reescrever issues já criadas:
+  outros campos, nunca no título. Trecho entre crases em qualquer campo de texto vira código
+  inline na issue (`rich()`). `plan_review` **não aparece na story quando preenchido** — os
+  achados já foram absorvidos pelas subtarefas, repeti-los seria a mesma decisão contada duas
+  vezes; vazio, a story nasce com aviso de pendência. `evidence` aceita string (como antes) ou
+  objeto `{"resumo": ..., "secoes": [{"titulo": ..., "itens": [...]}]}` — o comentário de
+  evidência sai com um subtítulo por seção, não um parágrafo único concatenado; preferir o
+  objeto para evidência com mais de uma pergunta respondida (o que foi feito / como foi
+  verificado / o que divergiu do plano). Reescrever issues já criadas:
   `python tools/jira_story.py --harness <pasta> --feature <id> --update` — mexe só em
   `summary`/`description`, nunca em status, sprint ou responsável.
 - **Ciclo de vida no board é derivado do JSON, nunca decidido no Jira**:
