@@ -27,7 +27,7 @@
         "epic-001"
       ],
       "status": "in-progress",
-      "evidence": "",
+      "evidence": "feat-001 (Setup do projeto) entregue em 2026-09-03 - ver evidencia detalhada em services/auth-service/feature_list.json. Spring Boot 4.1.1 bootstrap completo: layout hexagonal, conexao Postgres dev/test/prod, provisionamento de schema de tenant + migracao lazy por requisicao (RFC 7807, MDC), gate JaCoCo 80%, i18n MessageSource + locale resolver restrito, health checks do Actuator, .env.example + logging JSON estruturado. Epic continua in-progress: feat-002..feat-006 (entidades, rota admin de tenant, RF01, RF02, vinculo Telegram) ainda not-started.",
       "harness": "services/auth-service/"
     },
     {
