@@ -258,6 +258,23 @@ O merge sobe um nível por vez, sempre `--no-ff`: `subtask/SV-13` → `feature/S
     sub-tasks → só então `git checkout -b feature/SV-12`. As chaves ficam gravadas em `jira`
     (feature e cada subtask), então sessão sem acesso à rede continua sabendo os nomes de branch
     sem consultar o Jira.
+    > **Não commitar a saída do `jira_story.py` em `develop` antes de criar a branch** (achado
+    > real de `auth-service feat-002`/SV-22, 2026-09-04): `jira_story.py` grava as linhas de
+    > `CHANGELOG.md` de toda a story no exato momento em que cria as issues — se esse commit for
+    > feito em `develop` e só depois vier o `git checkout -b feature/SV-12`, a branch da feature
+    > nasce já com as linhas, `CHANGELOG.md` nunca mais é tocado nela (nenhuma subtask toca, ver
+    > seção "Changelog por serviço" de [[CI-CD]]), e a PR final `feature/` → `develop` mostra
+    > diff vazio no arquivo — o passo 1 do gate falha achando que a mudança não documentou nada,
+    > mesmo a issue e o codigo existindo de verdade. Pior: como o `base.sha` que o GitHub Actions
+    > usa é o **merge-base** entre as branches (o ponto onde divergiram), empurrar um commit novo
+    > em `develop` depois não resolve sozinho — é preciso `git merge develop` dentro da branch da
+    > feature para o merge-base andar, e mesmo assim o merge reaplica a remoção (lado da feature
+    > "não mudou" aquele trecho, então herda a exclusão do outro lado) e as linhas precisam ser
+    > re-adicionadas manualmente depois do merge. **Fluxo correto**: deixe a saída do
+    > `jira_story.py` sem commitar (`feature_list.json`/`CHANGELOG.md` no working tree), rode
+    > `git checkout -b feature/SV-12` — as mudanças não commitadas seguem para a branch nova
+    > automaticamente —, e só então faça o commit, já dentro da branch da feature. `develop`
+    > nunca vê essas linhas antes da PR final.
   - `subtask/<chave-da-subtask>` — um passo da feature, **a partir da branch da story**, não de
     `develop` (ex.: `subtask/SV-13`).
     > Por que prefixo próprio em vez de `feature/SV-12/SV-13`: o Git guarda ref como arquivo em
