@@ -213,6 +213,20 @@ qualquer escopo novo.
   partir dele, no mesmo momento em que preenche `plan_review`, antes de criar a story. Subtask
   descoberta durante a implementação é acrescentada ao array (e criada no Jira) em vez de virar
   trabalho invisível.
+  - **A última subtask de toda feature carrega um item de checklist fixo de vault** (decisão de
+    2026-09-04, depois de uma revisão geral encontrar 3 lacunas reais de documentação deixadas
+    por `feat-002`/`feat-003` sem que nenhuma sessão tivesse percebido — a versão em prosa desta
+    regra, "Depois que `./init.sh` passar, valide se a documentação precisa de ajuste" mais
+    abaixo neste arquivo, já existia desde a mesma data e mesmo assim não pegou os 3 casos,
+    porque nada obrigava a pergunta a ser feita item por item): ao preencher `subtasks` a partir
+    do `Plan Reviewer`, a última (tipicamente "CHANGELOG e verificação final") sempre ganha o
+    item **"Vault (`docs/`) revisado: alguma descoberta desta feature — mecanismo reaproveitável,
+    gotcha de lib/config, lacuna de especificação, decisão que diverge do já documentado — sem
+    nota correspondente? Se sim, atualizar/criar a nota do assunto (não `docs/DECISIONS-LOG.md`
+    a menos que divirja do TCC 1) no mesmo commit"**, além dos itens já padrão (CHANGELOG,
+    `./init.sh`, skills de revisão). Marcar a subtask `done` sem esse item explicitamente
+    conferido é o mesmo erro de pular o passo, só que agora visível no `feature_list.json` em vez
+    de invisível numa pergunta que ninguém fez.
   - **Uma branch por issue, aninhadas em quatro níveis**: `develop` → `feature/<chave-da-story>`
     → `subtask/<chave-da-subtask>`. Cada branch leva **o código da sua própria issue no Jira**
     (`feature/SV-12` para a story, `subtask/SV-13` para a subtask), e a branch da subtask sai da
@@ -356,8 +370,15 @@ considerar uma subtask/feature encerrada, pergunte explicitamente: alguma descob
 (mecanismo novo reaproveitável por outro serviço, gotcha de biblioteca, lacuna de especificação,
 edge case) ainda não está em nenhuma nota do vault? Se sim, atualize a nota do assunto
 correspondente no mesmo commit — já é a regra de "Harness se retroalimenta pela nota do vault"
-mais acima, isto só torna o gatilho explícito e ligado à verificação, não opcional/fácil de
-esquecer.
+mais acima.
+**Endurecida em 2026-09-04, mesmo dia**: essa pergunta sozinha não bastou — uma revisão geral
+pedida pelo usuário achou 3 lacunas reais (`mustChangePassword` documentado ao contrário do que
+`feat-005` implementou, gotcha de segurança de `feat-003` nunca propagado, nota de
+`package-info.java` contradizendo o que `feat-002` fez) que passaram por `feat-003`/`004`/`005`
+sem serem pegas, mesmo com a regra em prosa já valendo. Por isso a pergunta virou item de
+checklist explícito na última subtask de toda feature (ver "Feature se quebra em subtasks" acima)
+em vez de só uma pergunta a fazer de memória — não pule para o item de `evidence`/`done` sem
+marcar aquele item primeiro.
 
 ## Escalação
 
