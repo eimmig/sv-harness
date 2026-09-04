@@ -402,6 +402,12 @@ O merge sobe um nível por vez, sempre `--no-ff`: `subtask/SV-13` → `feature/S
 - **Merge de `develop` → `main`**: quando o conjunto de features acumuladas em `develop` estiver
   estável o suficiente para ser considerado uma entrega (não há cadência fixa definida — critério
   é estabilidade, não calendário).
+- **Deletar branch de trabalho depois do merge** (decisão de 2026-09-04): toda `feature/`/
+  `subtask/`/`bugfix/` — local e remota (`git branch -d`/`git push origin --delete`) — assim que
+  o merge que a fecha for concluído (subtask → branch da story, ou story → `develop`). A chave
+  do Jira já preserva o nome/histórico via `feature_list.json`; a branch em si não carrega
+  informação que não esteja nos commits mergeados. Não deletar antes de confirmar o merge (`git
+  branch -d` já recusa branch não mergeada, proteção suficiente).
 - **Commits**: [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/),
   **sempre em inglês** — descrição, corpo e footers (decisão de 2026-08-17, ver
   [[DECISIONS-LOG]]). Formato:
