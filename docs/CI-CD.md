@@ -220,6 +220,25 @@ condição a mais que o passo 5: roda em qualquer PR (`pull_request`) e em push 
 erro de API mascarando um "sem issue"). Isso é aceitável porque o ponto de bloqueio real é o PR
 (antes do merge) — o push para `develop` só acontece depois que o PR já passou.
 
+**Terceira armadilha, achada só em `auth-service feat-003` (2026-09-04)**: a premissa acima —
+"push pra `develop` só acontece depois que o PR já passou" — é falsa na prática. Commits
+diretos em `develop` acontecem (ex.: atualização de `progress.md`/`session-handoff.md` no fim de
+sessão, padrão já usado nas sessões anteriores deste projeto) e disparam o workflow `on: push`
+normalmente. Quando isso acontece, o **passo 5** (não só o 6) quebra: `-Dsonar.qualitygate.wait=
+true` está incondicional nele, e o mesmo bloqueio de API do parágrafo acima (`branch != main`)
+também se aplica à checagem de status do gate feita pelo próprio `sonar-maven-plugin` — não só
+ao `/api/issues/search` do script. Sintoma: `[ERROR] Not authorized or project not found. Please
+check the 'SONAR_TOKEN' environment variable...` no passo "Check Quality Gate status", com o
+relatório de análise já enviado com sucesso logo antes (`Analysis report uploaded`) — a mensagem
+de erro é enganosa (parece problema de token/permissão, não é). Corrigido: `-Dsonar.qualitygate.
+wait=true` também vira condicional no passo 5, pulado exatamente na mesma condição do passo 6
+(push para `develop`) — a análise ainda roda e atualiza o dashboard do SonarCloud, só não fica
+esperando/checando um gate que a API não computa pra essa branch. O ponto de bloqueio real
+continua sendo a PR (onde a branch analisada é a branch de origem via modo "pull request" do
+Sonar, não uma branch nomeada — isso funciona independente do destino). Replicar esse ajuste nos
+outros 5 repositórios de aplicação antes que um push direto pra `develop` quebre o pipeline lá
+também.
+
 ## Setup pendente (uma vez por repositório, quando cada um for criado)
 
 Repetir para cada um dos 6 serviços de aplicação (`infra/` só precisa do passo 1 — não usa
