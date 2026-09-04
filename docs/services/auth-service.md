@@ -22,6 +22,22 @@ antes de rotear para os demais serviços. O token carrega claims de `userId` **e
 (slug do tenant, resolvido no login) — é a partir desses claims que o Gateway injeta
 `X-User-Id`/`X-Tenant-Id` (ver [[API-CONTRACTS]]).
 
+> **Contrato implementado em `feat-005`** (`POST /api/v1/auth/login`, biblioteca
+> `io.github.nbaars:paseto4j-version4:2024.3` — v4.**local** simétrico, não v4.public/assinado,
+> chave `PASETO_LOCAL_KEY` compartilhada com `api-gateway` quando `epic-008` existir, ver
+> [[OBSERVABILITY-AND-CONFIG]]): body `{"slug": "acme", "email": "admin@acme", "password":
+> "..."}` → `200` `{"token": "v4.local...", "mustChangePassword": true|false}`. `slug` vem do
+> **corpo**, não do header `X-Tenant-Id` — o chamador ainda não está autenticado, não há tenant
+> resolvido antes do login. Token carrega `userId`/`tenantId`/`iat`/`exp` (TTL 8h, sem token de
+> refresh no backlog atual — sessão de duração única, revisitável se/quando refresh for pedido).
+> `401` **genérico** (`invalid-credentials`, mesma mensagem sempre) para slug malformado, tenant
+> inexistente, e-mail inexistente ou senha errada — nunca diferencia o motivo, evita enumeração
+> de tenant/usuário; os dois primeiros casos ainda executam um hash BCrypt descartado antes de
+> rejeitar, para manter o tempo de resposta equivalente ao de uma comparação de senha real.
+> `mustChangePassword = true` (do admin criado em `feat-003`) **não bloqueia** o login — devolvido
+> no corpo para o frontend decidir a UX; não há endpoint de troca de senha no backlog ainda,
+> bloquear travaria o admin sem via de escape (decisão do usuário, 2026-09-04).
+
 ## Modelo de tenant (organização multiusuário)
 
 Decisão de 2026-08-02 — ver [[DECISIONS-LOG]] "Modelo de tenant multiusuário e provisionamento

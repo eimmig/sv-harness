@@ -58,6 +58,13 @@ Convenções operacionais que evitam cada serviço logar/configurar de um jeito 
   arquivo versionado — inclusive em exemplos de request/response na documentação.
 - Chave PASETO: gerada uma vez por ambiente (dev/test/prod), armazenada como variável de
   ambiente, nunca hardcoded no código-fonte de `auth-service` nem de nenhum outro serviço.
+  > **Contrato implementado em `feat-005`**: env var `PASETO_LOCAL_KEY` (32 bytes em hex, 64
+  > chars, `openssl rand -hex 32`), lida em `application.yml` de `auth-service` como
+  > `paseto.local-key` — v4.**local** (simétrica), não v4.public. **É a MESMA chave** que
+  > `services/api-gateway` vai precisar quando `epic-008` existir (quem valida o token) — não
+  > gerar uma independente lá, ou os tokens emitidos por `auth-service` ficam indecifráveis.
+  > Perfil `test` de `auth-service` usa um valor hex fixo de 64 chars, mesmo padrão de
+  > `ADMIN_API_KEY`.
 
 ### Configuração de `apps/web` (frontend)
 
