@@ -43,6 +43,7 @@ que não devem ser reinterpretadas" para as decisões já consolidadas como defi
 - [2026-09-03 — huashu-design adicionado; correção sobre `/impeccable init`](#2026-09-03-huashu-design-adicionado-correcao-sobre-impeccable-init)
 - [2026-09-03 — Templates do Jira alinhados ao padrão de `oficina/tools`](#2026-09-03-templates-do-jira-alinhados-ao-padrao-de-oficinatools)
 - [2026-08-19 — Raiz vira o 8º repositório (`sv-harness`), reverte "a raiz nunca vai para o GitHub"](#2026-08-19-raiz-vira-o-8-repositorio-sv-harness-reverte-a-raiz-nunca-vai-para-o-github)
+- [2026-09-04 — `mustChangePassword` não bloqueia login, reverte a intenção original da entrada de 2026-08-02](#2026-09-04-mustchangepassword-nao-bloqueia-login-reverte-a-intencao-original-da-entrada-de-2026-08-02)
 
 ---
 
@@ -1155,3 +1156,33 @@ aplica a um repositório de docs + harness, que não tem build, não tem pipelin
 não têm um estado "instável" a isolar de um estado "entregável". A branch é `master` (não `main`)
 porque foi assim que o repositório foi inicializado; nenhuma feature ou story do Jira aponta para
 ela, então não há valor em renomear.
+
+## 2026-09-04 — `mustChangePassword` não bloqueia login, reverte a intenção original da entrada de 2026-08-02
+
+**O que mudou**: a entrada [2026-08-02 — Modelo de tenant multiusuário](#2026-08-02-modelo-de-tenant-multiusuario-e-provisionamento-de-banco),
+item 3, previa que "o backend bloqueia qualquer outra ação até a senha ser trocada" para o admin
+recém-criado por provisionamento de tenant (`mustChangePassword = true`). `feat-005` (login,
+`services/auth-service`) implementou o oposto: login **sempre autentica** se a senha bater,
+independente de `mustChangePassword` — o campo só é devolvido no corpo da resposta
+(`{"token": "...", "mustChangePassword": true|false}`) para o frontend decidir a UX (ex.: forçar
+tela de troca de senha). Nenhum bloqueio real no backend.
+
+**Por quê**: não existe endpoint de troca de senha em nenhum `feature_list.json` do backlog atual
+(nem `auth-service`, nem planejado em `apps/web`). Implementar o bloqueio como a entrada original
+previa deixaria o admin recém-criado por `feat-003` permanentemente trancado — autenticado o
+suficiente para saber que precisa trocar a senha, mas sem nenhuma rota que aceite a troca.
+Decisão tomada com o usuário (`AskUserQuestion`) durante o Plan Review de `feat-005`: preferir a
+opção que não bloqueia, adiando o bloqueio real para quando uma feature de troca de senha existir
+no backlog.
+
+**Impacto**:
+- `docs/services/auth-service.md` seção "Modelo de tenant" atualizada no mesmo commit — o
+  blockquote que citava a intenção de bloqueio agora aponta para este item, e a seção
+  "Autenticação" documenta o contrato real de `POST /api/v1/auth/login`.
+- Esta entrada não reescreve o texto de 2026-08-02 (histórico, fica como registro fiel da
+  intenção original) — só reverte o resultado, mesmo padrão das demais entradas "reverte X"
+  deste log.
+- Item aberto: quando uma feature de troca de senha for criada (nenhuma reserva de id ainda em
+  `services/auth-service/feature_list.json`), decidir se o bloqueio real volta a ser implementado
+  ali, ou se a mitigação por si só (senha aleatória de alta entropia, nunca logada, só na resposta
+  de `feat-003`) é considerada suficiente.

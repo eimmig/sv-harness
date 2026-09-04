@@ -53,10 +53,13 @@ de banco" para o racional completo. Resumo:
   > autenticação via header `X-Admin-Api-Key` (segredo estático dedicado ao operador, ver
   > [[API-CONTRACTS]]). Orquestração: **3 chamadas manuais separadas** do operador — este
   > serviço primeiro, depois `bets-service`, depois `stats-service` — nenhum serviço chama os
-  > outros dois em código. Senha padrão previsível mitigada por `mustChangePassword`: o backend
-  > bloqueia qualquer ação do admin recém-criado além de trocar a senha, até esse campo virar
-  > `false` — **enforcement real ainda não implementado**, sem consumidor até `feat-005` (login)
-  > existir.
+  > outros dois em código. Senha padrão previsível sinalizada por `mustChangePassword`.
+  > **Resolvido em `feat-005` (2026-09-04, decisão do usuário — não a intenção original desta
+  > entrada, que previa bloqueio de verdade)**: o login **não bloqueia** um admin com
+  > `mustChangePassword = true` — o valor só é devolvido no corpo da resposta para o frontend
+  > decidir a UX. Não há endpoint de troca de senha no backlog ainda; bloquear login deixaria
+  > esse admin trancado para sempre, sem via de escape. Ver seção "Autenticação" acima para o
+  > contrato completo.
   > **Contrato implementado em `feat-003`** (`POST /api/v1/admin/tenants`, header
   > `X-Admin-Api-Key` obrigatório, checado por `AdminApiKeyFilter` antes do `DispatcherServlet`):
   > body `{"slug": "acme", "tenantName": "Acme Corp"}` (`tenantName` opcional, default
