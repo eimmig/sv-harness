@@ -114,6 +114,8 @@ o código-fonte do outro serviço.
   que evita tanto lógica de compensação para falha parcial quanto o risco de dependência circular
   entre os epics desses serviços (ver [[DECISIONS-LOG]] item 3). `auth-service` cria o primeiro
   usuário admin do tenant com senha aleatória e `mustChangePassword = true` (ver [[DATA-MODEL]]).
+  Contrato de `auth-service` implementado em `feat-003`: `POST /api/v1/admin/tenants` — ver
+  [[auth-service]] seção "Modelo de tenant" para o payload/resposta exatos.
 
 ## Contratos de evento: `BetCreated` e `BetSettled`
 

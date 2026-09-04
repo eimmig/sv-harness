@@ -39,7 +39,18 @@ de banco" para o racional completo. Resumo:
   > serviço primeiro, depois `bets-service`, depois `stats-service` — nenhum serviço chama os
   > outros dois em código. Senha padrão previsível mitigada por `mustChangePassword`: o backend
   > bloqueia qualquer ação do admin recém-criado além de trocar a senha, até esse campo virar
-  > `false`.
+  > `false` — **enforcement real ainda não implementado**, sem consumidor até `feat-005` (login)
+  > existir.
+  > **Contrato implementado em `feat-003`** (`POST /api/v1/admin/tenants`, header
+  > `X-Admin-Api-Key` obrigatório, checado por `AdminApiKeyFilter` antes do `DispatcherServlet`):
+  > body `{"slug": "acme", "tenantName": "Acme Corp"}` (`tenantName` opcional, default
+  > `"Administrator"`) → `201` `{"userId": "...", "email": "admin@acme", "temporaryPassword":
+  > "..."}` — a senha só aparece nesta resposta, nunca mais recuperável. `409` se o slug já
+  > estiver provisionado (`gateway.exists()` checado **antes** de qualquer escrita — idempotência
+  > do `CREATE SCHEMA IF NOT EXISTS` faria uma segunda chamada reprovisionar em silêncio sem essa
+  > checagem); `422` para slug em formato inválido (validação de domínio, não Bean Validation —
+  > ver [[API-CONTRACTS]] seção "Formato de erro" para o corte 400/422); `401` sem tocar o banco
+  > se `X-Admin-Api-Key` ausente/incorreto.
 - **Criação de usuário dentro de um tenant**: só o usuário `role = admin` daquele tenant pode
   criar outros usuários (`role = member`). Precisa de checagem de autorização por role no
   endpoint correspondente — não é feature transparente pelo simples fato de existir a coluna
