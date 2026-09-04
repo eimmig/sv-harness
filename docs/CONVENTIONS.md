@@ -111,7 +111,10 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   MULTI_TENANT_CONNECTION_PROVIDER` (`hibernate.multi_tenant_connection_provider`) e
   `MULTI_TENANT_IDENTIFIER_RESOLVER` (`hibernate.tenant_identifier_resolver`) — não existe mais
   `hibernate.multiTenancy=SCHEMA` (isso era Hibernate 5). Confirmar de novo contra o jar
-  instalado antes de reaproveitar, versão pode ter mudado.
+  instalado antes de reaproveitar, versão pode ter mudado. O contexto de tenant resolvido pelo
+  filtro HTTP (`X-Tenant-Id`) fica num `ThreadLocal`, exposto também via MDC para log — só é
+  seguro em requisição síncrona (Spring MVC bloqueante, sem `@Async`/WebFlux); se algum serviço
+  passar a usar dispatch assíncrono, esse mecanismo de propagação precisa ser revisto.
 - **Entidade JPA com id atribuído pelo domínio**: implementar `Persistable<UUID>` (campo
   `@Transient boolean isNew = true`, `@PostLoad` vira `false`) — sem isso, todo `save()` de uma
   linha nova é tratado como possível update (`merge()` + `SELECT` extra a cada inserção, porque
