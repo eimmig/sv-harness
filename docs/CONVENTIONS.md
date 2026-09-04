@@ -316,7 +316,12 @@ O merge sobe um nível por vez, sempre `--no-ff`: `subtask/SV-13` → `feature/S
   repositório passando, `feature_list.json` atualizado (todas as `subtasks` `done`, `evidence`
   preenchida), skills de revisão rodadas (ver [[AGENT-SKILLS]]) e a pipeline de CI inteira,
   **incluindo SonarCloud** (changelog, i18n, build, testes, Sonar nos 6 de aplicação; changelog +
-  validação do compose em `infra/`) — ver [[CI-CD]].
+  validação do compose em `infra/`) — ver [[CI-CD]]. **Branch protection real nos 7 repositórios
+  do GitHub** (`develop` e `main`, `required_status_checks` no check `pipeline`, configurado via
+  API em 2026-09-04 depois de uma PR mergear com 27 apontamentos do SonarCloud nunca revisados —
+  até então nenhuma falha de CI de fato impedia o botão de merge, só ficava um X vermelho
+  cosmético). Sem essa proteção, todo o resto desta lista é convenção seguida por disciplina, não
+  um gate de verdade.
 - **`CHANGELOG.md`**: uma linha por issue do Jira (story e cada subtask), formato
   `- [chave](url) - título`, nada além disso — sem prosa, sem categoria Added/Fixed. Escrita
   automaticamente por `tools/jira_story.py` no momento em que cada issue é criada, nunca à mão
