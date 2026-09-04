@@ -70,11 +70,11 @@ acesso a nenhum código de serviço para verificar, e o `init.sh` raiz só agreg
 sub-harnesses. Cada repositório de serviço continua sendo o único lugar onde CI roda.
 
 `infra/` segue uma pipeline mais simples (só 2 passos: changelog + `docker compose config`), não
-os 5 passos abaixo — não tem texto de usuário (sem passo de i18n), não tem código de aplicação
+os 6 passos abaixo — não tem texto de usuário (sem passo de i18n), não tem código de aplicação
 para o SonarCloud analisar, e "testes unitários" não se aplica a um `docker-compose.yml`. Ver
 `infra/CLAUDE.md` e `infra/.github/workflows/ci.yml`.
 
-## Os 5 passos dos serviços de aplicação, sempre nesta ordem
+## Os 6 passos dos serviços de aplicação, sempre nesta ordem
 
 Aplicam-se aos 6 repositórios de serviço (`api-gateway`, `auth-service`, `bets-service`,
 `stats-service`, `telegram-integration`, `web`) — não a `infra/`, ver seção anterior.
@@ -115,11 +115,21 @@ Aplicam-se aos 6 repositórios de serviço (`api-gateway`, `auth-service`, `bets
    - Projeto SonarCloud por serviço, chave = nome do repositório GitHub (ex.:
      `sv-bets-backend`) — um projeto por repositório, mesma lógica de isolamento por serviço do
      resto do harness. Ver tabela de repositórios no início desta nota.
+   - `-Dsonar.qualitygate.wait=true` (Java) / equivalente do `sonarqube-scan-action` — sem isso o
+     passo "passa" mesmo que o gate reprove, porque o scanner só envia os dados e não espera o
+     processamento assíncrono do lado do SonarCloud.
+6. **Gate de zero issue do SonarCloud**: o gate "Sonar way" (built-in, único disponível no plano
+   gratuito — API recusa associar gate customizado a projeto) não tem condição de issue nova, só
+   rating/cobertura/duplicação. Script `.github/scripts/validate-sonar-issues.py` consulta
+   `GET /api/issues/search` direto depois do passo 5 e falha o build se encontrar qualquer issue
+   aberta — ver seção "SonarCloud: o Quality Gate padrão não bloqueia por issue nova" abaixo para
+   o achado completo, inclusive a armadilha de `branch=develop` retornar 403 no plano gratuito.
 
 ## Scripts de CI duplicados em cada repositório, não compartilhados
 
 `.github/scripts/validate-changelog.sh` existe **em cada um dos 7 repositórios**, e
-`validate-i18n-keys.py` nos 6 de aplicação (`infra/` não tem i18n) — mesmo conteúdo em todos —
+`validate-i18n-keys.py`/`validate-sonar-issues.py` nos 6 de aplicação (`infra/` não tem i18n nem
+SonarCloud) — mesmo conteúdo em todos —
 decisão de 2026-08-02 (ver [[DECISIONS-LOG]]): como não há um repositório-raiz compartilhado
 para os outros referenciarem, a alternativa a duplicar seria mais um repositório só para tooling
 de CI, referenciado via `uses: org/ci-shared@ref` — descartada por adicionar complexidade de
@@ -175,6 +185,40 @@ não é qualidade. A análise acontece na story, onde a feature está completa. 
 SonarCloud, então a coluna não se aplica lá. O Changelog é pulado no PR de subtask pelo motivo
 oposto (não é sobre qualidade, é sequenciamento): a linha daquela subtask já existe desde antes
 da branch nascer — ver seção anterior.
+
+### SonarCloud: o Quality Gate padrão não bloqueia por issue nova
+
+**Achado real** (`auth-service` SV-30, 2026-09-04): a PR `feature/SV-22` → `develop` mergeou com
+27 issues abertas no SonarCloud (1 CRITICAL, 8 MAJOR, 18 MINOR) nunca revisadas — o check
+"SonarCloud Code Analysis" do GitHub mostrava verde mesmo assim. Duas causas, as duas corrigidas
+nos 6 repositórios de aplicação:
+
+1. **O goal Maven não esperava/falhava pelo resultado do gate**: sem
+   `-Dsonar.qualitygate.wait=true`, `mvn sonar:sonar` sempre sai `0` (o scanner só envia os dados,
+   não fica esperando o processamento assíncrono do lado do SonarCloud) — o passo do CI "passa"
+   mesmo que o gate reprove.
+2. **O gate "Sonar way" (built-in) não tem condição de zero issue nova** — só mede
+   `new_reliability_rating`/`new_security_rating`/`new_maintainability_rating`/`new_coverage`/
+   `new_duplicated_lines_density`/`new_security_hotspots_reviewed`. Uma issue MINOR/MAJOR/CRITICAL
+   isolada não move nenhuma dessas métricas o suficiente para reprovar. **Criar um gate
+   customizado com uma condição extra (`new_violations > 0`) não é uma opção no plano gratuito**:
+   a API do SonarCloud recusa associar qualquer gate customizado a um projeto
+   (`"Organization is not allowed to modify Quality gates"`), mesmo a criação/cópia do gate
+   funcionando.
+
+**Correção implementada**: `.github/scripts/validate-sonar-issues.py` (script novo, um por
+repositório, mesmo padrão dos outros validadores) — consulta
+`GET /api/issues/search?componentKeys=...&pullRequest=<N>` (ou `&branch=main`) direto na API do
+SonarCloud depois do scanner rodar, e falha o build (`exit 1`) se `total > 0`, listando cada
+issue. Passo 6 novo no `ci.yml`, mesma condição do passo 5 (só PR/push para `develop`/`main`).
+
+**Segunda armadilha, encontrada testando o script**: a API do SonarCloud no plano gratuito só
+aceita `branch=main` — qualquer outro nome (`branch=develop` incluso) retorna `403
+"Organization is not allowed to access data from non main branches"`. Por isso o passo 6 tem uma
+condição a mais que o passo 5: roda em qualquer PR (`pull_request`) e em push para `main`, mas
+**não** em push direto para `develop` (nesse caso a checagem teria que ser pulada, não falhar por
+erro de API mascarando um "sem issue"). Isso é aceitável porque o ponto de bloqueio real é o PR
+(antes do merge) — o push para `develop` só acontece depois que o PR já passou.
 
 ## Setup pendente (uma vez por repositório, quando cada um for criado)
 

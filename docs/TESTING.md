@@ -107,7 +107,7 @@ pequeno demais para justificar a ferramenta. Em vez disso:
 Os relatórios de cobertura definidos acima (JaCoCo XML, LCOV do `ng test --code-coverage`,
 `coverage.xml` do `pytest-cov`) são gerados localmente pelo `init.sh`/gate de cada serviço e
 também consumidos pela pipeline de CI para a análise de qualidade/cobertura no SonarCloud — ver
-[[CI-CD]] para os 5 passos da pipeline e o setup pendente. O gate de 80% em si continua sendo
+[[CI-CD]] para os 6 passos da pipeline e o setup pendente. O gate de 80% em si continua sendo
 aplicado localmente (`mvn verify`/`ng test`/`pytest-cov`), o Sonar não duplica esse gate, só
 reporta a métrica.
 
