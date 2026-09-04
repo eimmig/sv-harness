@@ -154,6 +154,30 @@ princípios que não se misturam (ver também [[API-CONTRACTS]] seção "Interna
 - Exceptions de domínio (ver seção "Padrões de código Java" acima) carregam uma chave de
   mensagem (ex.: `error.invalid-odd`), não o texto final — o `@RestControllerAdvice` resolve o
   texto no locale da requisição, nunca a camada de domínio.
+- **Dois gotchas de encoding descobertos juntos em `auth-service feat-003`** (só apareceram
+  quando uma mensagem de erro com acento — `es`/`pt-BR` — foi testada pela primeira vez; as
+  mensagens hardcoded anteriores, `TenantSchemaFilter` de `feat-001.3`, não tinham acento, então
+  os dois bugs ficaram latentes sem nenhum teste pegar):
+  1. **Filtro de servlet escrevendo corpo RFC 7807 direto no `HttpServletResponse`** (necessário
+     quando o erro acontece fora do `DispatcherServlet` — ex.: `AdminApiKeyFilter`, que roda
+     antes do `@RestControllerAdvice` e não pode contar com ele):
+     `response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)` sozinho **não** basta —
+     sem `charset` explícito no content-type, `HttpServletResponse` (e `MockHttpServletResponse`
+     em teste) assume **ISO-8859-1** por padrão (default do Servlet spec), então texto UTF-8
+     escrito pelo `ObjectMapper` é relido errado por qualquer client/teste que decodifique a
+     resposta. Correção: `response.setCharacterEncoding("UTF-8")` explícito antes de escrever o
+     corpo, sempre que um filtro (não um `@RestControllerAdvice` — esse já usa
+     `HttpMessageConverter` com UTF-8 correto) monta a resposta na mão.
+  2. **`ResourceBundleMessageSource` construído manualmente em teste** (mesmo padrão usado desde
+     `feat-001.5` para testar `MessageSource` sem subir o contexto Spring inteiro) **não** herda
+     o default `spring.messages.encoding=UTF-8` do autoconfigure do Spring Boot — sem
+     `setDefaultEncoding("UTF-8")` explícito, ele lê o `.properties` (já em UTF-8 real no disco)
+     como ISO-8859-1, produzindo um *double-encoding* (`á` vira dois caracteres errados, que ao
+     serem re-serializados como UTF-8 geram 4 bytes em vez de 2). O bean real da aplicação (via
+     `MessageSourceAutoConfiguration`) não tem esse problema — é uma armadilha exclusiva de quem
+     instancia `new ResourceBundleMessageSource()` manualmente em teste. Correção: sempre chamar
+     `messageSource.setDefaultEncoding("UTF-8")` junto com `setBasename`/
+     `setFallbackToSystemLocale(false)` nesse padrão de teste.
 
 ### Frontend (apps/web)
 

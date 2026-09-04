@@ -47,7 +47,9 @@ Convenções operacionais que evitam cada serviço logar/configurar de um jeito 
   de uso exclusivo do operador da plataforma para criar tenants em `auth-service`/`bets-service`/
   `stats-service` (decisão de 2026-08-02, ver [[DECISIONS-LOG]] item 3) — ver [[API-CONTRACTS]]
   seção "Confiança entre serviços"). `.env` real fica em `.gitignore` desde o `feat-001` de cada
-  serviço.
+  serviço. Em `auth-service`, a env var é `ADMIN_API_KEY` (`feat-003`), lida em
+  `application.yml` como `admin.api-key` — perfil `test` usa um valor fixo, nunca `${ADMIN_API_KEY}`
+  sem default.
 - Serviços Java: `application.yml` com profiles `dev`/`test`/`prod` — `dev` lê de `.env`
   (via `spring-dotenv` ou variáveis de ambiente do `docker-compose.yml`), `test` usa valores
   fixos consumidos pelos containers do Testcontainers (ver [[TESTING]]), nunca aponta para
