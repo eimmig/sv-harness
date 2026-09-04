@@ -185,6 +185,16 @@ qualquer escopo novo.
   Idempotente: rodar de novo não duplica. Se a `evidence` for editada no harness, entra um
   comentário novo em vez de o antigo ser alterado, e o histórico da issue preserva as duas
   versões.
+  - **O board é vivo — rode `--sync-status` a cada transição real de status, não só uma vez no
+    fim da feature** (erro cometido em 2026-09-04, `feat-002` de `auth-service`: várias subtasks
+    pularam direto de `not-started` para `done` no JSON sem nunca passar por `in-progress`, e o
+    `--sync-status` só rodou no final — a story ficou presa em `To Do` durante todo o
+    desenvolvimento em vez de refletir `In Progress`, e o Jira nunca mostrou nada em andamento).
+    Prática correta: ao começar a trabalhar numa subtask, marque-a `in-progress` no
+    `feature_list.json` e rode `--sync-status` **antes** de escrever qualquer código; ao terminar
+    (código + testes + `/code-review`), marque `done` e rode `--sync-status` de novo — dois
+    disparos por subtask, não um só no fim. O mesmo vale para a feature: ela vira `in-progress`
+    no JSON (com `--sync-status` rodado) no momento em que a primeira subtask começa, não depois.
 - **Feature se quebra em subtasks; a story do Jira as espelha como sub-tasks**: o campo
   `subtasks` de cada feature (irmão de `jira`) lista os passos de implementação, cada um com
   `id` (`feat-001.3`), `name`, `status` e `jira`. **Eles saem do `Plan Reviewer`** — o veredito

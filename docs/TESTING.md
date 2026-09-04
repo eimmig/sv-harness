@@ -8,6 +8,19 @@ Ver [[CONVENTIONS]] para arquitetura/código. O TCC 1 já define a meta de cober
 "Método", fase "Verificação" do fluxo Kanban): **cobertura de testes unitários superior a 80%**
 antes de uma feature ser considerada `done` — isso vale para todos os serviços, não só os Java.
 
+## Nomenclatura de testes (todos os serviços)
+
+Nome de método/caso de teste sempre em **inglês**, padrão `should<ComportamentoEsperado>` (ex.:
+`shouldRejectDuplicateEmail`, `shouldReturnEmptyWhenUserIdNotFound`) — nunca descrição em
+português (`salvaEBuscaPorId`, `emailDuplicado_rejeitado`). Motivo: mesmo racional de
+`docs/CONVENTIONS.md` para mensagem de commit — superfície técnica compartilhada com nomes de
+classe/método, que já são em inglês; só documentação de projeto (`CHANGELOG.md`, `progress.md`,
+vault) segue em português. Decisão de 2026-09-04, corrigindo os testes de `auth-service feat-001`
+e o início de `feat-002`, escritos em português antes desta regra existir — não reescritos
+retroativamente sem confirmação do usuário (fora do escopo desta nota; não é divergência do TCC1,
+por isso não entra em `docs/DECISIONS-LOG.md` — mesmo padrão de "Título do PR"/"Comentário em
+código" em `docs/CONVENTIONS.md`).
+
 ## Java (auth-service, bets-service, stats-service)
 
 - **Unitários**: JUnit 5 + Mockito + AssertJ. Testam `domain/` e `application/` isoladamente,
