@@ -907,3 +907,37 @@ commitar, não depois.
 `epic-002` continua `in-progress` (`feat-003`..`feat-006` restantes). `./init.sh` da raiz não
 precisou rodar de novo (nenhuma mudança em `CLAUDE.md`/scripts de harness além de texto e do
 campo `evidence` do `epic-002`).
+
+## `feat-002` reaberta: 27 apontamentos do SonarCloud ignorados no merge (2026-09-04, mesmo dia)
+
+Usuário revisou a PR `feature/SV-22` → `develop` (já mergeada) e percebeu 27 issues abertas no
+SonarCloud (1 CRITICAL, 8 MAJOR, 18 MINOR) nunca revisadas antes do merge, e pediu correção +
+garantia de que isso não se repita. Causa raiz dupla: o gate padrão "Sonar way" do SonarCloud
+(plano gratuito da organização, que recusa associar qualquer gate customizado a um projeto) só
+mede rating/cobertura/duplicação de código novo, não quantidade de issue nova; e o goal Maven do
+Sonar não tinha `-Dsonar.qualitygate.wait=true`, então o passo do CI "passava" sem nem esperar o
+resultado do gate.
+
+Reaberta como `feat-002.8`/SV-30 (branch `bugfix/SV-30-sonar-issues` a partir de `develop`, PR
+#21, gate completo incluindo o novo passo 6): os 27 apontamentos corrigidos de verdade (não
+suprimidos) — variável de recurso não lida em `try-with-resources` (unnamed variable do Java
+21+), `@Component` → `@Repository` nos adapters de persistência, campo não-`transient` numa
+classe que implementa `Serializable` do Hibernate, lambda de teste com mais de uma chamada que
+pode lançar. Gate real implementado com dois mecanismos, já que customizar o Quality Gate não é
+opção no plano gratuito: script novo (`validate-sonar-issues.py`, um por repositório Java/
+frontend) consultando `/issues/search` e `/hotspots/search` direto na API do SonarCloud depois
+do scanner rodar, e **branch protection real no GitHub** (`required_status_checks` com o check
+`pipeline`, `develop` e `main` do repositório `sv-auth-backend`) — sem essa segunda parte,
+nenhuma falha de CI de fato bloqueava o botão de merge, é só um X vermelho cosmético.
+
+Documentado em `docs/CI-CD.md` (nova seção "SonarCloud: o Quality Gate padrão não bloqueia por
+issue nova", pipeline de aplicação passa de 5 para 6 passos) para os outros 5 repositórios
+(`api-gateway`, `bets-service`, `stats-service`, `telegram-integration`, `web`) replicarem o
+script/passo sem precisar redescobrir o problema — `bets-service`/`stats-service` (mesma stack
+Java) podem copiar os arquivos quase diretamente.
+
+Lição de processo registrada em `CLAUDE.md` durante a correção: fechar `feat-002.8` e reabrir
+`feat-002` (`in-progress`) e fechar de novo (`done`) precisou de **edições separadas do JSON com
+`--sync-status` entre elas** (não uma só) — mesmo padrão já documentado mais cedo nesta sessão
+para o estado `Review`, agora também aplicado ao caso de uma feature já fechada ser reaberta por
+um achado pós-merge.
