@@ -861,3 +861,49 @@ podem continuar em inglês; texto narrativo é sempre português) e referência 
 (raiz), bullet de skills prioritárias. Não registrada em `docs/DECISIONS-LOG.md` — não é
 divergência do TCC1, é regra de processo/ferramenta, fora do escopo daquele log (ver sua própria
 nota introdutória).
+
+## `auth-service feat-002` entregue + várias regras novas endurecidas (2026-09-04)
+
+Sessão completa: `Plan Reviewer` (REVISE, 2 MAJOR + 2 MINOR corrigidos) → 7 subtasks (SV-23..29,
+feat-002.4/002.5 absorvidas numa só — descoberto durante a implementação que teste de integração
+de JPA não passa sem o roteamento de schema existir primeiro) → `Delivery Reviewer`/`Test Suite
+Auditor`/`Persistence Auditor` (achados reais corrigidos nos dois primeiros) → merge em
+`develop`. Evidência completa em `services/auth-service/feature_list.json` (campo `evidence` de
+`feat-002`) e `services/auth-service/progress.md`. Primeira migration/mapeamento JPA real do
+serviço — multi-tenancy do Hibernate por schema implementada e documentada em
+`docs/CONVENTIONS.md` como padrão reaproveitável por `bets-service`/`stats-service`.
+
+**Quatro regras de convenção endurecidas/criadas a meio da sessão, a pedido do usuário, aplicadas
+a `feat-002` e retroativamente a `feat-001`**:
+1. **Zero comentário de racional/documentação/regra de negócio em código**, nem de uma linha —
+   endurece a regra de "no máximo uma linha" criada na sessão de `feat-001`. Todo racional vai
+   para a nota do vault correspondente, nunca para o código. `package-info.java` removidos de
+   todos os pacotes de `auth-service` pelo mesmo motivo (duplicavam o diagrama de estrutura já
+   documentado em `docs/CONVENTIONS.md`).
+2. **Nome de teste sempre em inglês, padrão `should...`** — nova seção em `docs/TESTING.md`.
+3. **`@Autowired` banido em todo lugar** — injeção sempre por construtor, inclusive em teste
+   (`spring.test.constructor.autowire.mode=all` via `junit-platform.properties`).
+4. **`any` banido no TypeScript de `apps/web`** — regra registrada em `docs/CONVENTIONS.md`
+   antes de existir código Angular para aplicar.
+
+**Board do Jira precisa se mover ao vivo, não em lote** — dois erros cometidos e corrigidos na
+mesma sessão, ambos documentados em `CLAUDE.md` (raiz): (a) várias subtasks pularam direto de
+`not-started` para `done` no JSON sem passar por `in-progress`, deixando a story presa em `To Do`
+durante todo o desenvolvimento; (b) a feature virou `done` na mesma edição do JSON que fechou a
+última subtask, pulando o estado `Review` que a tabela de status já previa. Prática corrigida:
+`--sync-status` roda a cada transição real (início e fim de cada subtask, e separadamente no
+fechamento da feature), nunca só uma vez no final.
+
+**Gotcha real de CI descoberto**: commitar a saída do `jira_story.py` (linhas de `CHANGELOG.md`
+da story inteira) diretamente em `develop` antes de criar a branch da feature faz a PR final
+`feature/` → `develop` mostrar diff vazio nesse arquivo — o `base.sha` que o GitHub Actions usa é
+o merge-base (fixo no ponto de divergência), não a ponta viva de `develop`; push posterior em
+`develop` não resolve sozinho, precisa de `git merge develop` dentro da branch da feature (que
+reaplica a remoção, exigindo reescrever as linhas depois do merge). Documentado em
+`docs/CONVENTIONS.md` seção "Git" para os outros 6 repositórios não caírem na mesma armadilha —
+fluxo correto é deixar a saída do `jira_story.py` sem commitar e rodar `git checkout -b` antes de
+commitar, não depois.
+
+`epic-002` continua `in-progress` (`feat-003`..`feat-006` restantes). `./init.sh` da raiz não
+precisou rodar de novo (nenhuma mudança em `CLAUDE.md`/scripts de harness além de texto e do
+campo `evidence` do `epic-002`).
