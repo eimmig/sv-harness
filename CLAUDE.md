@@ -195,6 +195,17 @@ qualquer escopo novo.
     (código + testes + `/code-review`), marque `done` e rode `--sync-status` de novo — dois
     disparos por subtask, não um só no fim. O mesmo vale para a feature: ela vira `in-progress`
     no JSON (com `--sync-status` rodado) no momento em que a primeira subtask começa, não depois.
+    **O mesmo erro se repete um nível acima se a feature virar `done` na mesma edição do JSON que
+    fecha a última subtask** (aconteceu de novo na mesma sessão, ao fechar `feat-002.7`): a
+    tabela desta seção tem um estado `Review` ("todas as subtasks `done`, feature ainda
+    `in-progress`") entre a última subtask fechando e a feature fechando — mesmo rodando as
+    skills de auditoria (Delivery/Test Suite/Persistence Auditor) antes de marcar a última
+    subtask `done`, como manda a Definição de Pronto, marcar a subtask e a feature `done` na
+    mesma edição pula esse estado: o `--sync-status` move a story de `In Progress` direto pra
+    `Done`, sem nunca passar por `Review`. Prática correta: marque só a última subtask `done` e
+    rode `--sync-status` primeiro (story cai em `Review`); só numa edição separada marque a
+    feature `done` e rode `--sync-status` de novo (`Review` -> `Done`) — dois disparos separados
+    para o fechamento, mesmo que as skills de auditoria já tenham rodado antes dos dois.
 - **Feature se quebra em subtasks; a story do Jira as espelha como sub-tasks**: o campo
   `subtasks` de cada feature (irmão de `jira`) lista os passos de implementação, cada um com
   `id` (`feat-001.3`), `name`, `status` e `jira`. **Eles saem do `Plan Reviewer`** — o veredito
