@@ -55,6 +55,21 @@ de banco" para o racional completo. Resumo:
   criar outros usuários (`role = member`). Precisa de checagem de autorização por role no
   endpoint correspondente — não é feature transparente pelo simples fato de existir a coluna
   `role`.
+  > **Contrato implementado em `feat-004`** (`POST /api/v1/users`, requer `X-Tenant-Id` — já
+  > resolvido pelo `TenantSchemaFilter` de `feat-001.3` — e `X-User-Id`, o id do usuário
+  > chamador): body `{"name": "...", "email": "...", "password": "..."}` → `201`
+  > `{"id": "...", "name": "...", "email": "...", "role": "MEMBER", "mustChangePassword": false,
+  > "createdAt": "..."}` — nunca `passwordHash` nem a senha em texto puro (diferente da resposta
+  > de `feat-003`, aqui quem escolhe a senha é o próprio requester). `role` é sempre `MEMBER`;
+  > este endpoint não cria outro `admin`. `401` se `X-User-Id` estiver ausente ou não for um
+  > UUID válido (mesma família de status que `X-Admin-Api-Key` ausente/inválido em `feat-003` —
+  > é identidade do chamador, não um campo de payload). `400` se `X-Tenant-Id` estiver ausente
+  > (ainda não existe `api-gateway`/`epic-008` para injetar os dois headers de verdade — por ora
+  > quem chama informa direto, mesmo modelo de confiança que `bets-service`/`stats-service` vão
+  > usar, ver [[API-CONTRACTS]]) ou se o payload falhar Bean Validation (`name`/`email`/`password`
+  > em branco, `email` com formato inválido). `403` se o chamador não existir no tenant resolvido
+  > ou não for `admin` (os dois casos retornam o mesmo erro, para não vazar enumeração de
+  > usuário). `409` se o e-mail já estiver cadastrado nesse tenant.
 - **Login (RF02)**: e-mail é único apenas dentro do schema do tenant, não globalmente — a tela
   de login precisa de um terceiro campo (slug/identificador da organização) para que este
   serviço saiba em qual schema procurar antes de validar a senha.

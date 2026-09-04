@@ -62,6 +62,13 @@ Todos os serviços Java respondem erros como **RFC 7807** (`application/problem+
   `"detail": "A odd informada (0.95) deve ser estritamente maior que 1.00 (RN07)."`.
 - Erros de validação de campo (`jakarta.validation`) usam `status: 400`; violações de regra de
   negócio de domínio usam `status: 422`.
+- **Header obrigatório ausente/inválido**: dois status distintos, conforme o papel do header —
+  `401` quando o header carrega **identidade do chamador** (ex.: `X-Admin-Api-Key`, `X-User-Id`
+  em [[auth-service]] `feat-004`), `400` quando carrega **contexto de negócio** necessário pra
+  resolver a operação mas não é identidade (ex.: `X-Tenant-Id` ausente — presente mas malformado
+  já é `400` desde `feat-001.3`, ausente é a mesma família de falha de contrato). Convenção
+  fixada em `feat-004` (auth-service) pra `bets-service`/`stats-service` reaproveitarem sem
+  redecidir status code header a header.
 
 ## Documentação de API
 
