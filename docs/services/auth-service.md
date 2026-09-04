@@ -63,6 +63,16 @@ divergências em 2026-08-01; `role` e o isolamento por schema (`tenant_<slug>`) 
   [[telegram-integration]] para identificar quem enviou a mensagem. Vive **dentro do schema do
   tenant**, como qualquer outro dado de negócio.
 
+**Mapeamento JPA/persistência implementado em `feat-002`** (tabelas físicas `users`/
+`telegram_accounts`, não `user`/`telegram_account` — ver [[DATA-MODEL]] nota sobre palavra
+reservada do Postgres): roteamento por schema via multi-tenancy do Hibernate (mecanismo
+reaproveitável pelos outros serviços Java, documentado em [[CONVENTIONS]] seção "Padrões de
+código Java"). `UserRepository.save()`/`TelegramAccountRepository.save()` são **só de criação**
+por enquanto (`Persistable<UUID>` sempre trata o id como novo) — nenhuma feature do backlog atual
+precisa atualizar uma linha já existente; quando `mustChangePassword` precisar ser zerado após
+troca de senha (ou qualquer outro update futuro), o mecanismo de `isNew()` precisa ser revisitado
+antes de reusar `save()` para isso.
+
 ### Diretório global (schema `public`, fora de qualquer tenant)
 
 Duas tabelas pequenas, só para resolver identidade — não são dado de negócio de nenhum tenant

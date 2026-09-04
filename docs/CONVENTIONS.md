@@ -95,6 +95,31 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   do slug da organização informado na criação do tenant) — sem tabela de diretório adicional
   para mapear slug → nome de schema; unicidade é garantida pelo próprio Postgres (`CREATE
   SCHEMA` falha se o schema já existir).
+- **Multi-tenancy do Hibernate por schema** (decidido em `auth-service feat-002`, vale para os 3
+  serviços Java schema-per-tenant): `CurrentTenantIdentifierResolver<String>` (lê o contexto de
+  tenant já resolvido pelo filtro HTTP; sem tenant resolvido, usa `public`) +
+  `MultiTenantConnectionProvider<String>` (`Connection.setSchema(...)` no checkout da conexão —
+  o driver do Postgres já traduz isso para `SET SEARCH_PATH` internamente —, reset para `public`
+  no release, tratando falha de `setSchema()` sem vazar a conexão do pool), registrados via
+  `HibernatePropertiesCustomizer`. Chaves de propriedade confirmadas por `javap` contra o jar
+  real instalado (Hibernate ORM 7.x): `org.hibernate.cfg.MultiTenancySettings.
+  MULTI_TENANT_CONNECTION_PROVIDER` (`hibernate.multi_tenant_connection_provider`) e
+  `MULTI_TENANT_IDENTIFIER_RESOLVER` (`hibernate.tenant_identifier_resolver`) — não existe mais
+  `hibernate.multiTenancy=SCHEMA` (isso era Hibernate 5). Confirmar de novo contra o jar
+  instalado antes de reaproveitar, versão pode ter mudado.
+- **Entidade JPA com id atribuído pelo domínio**: implementar `Persistable<UUID>` (campo
+  `@Transient boolean isNew = true`, `@PostLoad` vira `false`) — sem isso, todo `save()` de uma
+  linha nova é tratado como possível update (`merge()` + `SELECT` extra a cada inserção, porque
+  o id já vem preenchido e não é `null`). `save()` assim construído só serve para criar, não para
+  atualizar uma linha já existente.
+- **Enum persistido com valor diferente do nome Java** (ex.: `Role.ADMIN`/`MEMBER` gravado como
+  `'admin'`/`'member'` para bater com `CHECK` da migration): `AttributeConverter` dedicado com
+  `@Converter(autoApply = true)`, nunca `@Enumerated(EnumType.STRING)` puro (grava o nome Java
+  literal, maiúsculo).
+- **Lombok + Java 25**: `maven-compiler-plugin` precisa de `annotationProcessorPaths` explícito
+  apontando pro Lombok — só declarar a dependência (mesmo com escopo `provided`) não basta nesta
+  combinação de `javac`/Lombok, o processamento de anotação é pulado em silêncio (sem erro, sem
+  aviso) e os métodos gerados (`getX()`, construtor, etc.) simplesmente não existem no `.class`.
 
 ## Internacionalização (i18n)
 
@@ -240,11 +265,17 @@ O merge sobe um nível por vez, sempre `--no-ff`: `subtask/SV-13` → `feature/S
 - **Título do PR**: `[chave] título`, mesma chave e título da linha correspondente em
   `CHANGELOG.md` (ex.: `[SV-11] Bootstrap do pom.xml e esqueleto hexagonal`) — não a mensagem do
   commit.
-- **Comentário em código, minimalista** (decisão de 2026-09-03, corrige excesso desta mesma
-  sessão): no máximo uma linha, só quando o porquê não é óbvio pelo nome/estrutura. Racional
-  extenso (por que uma decisão foi tomada, o que um code review pegou, gotcha de biblioteca) vai
-  na mensagem de commit, na descrição da issue do Jira ou na nota do vault — nunca em bloco de
-  comentário no código.
+- **Zero comentário de documentação/racional/regra de negócio no código** (decisão de 2026-09-04,
+  endurece a regra anterior de "no máximo uma linha" da mesma sessão — o usuário considerou até o
+  comentário de uma linha ruído). Nenhum bloco `/** ... */`/`//` explicando o quê, o porquê ou uma
+  regra de negócio — nem em classe, nem em método, nem em campo. Código autoexplicativo por
+  nome/estrutura; o resto (por que uma decisão foi tomada, o que um code review pegou, gotcha de
+  biblioteca, contrato de um campo) vai para a mensagem de commit, a descrição da issue do Jira,
+  ou a nota do vault correspondente ao assunto — o Obsidian é a centralização única de
+  documentação e definição de negócio, nunca o código-fonte. Javadoc de `package-info.java`
+  continua permitido (é rótulo estrutural de pacote, já espelhado no diagrama de
+  `docs/CONVENTIONS.md` "Arquitetura interna dos serviços Java" — não é racional/regra de
+  negócio).
 - **Merge `subtask/` → branch da story**: `--no-ff`, via PR, com a **pipeline de CI daquele PR
   passando** (i18n, build, testes — não changelog, ver [[CI-CD]] seção "Changelog por serviço")
   e a subtask marcada `done` no `feature_list.json`. **Não** exige `./init.sh` local nem as

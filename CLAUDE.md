@@ -335,6 +335,19 @@ Não existe comando único de build/test para "o projeto inteiro" — não é um
 serviço é seu próprio repositório e evolui/é verificado de forma independente (é a razão de
 existir a arquitetura de microsserviços).
 
+**Depois que `./init.sh` passar, valide se a documentação precisa de ajuste** (regra adicionada
+em 2026-09-04, achado real: `auth-service feat-002` implementou multi-tenancy do Hibernate,
+padrão `Persistable` para id atribuído pelo domínio, e um gotcha de Lombok/Java 25 sem
+atualizar `docs/CONVENTIONS.md` até ser questionado pelo usuário — mecanismos reaproveitáveis
+pelos outros serviços Java quase viraram conhecimento tribal preso numa sessão). `init.sh` verde
+prova que o código funciona, não que o vault continua sendo a fonte da verdade — antes de
+considerar uma subtask/feature encerrada, pergunte explicitamente: alguma descoberta desta sessão
+(mecanismo novo reaproveitável por outro serviço, gotcha de biblioteca, lacuna de especificação,
+edge case) ainda não está em nenhuma nota do vault? Se sim, atualize a nota do assunto
+correspondente no mesmo commit — já é a regra de "Harness se retroalimenta pela nota do vault"
+mais acima, isto só torna o gatilho explícito e ligado à verificação, não opcional/fácil de
+esquecer.
+
 ## Escalação
 
 - **Decisões de arquitetura cross-service**: consulte `docs/ARCHITECTURE.md` (vault); se a
