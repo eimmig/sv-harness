@@ -65,6 +65,11 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
 
 ## Padrões de código Java
 
+- **Nunca usar `@Autowired`** (decisão de 2026-09-04): injeção sempre via construtor, campo
+  `final`, sem a anotação — Spring injeta sozinho quando só existe um construtor. Vale também
+  para classe de teste: `spring.test.constructor.autowire.mode=all` em
+  `src/test/resources/junit-platform.properties` (um arquivo por serviço) habilita injeção por
+  construtor nos testes `@SpringBootTest`, sem precisar de `@TestConstructor` em cada classe.
 - **DTOs e value objects imutáveis**: `record` do Java (25 tem suporte pleno), não classes com
   getters/setters manuais.
 - **Entidades JPA**: usar Lombok (`@Getter`, `@Setter`, `@NoArgsConstructor`,
@@ -194,6 +199,9 @@ princípios que não se misturam (ver também [[API-CONTRACTS]] seção "Interna
   [[API-CONTRACTS]]. Não gerar cliente automaticamente a partir de OpenAPI neste projeto (escopo
   pequeno o suficiente para não justificar a ferramenta extra) — mas manter os tipos TypeScript
   sincronizados manualmente com os DTOs Java é responsabilidade de quem mexe na feature.
+- **Nunca usar `any`** (decisão de 2026-09-04): todo tipo é explícito — `unknown` + type guard
+  quando o tipo de fato não é conhecido em tempo de compilação, nunca `any` como atalho. Vale
+  para parâmetro, retorno, variável e genérico.
 - **QA visual (Impeccable/taste-skill)**: ferramentas de design guidance para agentes de IA,
   usadas só como auditoria/polish de componentes já implementados contra [[DESIGN-SYSTEM]] —
   nunca como fonte de novas decisões de design (esse documento já é a fonte de verdade). Ver
