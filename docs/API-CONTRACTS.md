@@ -122,7 +122,9 @@ o código-fonte do outro serviço.
   entre os epics desses serviços (ver [[DECISIONS-LOG]] item 3). `auth-service` cria o primeiro
   usuário admin do tenant com senha aleatória e `mustChangePassword = true` (ver [[DATA-MODEL]]).
   Contrato de `auth-service` implementado em `feat-003`: `POST /api/v1/admin/tenants` — ver
-  [[auth-service]] seção "Modelo de tenant" para o payload/resposta exatos.
+  [[auth-service]] seção "Modelo de tenant" para o payload/resposta exatos. `bets-service`
+  implementa a mesma rota (`feat-001.4`) só criando o schema, sem usuário/senha — ver
+  [[bets-service]] seção "Provisionamento de tenant (rota admin)".
 
 ## Contratos de evento: `BetCreated` e `BetSettled`
 

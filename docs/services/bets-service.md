@@ -23,6 +23,18 @@ serviço). Tenant = organização com múltiplos usuários (ver [[auth-service]]
 `X-User-Id`, ver [[API-CONTRACTS]]), e migrado sob demanda antes de atender a requisição (Flyway
 lazy, ver [[CONVENTIONS]] seção "Migrations").
 
+## Provisionamento de tenant (rota admin)
+
+`POST /api/v1/admin/tenants` (`{"slug": "<slug>"}` → 201 `{"schema": "tenant_<slug>"}`), autenticada
+por `X-Admin-Api-Key` (ver [[API-CONTRACTS]] e [[DECISIONS-LOG]] item 3 — chamada manual do
+operador, direto neste serviço, não roteada pelo `api-gateway`). Idempotente por design (409
+`tenant-already-provisioned` se o slug já tem schema), 422 `invalid-tenant-slug` para slug
+malformado. Diferente de [[auth-service]] `feat-003`: aqui não há criação de usuário/senha — só o
+schema `tenant_<slug>` (`ProvisionTenantSchemaUseCase`, mesmo mecanismo Flyway lazy usado pelo
+filtro por requisição, ver [[CONVENTIONS]] seção "Migrations"). Implementado em `feat-001.4`
+(bundlado com o setup do serviço, não uma feature separada como em `auth-service` — decisão
+aceita no Plan Reviewer daquela feature, já que não há complexidade de criação de admin aqui).
+
 ## Modelo de dados (OLTP)
 
 Ver [[DATA-MODEL]] para o ERD (Mermaid + PNG original do TCC1). Confirmado sem divergências em
