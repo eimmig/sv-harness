@@ -151,6 +151,27 @@ princípios que não se misturam (ver também [[API-CONTRACTS]] seção "Interna
   partir do header `Accept-Language` da requisição. Sem header reconhecido, cai em `pt-BR`
   (idioma padrão). O `type` da resposta (slug em inglês) nunca muda com o locale — só
   `title`/`detail`.
+  > **Gotcha crítico, descoberto só em `auth-service feat-003.6`**: sem um `src/main/resources/
+  > messages.properties` **sem sufixo de locale** (só `messages_pt_BR.properties`/
+  > `messages_en_US.properties`/`messages_es.properties`), o `MessageSourceAutoConfiguration` do
+  > Spring Boot **nunca ativa** — a condição de ativação (`ResourceBundleCondition`, confirmado
+  > via `javap` contra o jar real `spring-boot-autoconfigure-4.1.1`) checa literalmente
+  > `classpath*:messages.properties` (basename + `.properties`, sem locale), não os arquivos com
+  > sufixo. Sem a autoconfiguração, `MessageSource` nunca vira bean de verdade — todo
+  > `messageSource.getMessage(...)` real da aplicação recebe o `DelegatingMessageSource` interno
+  > do Spring (fallback vazio) e lança `NoSuchMessageException` para qualquer chave, mesmo com os
+  > 3 arquivos de locale presentes e corretos. **Ficou sem detecção desde `feat-001.5`** porque
+  > todo teste até `feat-003.5` (`MessagesTest`, `AdminApiKeyFilterTest`) instanciava seu próprio
+  > `new ResourceBundleMessageSource()` manualmente em vez de injetar o bean real da aplicação —
+  > só o primeiro teste de integração ponta a ponta de verdade (`@SpringBootTest` +
+  > `RANDOM_PORT`, chamando um endpoint que resolve mensagem via o bean autowired) expôs o
+  > problema. Correção: criar `messages.properties` (sem sufixo) — não precisa ter as mesmas
+  > chaves dos 3 arquivos de locale (eles continuam sendo a fonte real, `.properties` base só
+  > existe para satisfazer a condição de ativação); **não** incluir esse arquivo na checagem de
+  > paridade de chaves do `validate-i18n-keys.py` (ele não é um 4º locale). Aplicável aos outros 3
+  > serviços Java (`bets-service`, `stats-service`, `api-gateway`) assim que criarem seus
+  > próprios `messages_*.properties` — criar o arquivo base **junto**, não depois de descobrir o
+  > bug de novo.
 - Exceptions de domínio (ver seção "Padrões de código Java" acima) carregam uma chave de
   mensagem (ex.: `error.invalid-odd`), não o texto final — o `@RestControllerAdvice` resolve o
   texto no locale da requisição, nunca a camada de domínio.

@@ -941,3 +941,62 @@ Lição de processo registrada em `CLAUDE.md` durante a correção: fechar `feat
 `--sync-status` entre elas** (não uma só) — mesmo padrão já documentado mais cedo nesta sessão
 para o estado `Review`, agora também aplicado ao caso de uma feature já fechada ser reaberta por
 um achado pós-merge.
+
+## `auth-service feat-003` — provisionamento de tenant (rota admin) (2026-09-04)
+
+Sessão inteira dedicada a `feat-003` (`services/auth-service`, epic-002 continua `in-progress`),
+do Plan Reviewer ao merge final em `develop`. 7 subtasks (SV-32..SV-38), cada uma com PR própria,
+`/code-review` antes do merge e CI verde. Primeiro endpoint HTTP real do serviço
+(`POST /api/v1/admin/tenants`) e primeira implementação de verdade do padrão
+`@RestControllerAdvice`/mensagem-com-chave documentado desde `feat-001` mas nunca exercitado.
+
+**Plan Reviewer** (antes do código): `REVISE`, 2 achados BLOCKER — plano original não checava
+`gateway.exists(schema)` antes de escrever (slug duplicado reprovisionaria em silêncio via
+`CREATE SCHEMA IF NOT EXISTS`, estourando `DataIntegrityViolationException` crua em vez do 409
+esperado); e a rota admin não abre `TenantContextScope` (usa `X-Admin-Api-Key`, não
+`X-Tenant-Id`, então nenhum filtro existente resolvia o schema — o insert do admin cairia no
+schema `public`). Ambos corrigidos no plano antes de codificar.
+
+**Achado crítico de infraestrutura, descoberto só ao escrever o primeiro teste de integração
+HTTP real do serviço**: `MessageSourceAutoConfiguration` do Spring Boot nunca ativava neste
+serviço. Confirmado via `javap` contra o jar real (`spring-boot-autoconfigure-4.1.1`): a condição
+de ativação checa literalmente `classpath*:messages.properties` (basename **sem** sufixo de
+locale) — o serviço só tinha `messages_pt_BR/en_US/es.properties`. Sem a autoconfiguração,
+`MessageSource` nunca virava bean real; todo `getMessage()` da aplicação recebia o
+`DelegatingMessageSource` interno do Spring e lançava `NoSuchMessageException`, silenciosamente,
+desde `feat-001.5` — nenhum teste pegou porque `MessagesTest`/`AdminApiKeyFilterTest` sempre
+construíam seu próprio `ResourceBundleMessageSource` manualmente em vez de injetar o bean real.
+Corrigido criando o arquivo base. Documentado em `docs/CONVENTIONS.md` para `bets-service`/
+`stats-service`/`api-gateway` criarem esse arquivo **junto** com seus próprios
+`messages_*.properties`, não depois de descobrir o bug de novo.
+
+**Dois bugs de encoding relacionados, também só descobertos ao testar a primeira mensagem de
+erro acentuada** (`es`/`pt-BR` — mensagens anteriores eram todas sem acento): (1)
+`HttpServletResponse`/`MockHttpServletResponse` assume ISO-8859-1 sem `charset` explícito no
+content-type, corrompendo texto UTF-8 escrito por `ObjectMapper` — corrigido com
+`response.setCharacterEncoding("UTF-8")` explícito em `AdminApiKeyFilter`; (2)
+`ResourceBundleMessageSource` construído manualmente em teste usa o cache estático por JVM do
+`ResourceBundle.getBundle(...)`, que não leva o `Control`/encoding em conta na chave — se uma
+classe sem `setDefaultEncoding("UTF-8")` roda primeiro na mesma JVM (Surefire reusa uma fork para
+todas as classes), ela popula o cache com a versão mal-decodificada e a classe seguinte reaproveita
+o cache errado. Só reproduziu no CI (Linux), nunca localmente (Windows) — ordem de execução de
+classe difere entre os dois SOs. Corrigido aplicando `setDefaultEncoding("UTF-8")` em toda
+instância manual do padrão, inclusive retroativamente em `MessagesTest` (`feat-001.5`) — validado
+forçando `-Dsurefire.runOrder=alphabetical`/`reversealphabetical` localmente.
+
+**Achado de segurança real via `/code-review`**: `AdminApiKeyFilter.shouldNotFilter()` comparava
+contra `request.getRequestURI()` cru (não decodificado) — um path com percent-encoding
+(`/api/v1/adm%69n/tenants`) driblava o filtro completamente (nenhuma checagem de
+`X-Admin-Api-Key`) enquanto o Spring MVC decodificava e roteava normalmente para o endpoint
+admin. Corrigido com `UriUtils.decode()` antes da comparação de prefixo.
+
+**Gate final (`feature/SV-31` → `develop`)**: SonarCloud reprovou duas vezes antes de passar —
+primeiro por duplicação de código nova acima de 3% (`TenantAlreadyProvisionedException`/
+`InvalidTenantSlugException` com a mesma estrutura de campo `slug`/construtor/`messageArgs()`,
+corrigido extraindo `SlugRelatedDomainException` comum), depois por 3 apontamentos MINOR reais
+(`S1075` URI hardcoded, `S7467` variável de catch não usada, `S5853` asserções não encadeadas) —
+todos corrigidos, não suprimidos, mesmo padrão de `feat-002.8`.
+
+`mvn verify` final: 87 testes, 0 falhas, cobertura 80% ok. Delivery Reviewer, Test Suite Auditor
+e Persistence Auditor rodados contra a entrega completa — `PASS` nos três. Evidência completa em
+`services/auth-service/feature_list.json` (campo `evidence` de `feat-003`).
