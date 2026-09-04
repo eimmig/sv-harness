@@ -128,6 +128,15 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   apontando pro Lombok — só declarar a dependência (mesmo com escopo `provided`) não basta nesta
   combinação de `javac`/Lombok, o processamento de anotação é pulado em silêncio (sem erro, sem
   aviso) e os métodos gerados (`getX()`, construtor, etc.) simplesmente não existem no `.class`.
+- **Filtro de servlet que decide por prefixo de rota** (ex.: `shouldNotFilter`/gate de header
+  restrito a `/api/v1/admin/**`, decidido em `auth-service feat-003`): nunca comparar contra
+  `request.getRequestURI()` cru — path com percent-encoding (`/api/v1/adm%69n/tenants`) passa
+  ileso pela comparação de prefixo enquanto o Spring MVC decodifica e roteia normalmente para o
+  endpoint protegido, driblando o filtro por completo. Decodificar primeiro com
+  `UriUtils.decode(request.getRequestURI(), StandardCharsets.UTF_8)` antes de comparar o
+  prefixo. Achado real via `/code-review`, não do Plan Review original — vale para qualquer
+  filtro futuro que gate por prefixo de path nos 4 serviços Java (`api-gateway` incluso, que
+  roteia por path).
 
 ## Internacionalização (i18n)
 
@@ -363,10 +372,10 @@ O merge sobe um nível por vez, sempre `--no-ff`: `subtask/SV-13` → `feature/S
   nome/estrutura; o resto (por que uma decisão foi tomada, o que um code review pegou, gotcha de
   biblioteca, contrato de um campo) vai para a mensagem de commit, a descrição da issue do Jira,
   ou a nota do vault correspondente ao assunto — o Obsidian é a centralização única de
-  documentação e definição de negócio, nunca o código-fonte. Javadoc de `package-info.java`
-  continua permitido (é rótulo estrutural de pacote, já espelhado no diagrama de
-  `docs/CONVENTIONS.md` "Arquitetura interna dos serviços Java" — não é racional/regra de
-  negócio).
+  documentação e definição de negócio, nunca o código-fonte. `package-info.java` **não** é
+  exceção — removidos de todos os pacotes em `auth-service feat-002` por duplicarem o diagrama de
+  estrutura já documentado na seção "Arquitetura interna dos serviços Java" acima; não recriar em
+  nenhum dos 4 serviços Java.
 - **Merge `subtask/` → branch da story**: `--no-ff`, via PR, com a **pipeline de CI daquele PR
   passando** (i18n, build, testes — não changelog, ver [[CI-CD]] seção "Changelog por serviço")
   e a subtask marcada `done` no `feature_list.json`. **Não** exige `./init.sh` local nem as
