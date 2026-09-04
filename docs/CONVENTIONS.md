@@ -178,6 +178,24 @@ princípios que não se misturam (ver também [[API-CONTRACTS]] seção "Interna
      instancia `new ResourceBundleMessageSource()` manualmente em teste. Correção: sempre chamar
      `messageSource.setDefaultEncoding("UTF-8")` junto com `setBasename`/
      `setFallbackToSystemLocale(false)` nesse padrão de teste.
+     > **Pegadinha extra, só apareceu no CI (Linux), não localmente (Windows)**: corrigir
+     > `setDefaultEncoding("UTF-8")` numa única classe de teste não basta se **outra** classe do
+     > mesmo módulo também instancia `new ResourceBundleMessageSource()` para o mesmo
+     > `basename`/`locale` **sem** esse ajuste — `ResourceBundle.getBundle(...)` (usado por baixo
+     > dos panos pelo Spring) mantém um **cache estático por JVM**, sem levar o `Control`/encoding
+     > em conta na chave. Se a classe "errada" (sem `setDefaultEncoding`) rodar primeiro na mesma
+     > JVM (Surefire por padrão reusa uma única JVM fork para todas as classes de teste), ela
+     > popula o cache com a versão mal-decodificada, e a classe "certa" (com
+     > `setDefaultEncoding`) reaproveita esse cache errado silenciosamente — o resultado depende
+     > da **ordem de execução das classes**, que difere entre Windows e Linux (`surefire.runOrder`
+     > default não é garantidamente igual nos dois SOs). Sintoma: teste passa isolado
+     > (`-Dtest=UmaClasse`) ou na máquina local, falha só na suíte completa ou só no CI.
+     > Correção real: aplicar `setDefaultEncoding("UTF-8")` em **toda** instância manual de
+     > `ResourceBundleMessageSource` no módulo, não só na classe nova — um site esquecido
+     > contamina os outros. Achado em `auth-service feat-003.5` (`MessagesTest` de `feat-001.5`
+     > não tinha o ajuste; `AdminApiKeyFilterTest` tinha, e mesmo assim CI falhou até corrigir as
+     > duas juntas — confirmado forçando `-Dsurefire.runOrder=alphabetical` e
+     > `reversealphabetical` localmente, os dois passam só com as duas classes corrigidas).
 
 ### Frontend (apps/web)
 
