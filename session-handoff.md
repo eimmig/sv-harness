@@ -3,39 +3,27 @@
 > Estado atual, não histórico. O diário cronológico é o `progress.md` — este arquivo é reescrito
 > a cada sessão para responder "o que a próxima sessão precisa saber agora".
 
-**Última atualização:** 2026-09-03
+**Última atualização:** 2026-09-04
 
 ## Objetivo atual
 
-- `epic-002` (`auth-service`) iniciado — `feat-001` (setup do projeto) entregue e mergeado em
-  `develop`. RF01/RF02 e o resto do backlog de `auth-service` (`feat-002`..`feat-006`) seguem
-  `not-started`.
-- Situação: 2 de 9 epics `done` (`epic-001` infra, `epic-009` bootstrap+SonarCloud). `epic-002`
-  é o primeiro epic de serviço de aplicação com código real — os outros 5 serviços (`bets-service`,
-  `stats-service`, `api-gateway`, `telegram-integration`, `web`) continuam com `main`/`develop`
-  vazios, só o commit de bootstrap.
+- `epic-002` (`auth-service`) **fechado** — backlog inteiro (`feat-001..007`) `done`. Última
+  feature (`feat-007`, pipeline de CI) foi só fechamento formal, sem código novo — ver
+  `progress.md`.
+- Situação: 3 de 9 epics `done` (`epic-001` infra, `epic-009` bootstrap+SonarCloud, `epic-002`
+  auth-service). `epic-003` (`bets-service`) e `epic-008` (`api-gateway`) ficam elegíveis agora —
+  ambos dependiam só de `epic-002`. Nenhum dos dois é `in-progress` ainda; podem avançar em
+  paralelo (serviços diferentes, WIP=1 por serviço).
 
-## Concluído nesta sessão (2026-09-03)
+## Concluído nesta sessão (2026-09-04)
 
-- [x] **`auth-service feat-001` implementado e mergeado em `develop`** — Spring Boot 4.1.1,
-      layout hexagonal, conexão Postgres por profile, provisionamento de schema de tenant +
-      migração lazy por requisição, gate JaCoCo 80%, i18n, health checks, logging JSON
-      estruturado. 9 subtasks (SV-11..SV-19). Evidência completa em
-      `services/auth-service/feature_list.json` e `services/auth-service/progress.md`.
-- [x] **`groupId` corrigido**: `com.eduardoimmig.betting` → `com.stakevault.betting`, em
-      `docs/CONVENTIONS.md` e nos arquivos já commitados de `auth-service`.
-- [x] **`CHANGELOG.md` de todo repositório de aplicação virou índice de issues do Jira** (uma
-      linha `- [chave](url) - título` por story/subtask, escrita automaticamente por
-      `tools/jira_story.py`), não mais Keep a Changelog com prosa. Gate de changelog na CI mudou
-      de "todo PR" para "só PR story→develop". `docs/CONVENTIONS.md`, `docs/CI-CD.md`,
-      `tools/jira_story.py` atualizados.
-- [x] **`/code-review` (skill builtin) vira etapa obrigatória antes de cada PR de subtask** —
-      `docs/CONVENTIONS.md`, `docs/AGENT-SKILLS.md`. Achou e corrigiu problemas reais em 5 das 9
-      subtasks desta sessão (ver evidência de `feat-001`).
-- [x] **Análise das skills sempre em português** — `docs/AGENT-SKILLS.md` seção "Idioma das
-      análises", registrado antes de iniciar `feat-001`.
-- [x] 3 gotchas de guarda-por-marcador na CI, reais e documentados em `docs/CI-CD.md` para os
-      outros 5 repositórios (i18n, goal `jacoco:report` solto, atalho `sonar:sonar`).
+- [x] **`auth-service feat-007` (Pipeline de CI) implementado e mergeado em `develop`** — Plan
+      Reviewer confirmou que não sobrava peça de CI faltando (setup/gate já provados em produção
+      desde `epic-009`/`feat-001..006`); único achado real foi a `description` da feature estar
+      desatualizada (5→6 passos, atalho `mvn sonar:sonar` incorreto). 2 subtasks (SV-58/59, story
+      SV-57). Evidência completa em `services/auth-service/feature_list.json` e
+      `services/auth-service/progress.md`.
+- [x] **`epic-002` marcado `done`** na raiz.
 
 ## Bloqueios / Riscos
 
@@ -45,14 +33,19 @@
 | Topologia RabbitMQ é contrato | `bets-service` e `stats-service` publicam/consomem **sem redeclarar** exchange ou fila. Ver `docs/API-CONTRACTS.md`. |
 | 5 repositórios ainda sem código de aplicação | `bets-service`, `stats-service`, `api-gateway`, `telegram-integration`, `web` — só o commit de bootstrap do `epic-009`. |
 | `infra`: `main` está atrás de `develop` | Merge `develop` → `main` não feito — decisão pendente do usuário, não é defeito. |
-| GitGuardian só escaneia `pull_request` | Achado real em `auth-service feat-001.9`: um valor de exemplo em `.env.example` só foi flagado no PR final, não nas 8 PRs de subtask anteriores. Ver `services/auth-service/progress.md`. Vale revisar `.env.example` de cada novo serviço com placeholder sem formato de senha real (`CHANGE_ME`) antes da primeira PR que o toque. |
+| Mecanismos reaproveitáveis de `auth-service` para os outros 2 serviços Java com banco (`bets-service`/`stats-service`) | Multi-tenancy do Hibernate por schema, padrão `Persistable`/`AttributeConverter`, migration eager para schema `public` + `InitializingBean` (não `ApplicationRunner`), gate de zero issue do SonarCloud (`validate-sonar-issues.py` + `sonar.qualitygate.wait` condicional) — todos documentados em `docs/CONVENTIONS.md`/`docs/CI-CD.md`, mas ainda não *aplicados* em nenhum outro serviço. Replicar ao bootstrapar `epic-003`/`epic-004` em vez de redescobrir. |
 
 ## Próxima sessão — por onde começar
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. Continuar `epic-002` (`auth-service`): `feat-002` (entidades `USER`/`TELEGRAM_ACCOUNT`,
-   primeiras migrations Flyway reais) é a próxima feature elegível — `Plan Reviewer` antes de
-   codificar, mesmo fluxo já validado ponta a ponta em `feat-001`.
-3. `epic-008` (`api-gateway`) **ainda não é elegível** — depende de `epic-002` `done` (regra de
-   WIP em `CLAUDE.md` raiz: dependências precisam estar `done`, não apenas `in-progress`), e
-   `epic-002` só tem `feat-001` de um backlog de 6 features feito. Continuar em `auth-service`.
+2. Escolher entre **`epic-003` (`bets-service`)** ou **`epic-008` (`api-gateway`)** — ambos
+   elegíveis agora, dependências (`epic-002`) `done`. Podem rodar em paralelo (sessões/serviços
+   diferentes) por causa do WIP=1-por-serviço; não escolha os dois na mesma sessão.
+   - `bets-service` é o próximo natural do fluxo de negócio (casas de apostas, aposta, bankroll,
+     eventos `BetCreated`/`BetSettled`) e o primeiro a reaproveitar os mecanismos de
+     `auth-service` listados acima.
+   - `api-gateway` não tem regra de negócio própria (só roteamento/autenticação PASETO) — mais
+     simples, mas sem ele `bets-service`/`stats-service` continuam confiando direto em
+     `X-User-Id`/`X-Tenant-Id` do chamador (mesmo modelo já usado em `auth-service feat-004`).
+3. `epic-005` (`telegram-integration`) e `epic-006` (`web`) continuam **não elegíveis**
+   (dependem de `epic-003`/`epic-004`/`epic-008` ainda não `done`).

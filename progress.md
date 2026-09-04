@@ -1000,3 +1000,23 @@ todos corrigidos, não suprimidos, mesmo padrão de `feat-002.8`.
 `mvn verify` final: 87 testes, 0 falhas, cobertura 80% ok. Delivery Reviewer, Test Suite Auditor
 e Persistence Auditor rodados contra a entrega completa — `PASS` nos três. Evidência completa em
 `services/auth-service/feature_list.json` (campo `evidence` de `feat-003`).
+
+## `epic-002` (`auth-service`) fechado — `feat-007` (Pipeline de CI) (2026-09-04)
+
+Última feature liberada do backlog atual de `auth-service`. Sem código/workflow novo: o pipeline
+de CI (GitHub Actions + SonarCloud) já existia e já rodava de verdade em produção desde
+`epic-009` (setup) e `feat-001..006` (endurecimento incremental — guardas por marcador,
+`sonar.qualitygate.wait`, gate de zero issue/hotspot, branch protection real). Plan Reviewer
+confirmou que não sobrava nenhuma peça de CI faltando; único achado real (MAJOR) foi a
+`description` da própria feature ter ficado desatualizada — dizia "5 passos" e citava o atalho
+`mvn sonar:sonar`, ambos corrigidos desde `feat-002.8`/SV-30 (6º passo = gate de zero issue) sem
+a `description` acompanhar. Corrigida para bater com o `ci.yml` real (6 passos, coordenadas
+completas do plugin Sonar). Delivery Reviewer achou o mesmo erro remanescente na própria correção
+(description reescrita ainda citava o atalho errado) — corrigido antes de fechar. 2 subtasks
+(SV-58/59, story SV-57), 3 PRs (subtask→story ×2, story→develop), gate completo verde incluindo
+SonarCloud.
+
+**`epic-002` marcado `done`** — `services/auth-service/feature_list.json` 100% `done`
+(`feat-001..007`). Libera `epic-003` (`bets-service`, já elegível — dependia só de `epic-002`) e
+`epic-008` (`api-gateway`, idem). Nenhuma feature liberada restante em `auth-service` até a raiz
+abrir um epic novo para o serviço (não há previsão hoje).
