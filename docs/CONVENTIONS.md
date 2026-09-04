@@ -100,6 +100,29 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   do slug da organização informado na criação do tenant) — sem tabela de diretório adicional
   para mapear slug → nome de schema; unicidade é garantida pelo próprio Postgres (`CREATE
   SCHEMA` falha se o schema já existir).
+- **Migration eager para o schema `public`** (introduzida em `auth-service feat-006`, achado do
+  `Plan Reviewer`): tabelas de diretório global (fora de qualquer tenant, ex.: `TELEGRAM_LINK`/
+  `PENDING_TELEGRAM_LINK`, ver [[DATA-MODEL]]) não se beneficiam da migração lazy acima — não há
+  "schema do tenant resolvido por requisição" para elas, e o schema `public` sempre existe e
+  pertence ao próprio serviço, sem a ambiguidade de "quem provisiona" que motivou a lazy
+  migration. Solução: uma segunda pasta de migrations (`classpath:db/migration-public/`,
+  arquivos com o mesmo padrão de nomenclatura acima), aplicada por um bean dedicado que roda
+  `Flyway.configure().schemas("public").createSchemas(false).locations(...).load().migrate()`
+  uma única vez no boot — independente do `spring.flyway.enabled: false` global (é uma instância
+  própria de `Flyway`, mesmo padrão já usado para a migração lazy por tenant). **Não use
+  `ApplicationRunner`/`CommandLineRunner`** para isso (achado do `Persistence Auditor` em
+  `feat-006`): o `SpringApplication.run()` já inicia o servidor embutido (`SmartLifecycle`,
+  dentro de `refreshContext()`) **antes** de chamar os runners — uma requisição pode chegar e
+  ser aceita pela porta HTTP antes da migration rodar, quebrando com "relation does not exist"
+  logo após o boot. Use `InitializingBean.afterPropertiesSet()` (roda durante
+  `finishBeanFactoryInitialization()`, garantidamente antes do servidor embutido subir — mesmo
+  mecanismo que o próprio `FlywayMigrationInitializer` do Spring Boot usa) num bean dedicado.
+  Entidades JPA dessas tabelas usam `@Table(schema = "public")` explícito — Hibernate
+  sempre qualifica totalmente essas tabelas nas queries geradas, independente do schema corrente
+  setado pelo `MultiTenantConnectionProvider` para a sessão (ver bullet acima sobre multi-tenancy
+  do Hibernate) — permite que tabelas globais e tabelas por tenant convivam na mesma
+  `EntityManagerFactory`/transação, sem precisar de um segundo mecanismo de acesso a dados
+  (`JdbcTemplate` cru) nem de coordenar duas transações separadas.
 - **Multi-tenancy do Hibernate por schema** (decidido em `auth-service feat-002`, vale para os 3
   serviços Java schema-per-tenant): `CurrentTenantIdentifierResolver<String>` (lê o contexto de
   tenant já resolvido pelo filtro HTTP; sem tenant resolvido, usa `public`) +

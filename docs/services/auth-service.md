@@ -141,24 +141,43 @@ operação é uma transação local comum — não um problema de transação di
 `auth-service` é dono do vínculo `TELEGRAM_ACCOUNT`, mesmo não sendo o serviço que recebe as
 mensagens do bot:
 
-- Endpoint autenticado (token PASETO, usuário logado em [[web]]) para gerar um código de
-  vínculo de curta duração. Grava o código em `PENDING_TELEGRAM_LINK` (schema `public`, ver
-  seção "Diretório global" acima) **além de** no schema do próprio tenant — é o que permite ao
-  passo de confirmação abaixo achar o tenant certo sem o bot precisar informar o slug.
-- Endpoint interno (via [[api-gateway]], sem exigir token PASETO — é chamado por
-  [[telegram-integration]] repassando o código enviado pelo usuário ao bot) para confirmar o
-  vínculo: `telegramUserId` + código → busca `PENDING_TELEGRAM_LINK`, e **numa única transação**
-  cria/atualiza `TELEGRAM_ACCOUNT` dentro do schema do tenant resolvido e faz upsert em
-  `TELEGRAM_LINK`.
+- `POST /api/v1/telegram-links` — usuário logado gera um código de vínculo de curta duração.
+  Grava o código em `PENDING_TELEGRAM_LINK` (schema `public`, ver seção "Diretório global"
+  acima) — só ali, sem cópia no schema do tenant: a própria linha em `public` já carrega
+  `tenantId`/`userId`, suficiente para o passo de confirmação abaixo achar o tenant certo sem o
+  bot precisar informar o slug.
+- `POST /api/v1/telegram-accounts` — endpoint interno (via [[api-gateway]] quando esse existir;
+  hoje sem `api-gateway`, sem header de credencial de serviço — mesmo risco residual aceito em
+  `feat-003` para a rota admin, desproporcional de mitigar antes do Gateway existir de fato) que
+  confirma o vínculo: `telegramUserId` + código → busca `PENDING_TELEGRAM_LINK` (`404` se
+  ausente, `422` se expirado — código expirado é consumido/apagado mesmo assim), e **numa única
+  transação** cria `TELEGRAM_ACCOUNT` dentro do schema do tenant resolvido, faz upsert em
+  `TELEGRAM_LINK` e apaga o `PENDING_TELEGRAM_LINK` consumido. Se `telegramUserId` já estava
+  vinculado a outro tenant/usuário, a nova confirmação **sobrescreve** o vínculo antigo
+  (decisão do usuário, `feat-006`; `TELEGRAM_LINK.telegramUserId` já é PK única — só um vínculo
+  ativo por vez — a linha de `TELEGRAM_ACCOUNT` do tenant anterior fica órfã, sem endpoint de
+  desvínculo ainda). `409` se o usuário chamador ou o `telegramUserId` já tiver um vínculo ativo
+  dentro do MESMO tenant (não é o caso de sobrescrita entre tenants acima).
 - `GET /api/v1/telegram-accounts/{telegramUserId}` — lookup interno usado pelo [[api-gateway]]
   para resolver `telegramUserId -> userId`/`tenantId` antes de rotear a captura automática de
-  aposta para [[bets-service]]. Não exige token PASETO (não há usuário logado nesse caminho) —
-  só é alcançável pelo Gateway, autenticado por credencial de serviço, nunca exposto
-  publicamente. Retorna `404` se não houver vínculo, para o Gateway rejeitar a chamada em vez de
-  adivinhar o tenant.
+  aposta para [[bets-service]]. Mesmo estado sem header de credencial de serviço do endpoint
+  acima, até o Gateway existir. Retorna `404` se não houver vínculo, para o Gateway rejeitar a
+  chamada em vez de adivinhar o tenant.
   > **Resolvido em 2026-08-02** (ver [[DECISIONS-LOG]] item 15): o lookup consulta a tabela
   > `TELEGRAM_LINK` no schema `public` (seção "Diretório global" acima) — não busca mais um
   > `USER` numa tabela global, e não precisa varrer schemas de tenant.
+  > **Contrato implementado em `feat-006`**: `POST /api/v1/telegram-links` requer `X-User-Id`
+  > (`401` se ausente/inválido ou se o usuário não existir no tenant corrente) e `X-Tenant-Id`
+  > (já resolvido pelo `TenantSchemaFilter`, mesmo modelo de confiança de `feat-004`) → `201`
+  > `{"code": "...", "expiresAt": "..."}` (código de 8 caracteres alfanuméricos maiúsculos sem
+  > ambíguos, TTL configurável via `telegram.link-code-ttl-minutes`, default 15 minutos).
+  > `TELEGRAM_LINK`/`PENDING_TELEGRAM_LINK` são entidades JPA normais com `@Table(schema =
+  > "public")` explícito — não um adapter JDBC separado — convivendo com a multi-tenancy do
+  > Hibernate na mesma `EntityManagerFactory` (ver [[CONVENTIONS]] seção "Migrations"); a
+  > transação de confirmação abre o `TenantContextScope` do tenant resolvido **antes** de entrar
+  > no método `@Transactional` (não durante), porque a sessão Hibernate resolve o schema da
+  > conexão uma única vez, na primeira aquisição, não a cada query — abrir o escopo depois não
+  > re-roteia a conexão já aberta.
 
 ## Ver também
 
