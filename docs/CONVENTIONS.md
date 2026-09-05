@@ -172,6 +172,30 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   aceita enum ou campo estruturado no corpo precisa do handler de
   `HttpMessageNotReadableException` ao lado do de `MethodArgumentNotValidException`, mapeado para
   o mesmo `validation-failed`.
+- **Atualizar uma linha já persistida (não criar)**: até `bets-service feat-004`, todas as
+  features dos serviços Java só faziam `INSERT` (`save()` de uma entidade recém-construída,
+  `isNew=true`). Para um `UPDATE` de verdade (`JpaBetRepository.updateStatus`, `PATCH
+  /api/v1/bets/{id}/status`), **não** reconstruir a entidade via `new XJpaEntity(id, ...)` e
+  chamar `save()` — a instância nova nasce com `isNew=true` (nenhum `@PostLoad` rodou), e o
+  `Persistable` faz Spring Data chamar `entityManager.persist()`, tentando inserir uma linha com
+  PK já existente (constraint violation, não um update). O jeito certo: carregar a entidade via
+  `jpaRepository.findById(id)` (isso roda `@PostLoad`, `isNew` vira `false`), mutar o campo
+  através de um método da própria entidade (não expor `@Setter` amplo — `BetJpaEntity` ganhou só
+  `void updateStatus(BetStatus)`, package-private) e salvar a MESMA instância carregada — aí sim
+  `Persistable.isNew()==false` faz Spring Data chamar `entityManager.merge()`. Reaproveitar este
+  padrão em `auth-service`/`stats-service` na primeira vez que precisarem atualizar uma linha
+  (não só criar/ler).
+- **Entidade JPA com muitas colunas (`java:S107`, gate `feature -> develop` do SonarCloud)**:
+  achado real em `bets-service feat-004` — `BetJpaEntity` (18 colunas) com um construtor
+  posicional de 18 parâmetros reprovou o gate (`Constructor has 18 parameters, which is greater
+  than 7 authorized`), só descoberto no PR `feature -> develop` (gate completo — PRs de subtask
+  pulam SonarCloud, ver `docs/CI-CD.md`). Corrigido trocando o construtor posicional por um único
+  parâmetro: `BetJpaEntity(Bet bet)`, que lê os campos do record de domínio — direção de
+  dependência já é a correta em hexagonal (adapter conhece domínio, nunca o contrário), e
+  `TransactionJpaEntity`/`CatalogJpaEntity` já importavam tipos de domínio (`TransactionType`)
+  antes disso. Preferir este padrão (construtor recebendo o record de domínio inteiro) em vez de
+  builder/Lombok assim que uma entidade JPA nova ultrapassar ~7 colunas, para não repetir o
+  mesmo achado reativo em `auth-service`/`stats-service`.
 - **Lombok + Java 25**: `maven-compiler-plugin` precisa de `annotationProcessorPaths` explícito
   apontando pro Lombok — só declarar a dependência (mesmo com escopo `provided`) não basta nesta
   combinação de `javac`/Lombok, o processamento de anotação é pulado em silêncio (sem erro, sem

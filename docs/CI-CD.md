@@ -239,6 +239,34 @@ Sonar, não uma branch nomeada — isso funciona independente do destino). Repli
 outros 5 repositórios de aplicação antes que um push direto pra `develop` quebre o pipeline lá
 também.
 
+**Quarta armadilha, achada em `bets-service feat-004` (2026-09-05)**: `mvn verify` local
+(JaCoCo, gate de 80% de cobertura de linha **do projeto inteiro**) passar verde **não** garante
+que o gate `new_coverage` do SonarCloud (cobertura de 80% só das **linhas novas/alteradas
+daquele PR**, métrica separada, ver parágrafo "Sonar way" acima) também passe — são dois cálculos
+independentes, sobre bases diferentes (projeto inteiro vs. diff). Uma feature inteira nova (ex.:
+entidade `BET` com 4 FKs) pode ficar em ~97% de cobertura total do projeto e ainda reprovar
+`new_coverage` (79,7% neste caso real) se uma fração pequena mas real do código novo nunca for
+exercitada por teste — no caso, três ramos de exceção (`SportNotFoundException`/
+`LeagueNotFoundException`/`MarketNotFoundException`, só `BettingHouseNotFoundException`/
+`TipsterNotFoundException` tinham teste), um branch de catch de corrida (`Idempotency-Key`
+concorrente) e uma guarda de invariante do `record` de domínio. **Consequência prática**: só
+descoberto no PR `feature -> develop` (gate completo, ver acima) — nenhum sinal local antes
+disso. Ao planejar testes de uma feature nova, cobrir explicitamente cada ramo de erro/exceção
+introduzido (não só "os principais"), mesmo que pareçam estruturalmente idênticos entre si (ex.:
+4 validações de FK pelo mesmo padrão `existsById`) — o gate de código novo não distingue "mesmo
+padrão, já provado uma vez" de "nunca executado". Consultar
+`GET /api/measures/component_tree?...&metricKeys=new_uncovered_lines` (autenticado com
+`SONAR_TOKEN`, ver `tools/.sonar.env`) para achar as linhas exatas sem esperar o CI, se o gate
+reprovar de novo por cobertura.
+
+**Quinta armadilha, mesma feature**: regra `java:S5778` ("lambda usado em
+`assertThatThrownBy`/similar não pode ter mais de uma invocação que possa lançar exceção em
+runtime") reprovou um teste com `assertThatThrownBy(() -> new Bet(UUID.randomUUID(), ...))` —
+cada `UUID.randomUUID()`/`BigDecimal.valueOf()`/`Instant.now()` dentro do lambda conta como
+"invocação", mesmo sem chance real de lançar. Corrigido: extrair todos os argumentos para
+variáveis locais antes do `assertThatThrownBy`, deixando só a chamada que deve lançar
+(`new Bet(id, ..., campoInvalido, ...)`) dentro do lambda.
+
 ## Setup pendente (uma vez por repositório, quando cada um for criado)
 
 Repetir para cada um dos 6 serviços de aplicação (`infra/` só precisa do passo 1 — não usa

@@ -91,6 +91,29 @@ piso rígido; revisitar se o usuário quiser proteção contra saldo negativo). 
 constante — ver [[CONVENTIONS]] seção "Padrões de código Java" para o porquê de não seguir o
 precedente maiúsculo de `Role` em [[auth-service]].
 
+## Registro e ciclo de vida da aposta (`feat-004`)
+
+`POST /api/v1/bets` (RF04/RF05, compartilhado com [[telegram-integration]] via [[api-gateway]]):
+`createdByUserId` = `X-User-Id` (401 `missing-caller-context` se ausente/inválido, mesmo padrão
+de [[auth-service]] `feat-004`), valida as 4 FKs (`bettingHouseId`/`sportId`/`leagueId`/
+`marketId` obrigatórias, `tipsterId` opcional — nullable, ver `docs/contracts/bet-created.schema.json`
+já existente antes desta feature), 404 `<recurso>-not-found` para FK inexistente. RN07 (`odd`
+estritamente > 1,00, `stake` > 0) validado como regra de domínio (422 `invalid-odd`/
+`invalid-stake`, mensagem citando "(RN07)" — segue o exemplo literal de [[API-CONTRACTS]], não
+Bean Validation). Header `Idempotency-Key` opcional: reenvio da mesma chave retorna a aposta já
+criada (200, não 201), sem checar se o corpo bate com o original (simplificação aceita, sem TTL).
+`GET /api/v1/bets/{id}` (recurso único, 404 `bet-not-found`) e `PATCH /api/v1/bets/{id}/status`
+(RF12) completam o ciclo mínimo — só `pending -> won|lost|void` é transição válida (422
+`invalid-status-transition` em qualquer outro caso, incluindo tentar voltar para `pending`). Esta
+feature não cria `BET_RESULT` nem calcula `profit`/atualiza saldo (RN02/RN03/RN05) — isso é
+`feat-005`, que reage à mesma transição de status.
+
+**Risco residual aceito**: `BetService.updateStatus` lê o status atual e só depois escreve (sem
+`WHERE status = 'pending'` atômico nem `@Version`) — duas chamadas `PATCH` concorrentes para a
+mesma aposta `pending` poderiam ambas passar a validação e a segunda sobrescrever a primeira
+(last-write-wins), sem nunca retornar `422`. Sem consequência hoje (não há `BET_RESULT`/`profit`
+associado ainda); revisitar quando `feat-005` passar a depender desta transição ser exatamente-uma-vez.
+
 ## Histórico (RF08)
 
 `GET /api/v1/bets` e `GET /api/v1/transactions` são endpoints de leitura paginados (ver
