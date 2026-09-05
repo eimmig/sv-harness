@@ -142,11 +142,36 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   `@Transient boolean isNew = true`, `@PostLoad` vira `false`) — sem isso, todo `save()` de uma
   linha nova é tratado como possível update (`merge()` + `SELECT` extra a cada inserção, porque
   o id já vem preenchido e não é `null`). `save()` assim construído só serve para criar, não para
-  atualizar uma linha já existente.
+  atualizar uma linha já existente. **A partir de `bets-service feat-003`**, esse boilerplate
+  (`id`/`isNew`/`@PostLoad`) vive numa única `AbstractJpaEntity` (`@MappedSuperclass`) — extraída
+  quando o mesmo mecanismo passou a se repetir em 3+ entidades (`CatalogJpaEntity` refatorada para
+  estendê-la, `BettingHouseJpaEntity`/`TransactionJpaEntity` a estendem direto quando não têm
+  campo `name` único). Reaproveitar em `stats-service`/`auth-service` se o mesmo padrão de id
+  atribuído pelo domínio se repetir por lá.
 - **Enum persistido com valor diferente do nome Java** (ex.: `Role.ADMIN`/`MEMBER` gravado como
   `'admin'`/`'member'` para bater com `CHECK` da migration): `AttributeConverter` dedicado com
   `@Converter(autoApply = true)`, nunca `@Enumerated(EnumType.STRING)` puro (grava o nome Java
-  literal, maiúsculo).
+  literal, maiúsculo). **Valor exposto em JSON é uma decisão separada da persistência** (achado de
+  `bets-service feat-003`): `Role` em `auth-service` nunca ganhou tratamento de serialização e
+  trafega maiúsculo (`"ADMIN"`) por ser só o default do Jackson, não uma convenção deliberada —
+  não seguir esse precedente para enums de estado de domínio (ex.: `TransactionType`, e futuramente
+  `BET.status`), que já têm valores minúsculos documentados (`docs/services/bets-service.md`,
+  `pending`/`won`/`lost`/`void`). Nesses casos, anotar cada constante do enum com
+  `@JsonProperty("valor-minusculo")` (`com.fasterxml.jackson.annotation` — pacote de anotações do
+  Jackson não migrou para `tools.jackson` no Jackson 3, confirmado via `mvn dependency:build-
+  classpath` contra o classpath real; só `jackson-core`/`jackson-databind` migraram) — cobre
+  serialização e desserialização com a mesma anotação, sem precisar de conversor à parte nem de
+  customizar o `ObjectMapper` globalmente.
+- **`MethodArgumentNotValidException` não cobre corpo malformado**: um `@RestControllerAdvice`
+  com handler só para `MethodArgumentNotValidException` (falha de Bean Validation) deixa passar
+  JSON malformado ou valor de enum não reconhecido no corpo da requisição — Spring lança
+  `HttpMessageNotReadableException` *antes* da validação rodar, então sem handler dedicado a
+  resposta cai no formato de erro default do Spring Boot (não `application/problem+json`),
+  quebrando o contrato RFC 7807 documentado. Achado real em `bets-service feat-003` (campo
+  `TransactionType` no corpo de `POST /api/v1/transactions`) — todo `@RestControllerAdvice` que
+  aceita enum ou campo estruturado no corpo precisa do handler de
+  `HttpMessageNotReadableException` ao lado do de `MethodArgumentNotValidException`, mapeado para
+  o mesmo `validation-failed`.
 - **Lombok + Java 25**: `maven-compiler-plugin` precisa de `annotationProcessorPaths` explícito
   apontando pro Lombok — só declarar a dependência (mesmo com escopo `provided`) não basta nesta
   combinação de `javac`/Lombok, o processamento de anotação é pulado em silêncio (sem erro, sem

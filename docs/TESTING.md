@@ -64,6 +64,15 @@ código" em `docs/CONVENTIONS.md`).
 - **i18n**: pelo menos um teste de integração por serviço confirma que uma resposta de erro
   muda de `title`/`detail` conforme o header `Accept-Language` (`pt-BR` vs `en-US` vs `es`) —
   não é suficiente testar só o idioma padrão (ver [[CONVENTIONS]] seção "Internacionalização").
+- **`BigDecimal` e coluna `NUMERIC` — não comparar por `equals()`/`record` cru** (achado real de
+  `bets-service feat-003`): uma coluna `NUMERIC(19,2)` sempre devolve o valor já normalizado pra
+  escala 2 (`100` vira `100.00`) depois do round-trip pelo banco. `BigDecimal.equals()` (usado
+  implicitamente pelo `equals()` gerado de um `record` de domínio, ex.: `BettingHouse`) considera
+  escala diferente como valor diferente — um teste que insere `BigDecimal.valueOf(100)` (escala 0)
+  e depois faz `assertThat(lista).contains(objetoOriginal)` falha mesmo com o valor "certo"
+  persistido. Comparar campos monetários com `isEqualByComparingTo(...)` (AssertJ) em vez de
+  `contains`/`isEqualTo` sobre o objeto inteiro, ou extrair o campo e comparar à parte — vale para
+  qualquer entidade futura com campo `BigDecimal` (`BET.stake`/`odd` em `feat-004`).
 
 ## Frontend (apps/web)
 

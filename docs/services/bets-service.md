@@ -76,6 +76,21 @@ por tabela). Primeira introdução de multi-tenancy do Hibernate neste serviço
 `TenantSchemaFilter` passa a exigir `X-Tenant-Id` (`400 missing-tenant-id`) em rotas de negócio,
 antecipando o que `feat-001` tinha deixado como residual para `feat-004`.
 
+## Casas de apostas e movimentações (`feat-003`)
+
+`POST`/`GET` (paginado) para `/api/v1/betting-houses` e `/api/v1/transactions` (RF03/RF13).
+`GET /api/v1/betting-houses` inclui `balance` calculado (`initialBalance` + depósitos - saques,
+parcela de RN01 anterior à liquidação de apostas — o restante, resultado das apostas liquidadas,
+entra em `feat-005`), numa única query agregada por página (não uma soma por casa). `409
+betting-house-already-registered` para nome duplicado (`UNIQUE(name)`); `404
+betting-house-not-found` ao criar movimentação para `bettingHouseId` inexistente; `400
+validation-failed` para `amount` não positivo (RN07, "bloquear movimentações inconsistentes") —
+saque que deixaria o saldo negativo **não** é bloqueado (RN01 trata saldo como total corrente, não
+piso rígido; revisitar se o usuário quiser proteção contra saldo negativo). `type` de
+`TRANSACTION` (`deposit`/`withdrawal`) trafega minúsculo no JSON via `@JsonProperty` por
+constante — ver [[CONVENTIONS]] seção "Padrões de código Java" para o porquê de não seguir o
+precedente maiúsculo de `Role` em [[auth-service]].
+
 ## Histórico (RF08)
 
 `GET /api/v1/bets` e `GET /api/v1/transactions` são endpoints de leitura paginados (ver
