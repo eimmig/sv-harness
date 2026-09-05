@@ -306,13 +306,15 @@ mesmo commit. Mas o `Plan Reviewer` (ver `plan_review` de `services/auth-service
 passo 2 guardado só por `pom.xml`, os PRs das subtasks intermediárias quebrariam na validação de
 i18n por **sequenciamento**, não por defeito real. Corrigido em `sv-auth-backend/.github/workflows/ci.yml`:
 o passo 2 ganhou marcador **próprio** (`messages_pt_BR.properties`), independente do `pom.xml`
-que guarda os passos 3–5. **Mesma armadilha latente ainda não corrigida nos outros 3 repositórios
-Java** (`sv-api-gateway`, `sv-bets-backend`, `sv-stats-backend`) e potencialmente em
+que guarda os passos 3–5. **Corrigido tambem em `sv-bets-backend`** (`feat-001.1`, 2026-09-04) —
+mas *proativamente*, portando o `ci.yml` já endurecido de `auth-service` **antes** do bootstrap
+do `pom.xml`, em vez de descobrir a mesma quebra reativamente feature adentro. **Mesma armadilha
+latente ainda não corrigida em `sv-api-gateway`/`sv-stats-backend`** e potencialmente em
 `sv-frontend`/`sv-telegram-integration-backend` se o `feat-001` deles também for dividido em
-subtasks incrementais — cada um deve aplicar a mesma correção (marcador do passo de i18n = o
-primeiro arquivo de tradução daquele stack, não o marcador geral do repositório) quando chegar a
-vez de bootstrapar seu próprio `feat-001`, não só copiar o `ci.yml` atual do `auth-service` sem
-essa correção.
+subtasks incrementais — a partir de agora, cada um deve portar o `ci.yml` já endurecido (de
+`sv-auth-backend` **ou** `sv-bets-backend`, ambos equivalentes hoje — 6 passos, gate de zero
+issue incluso) como primeira subtask do próprio `feat-001`, proativamente, em vez de bootstrapar
+o `pom.xml` primeiro e descobrir as 3 armadilhas reativamente como aconteceu em `auth-service`.
 
 **Segunda armadilha do mesmo dia**: o passo 4 chamava `mvn test jacoco:report` — um goal solto
 que exige o plugin JaCoCo já declarado no `pom.xml`. Como o plugin só entra numa subtask
@@ -334,8 +336,10 @@ repositórios, então o erro é sempre `No plugin found for prefix 'sonar'`, nun
 análise. Passou despercebido em `epic-009` porque o passo nunca chegou a rodar de fato (nenhum
 repositório tinha `pom.xml`/testes reais ainda). Corrigido em `sv-auth-backend` para as
 coordenadas completas do plugin (`org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar`,
-versão pinada) em vez do atalho — não depende de nada estar declarado no `pom.xml`. **Mesma
-correção pendente nos outros 5 `ci.yml`** quando cada repositório chegar ao próprio `feat-001`.
+versão pinada) em vez do atalho — não depende de nada estar declarado no `pom.xml`. **Também já
+corrigido em `sv-bets-backend`** (proativamente, `feat-001.1`). **Mesma correção pendente em
+`sv-api-gateway`/`sv-stats-backend`** quando cada repositório chegar ao próprio `feat-001` — ver
+nota acima sobre portar o `ci.yml` já endurecido em vez de repetir o ciclo de descoberta.
 
 Os scripts em `.github/scripts/` são versionados como `100755`. O Windows reporta
 `core.fileMode=false`, então o bit precisa ser posto no índice (`git update-index --chmod=+x`); sem

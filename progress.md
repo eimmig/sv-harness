@@ -1020,3 +1020,46 @@ SonarCloud.
 (`feat-001..007`). Libera `epic-003` (`bets-service`, já elegível — dependia só de `epic-002`) e
 `epic-008` (`api-gateway`, idem). Nenhuma feature liberada restante em `auth-service` até a raiz
 abrir um epic novo para o serviço (não há previsão hoje).
+
+## `epic-003` (`bets-service`) reivindicado — `feat-001` (Setup do projeto) entregue (2026-09-04)
+
+Primeiro código de aplicação de `bets-service`. 9 subtasks (SV-61..69, story SV-60), 10 PRs (8 de
+subtask + 1 de fechamento da story), gate completo verde incluindo SonarCloud/GitGuardian.
+Escopo: bootstrap Spring Boot 4.1.1/Java 25/Maven hexagonal, conexão Postgres dev/test/prod,
+provisionamento de schema de tenant (Flyway lazy) + filtro `X-Tenant-Id` + rota admin
+`POST /api/v1/admin/tenants` (`X-Admin-Api-Key`, bundlada nesta feature por decisão do Plan
+Reviewer — só cria schema, sem usuário/senha, diferente de `auth-service`), gate JaCoCo 80% (real
+97%+), i18n completo, health checks, `.env.example` + logging JSON estruturado.
+
+**Pipeline de CI endurecida proativamente**, antes do bootstrap do `pom.xml` — primeira vez que o
+padrão já validado em `auth-service` (6 passos, gate de zero issue do SonarCloud) foi portado
+*antes* de qualquer código, evitando o ciclo de descoberta reativa que `auth-service` passou
+(3 armadilhas de goal/guarda). `docs/CI-CD.md` atualizado: `sv-bets-backend` agora é o template a
+portar para `sv-api-gateway`/`sv-stats-backend` quando cada um chegar ao próprio `feat-001`.
+
+**i18n foi além do residual permanente de `auth-service`**: lá, os 2 erros de
+`TenantSchemaFilter` (que roda fora do `DispatcherServlet`) nunca saíram de texto hardcoded
+pt-BR, aceito como limitação estrutural repetida em várias features. Aqui, o mesmo mecanismo já
+provado por `AdminApiKeyFilter` de `auth-service` (injetar `MessageSource`/`LocaleResolver` direto
+no filtro) foi aplicado aos 2 erros de filtro deste serviço também — nenhum resíduo permanente.
+
+**Achado real na revisão final (Delivery Reviewer), não pego pelo `/code-review` de nenhuma
+subtask**: `FilterProblemWriter` (helper extraído em `feat-001.4` para eliminar duplicação entre
+os 2 filtros) nunca chamava `response.setCharacterEncoding("UTF-8")` — quase uma regressão do
+gotcha já documentado em `docs/CONVENTIONS.md` desde `auth-service feat-003`. Só ficou latente
+porque o teste unitário do filtro mocka `MessageSource` (não prova encoding real) e o cliente
+HTTP de teste (`java.net.http.HttpClient`) é permissivo. Reproduzido antes de corrigir (teste
+falha sem a correção, passa com ela) — `docs/CONVENTIONS.md` atualizado alertando que qualquer
+extração futura de helper de escrita de problema RFC 7807 em filtro precisa levar essa linha
+junto.
+
+Plan Reviewer (1 MAJOR corrigido no plano), `/code-review` (8 rodadas, achados reais em 3),
+Delivery Reviewer, Test Suite Auditor e Persistence Auditor — `PASS` nos quatro últimos. 2 riscos
+residuais aceitos e confirmados sem terceiro problema oculto: TOCTOU no `exists()`-antes-de-criar
+da rota admin (baixo volume, uso manual do operador); `TenantSchemaFilter` passa direto sem
+`X-Tenant-Id` (nenhuma rota de negócio desta feature exige o header ainda).
+
+`epic-003` continua `in-progress` — backlog de `bets-service` segue com `feat-002`
+(Catálogos base) até `feat-009` (Pipeline de CI, já coberta incidentalmente por `feat-001.1`, mas
+formalizada como feature própria mais adiante). `feat-002` é a próxima feature elegível, primeira
+a introduzir JPA/Hibernate multi-tenancy.

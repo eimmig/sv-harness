@@ -220,7 +220,14 @@ princípios que não se misturam (ver também [[API-CONTRACTS]] seção "Interna
      escrito pelo `ObjectMapper` é relido errado por qualquer client/teste que decodifique a
      resposta. Correção: `response.setCharacterEncoding("UTF-8")` explícito antes de escrever o
      corpo, sempre que um filtro (não um `@RestControllerAdvice` — esse já usa
-     `HttpMessageConverter` com UTF-8 correto) monta a resposta na mão.
+     `HttpMessageConverter` com UTF-8 correto) monta a resposta na mão. **Quase regredido em
+     `bets-service feat-001.9`**: ao extrair um `FilterProblemWriter` compartilhado entre dois
+     filtros (`/code-review` da própria feature, achado de duplicação), o `setCharacterEncoding`
+     ficou de fora da extração - só pego na revisão final porque as mensagens deste serviço já
+     nasceram acentuadas (diferente de `auth-service`, que nunca teve acento no texto hardcoded do
+     `TenantSchemaFilter` e por isso nunca expôs o bug). Qualquer extração futura de um helper de
+     escrita de problema RFC 7807 num filtro precisa levar essa linha junto, não só content-type
+     e status.
   2. **`ResourceBundleMessageSource` construído manualmente em teste** (mesmo padrão usado desde
      `feat-001.5` para testar `MessageSource` sem subir o contexto Spring inteiro) **não** herda
      o default `spring.messages.encoding=UTF-8` do autoconfigure do Spring Boot — sem
