@@ -1091,3 +1091,38 @@ SonarCloud reprovou 2 padrões reais (`Math.min(Math.max(...))` em vez de `Math.
 Plan Reviewer (2 MAJOR + 2 MINOR corrigidos no plano), Delivery Reviewer, Test Suite Auditor e
 Persistence Auditor — `PASS` nos quatro. `epic-003` continua `in-progress` — próxima feature
 elegível é `feat-003` (RF03/RF13, casas de apostas e movimentações).
+
+## `bets-service feat-003` (Casas de apostas e movimentações) entregue (2026-09-05, mesmo dia)
+
+`BETTING_HOUSE`/`TRANSACTION`, POST + GET paginado, saldo por casa (RN01, parcela pré-liquidação:
+`initialBalance` + depósitos - saques) calculado numa única query agregada por página — não uma
+soma por casa. 4 subtasks (SV-77..80, story SV-76).
+
+**Desvio real do plano, descoberto na implementação**: o `plan_review` copiava o precedente de
+`auth-service Role` (enum exposto cru no JSON, maiúsculo) para `TransactionType` — mas esse
+precedente nunca foi uma convenção deliberada, só o default do Jackson nunca desafiado. Como
+`BET.status` (`feat-004`) já tem valores minúsculos documentados (`pending`/`won`/`lost`/`void`),
+corrigido para `TransactionType` também trafegar minúsculo (`@JsonProperty` por constante) —
+`docs/CONVENTIONS.md` atualizado para não repetir o erro de copiar `Role` sem verificar se era
+deliberado.
+
+**Achado extra, fora do `plan_review`**: `DomainExceptionHandler` não tinha handler para
+`HttpMessageNotReadableException` — corpo JSON malformado ou valor de enum desconhecido caía no
+erro default do Spring Boot, quebrando o contrato RFC 7807. Corrigido com handler mapeado pro
+mesmo `validation-failed`.
+
+**Gotcha real de teste**: `BigDecimal.equals()` (usado no `equals()` de `record`) distingue
+escala — comparar um valor recém-criado (`BigDecimal.valueOf(100)`, escala 0) com o que volta de
+uma coluna `NUMERIC(19,2)` (sempre escala 2) falha mesmo com o dado correto. Documentado em
+`docs/TESTING.md` para qualquer entidade futura com `BigDecimal` (`BET.stake`/`odd`).
+
+`AbstractJpaEntity` extraída (boilerplate `id`/`isNew`/`@PostLoad`, antes só em
+`CatalogJpaEntity`) — 6 entidades JPA agora compartilham o mesmo mecanismo.
+
+Gate `feature→develop` reprovou 3 achados reais do SonarCloud antes do merge: regex com
+backtracking superlinear em 2 testes (substituído por parsing por substring) e caractere tab não
+escapado dentro de um literal JPQL (query reescrita sem indentação dentro da string) — corrigidos.
+
+Plan Reviewer (2 achados corrigidos no plano), Delivery Reviewer, Test Suite Auditor e Persistence
+Auditor — `PASS` nos quatro. `epic-003` continua `in-progress` — próxima feature elegível é
+`feat-004` (RF04/RF12, registro e ciclo de vida da aposta).
