@@ -26,7 +26,13 @@ e [[CONVENTIONS]] para arquitetura/código.
   URL.
 - **Paginação**: query params `page` (0-indexed) e `size` (default 20, máx 100) em toda listagem
   (histórico de apostas, movimentações); resposta envelopada
-  `{ "content": [...], "page": 0, "size": 20, "totalElements": N, "totalPages": N }`.
+  `{ "content": [...], "page": 0, "size": 20, "totalElements": N, "totalPages": N }`. **Clampar
+  `page`/`size` no controller antes de repassar ao repositório** (`page = max(page, 0)`,
+  `size = min(max(size, 1), 100)`) — gotcha real encontrado em `bets-service feat-002`: o
+  `PageRequest.of()` do Spring Data lança `IllegalArgumentException` (vira 500 não tratado, não
+  400) para `page` negativo ou `size` não positivo; mais barato clampar no controller do que
+  tratar a exceção. Mesmo padrão a reaproveitar em qualquer endpoint paginado novo (`bets-service
+  feat-007`, `stats-service`).
 - **Filtros** (RF11, RN08): query params em inglês, nomeados igual ao domínio, não abreviados —
   `?sport=football&league=brasileirao&market=over-under&from=2026-01-01&to=2026-01-31` — o
   mesmo vocabulário usado em `bets-service` e `stats-service` para os mesmos conceitos.

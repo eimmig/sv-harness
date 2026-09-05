@@ -1063,3 +1063,31 @@ da rota admin (baixo volume, uso manual do operador); `TenantSchemaFilter` passa
 (Catálogos base) até `feat-009` (Pipeline de CI, já coberta incidentalmente por `feat-001.1`, mas
 formalizada como feature própria mais adiante). `feat-002` é a próxima feature elegível, primeira
 a introduzir JPA/Hibernate multi-tenancy.
+
+## `bets-service feat-002` (Catálogos base) entregue (2026-09-05)
+
+4 catálogos (`SPORT`/`LEAGUE`/`MARKET`/`TIPSTER`), POST + GET paginado, primeira multi-tenancy do
+Hibernate deste serviço (`CurrentTenantIdentifierResolver`/`MultiTenantConnectionProvider`, mesmo
+padrão de `auth-service`). `TenantSchemaFilter` passou a exigir `X-Tenant-Id` em rotas de negócio
+(400 `missing-tenant-id`), fechando o residual aceito em `feat-001`. 5 subtasks (SV-71..75, story
+SV-70).
+
+**Bug real corrigido na verificação final (`feat-002.5`)**: `PageRequest.of()` do Spring Data
+lança `IllegalArgumentException` (vira 500 não tratado, não 400) para `page` negativo ou `size`
+não positivo — os 4 controllers passaram a clampar (`Math.clamp`) antes de chamar o repositório.
+Documentado como convenção normativa em `docs/API-CONTRACTS.md` (seção "Paginação"), reaproveitável
+por `bets-service feat-007` e `stats-service` quando expuserem endpoints paginados novos.
+
+**Achado de processo (não de código), corrigido nesta sessão**: `feature/SV-70` e as subtasks
+SV-71..74 nunca haviam sido empurradas para o GitHub — os merges de `feat-002.1..4` (sessão
+anterior) foram feitos só localmente (`git merge --no-ff`), sem PR nem gate de CI, violando a
+regra deste `CLAUDE.md` ("merge subtask → story exige pipeline de CI do GitHub passando"). Não
+reescrito (histórico já mesclado, sem valor em refazer) — só sinalizado aqui e em
+`services/bets-service/progress.md`. A partir de `feat-002.5`, o fluxo correto (push + PR + CI
+verde + merge `--no-ff`) foi seguido. Achado colateral do gate completo (`feature→develop`):
+SonarCloud reprovou 2 padrões reais (`Math.min(Math.max(...))` em vez de `Math.clamp`; variável de
+`catch` não usada em vez do padrão não-nomeado `_`) — corrigidos antes do merge.
+
+Plan Reviewer (2 MAJOR + 2 MINOR corrigidos no plano), Delivery Reviewer, Test Suite Auditor e
+Persistence Auditor — `PASS` nos quatro. `epic-003` continua `in-progress` — próxima feature
+elegível é `feat-003` (RF03/RF13, casas de apostas e movimentações).

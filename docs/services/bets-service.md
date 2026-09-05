@@ -62,6 +62,20 @@ Ver [[DATA-MODEL]] para o ERD (Mermaid + PNG original do TCC1). Confirmado sem d
 - RN06 — aposta só entra em métricas quando `status` vira `won`/`lost`/`void` (não `pending`).
 - RN07 — `stake` nunca negativo; `odd` estritamente > 1,00; bloquear movimentações inconsistentes.
 
+## Catálogos base (`feat-002`)
+
+`POST`/`GET` (paginado, envelope de [[API-CONTRACTS]]) para os 4 catálogos —
+`/api/v1/sports`, `/api/v1/leagues`, `/api/v1/markets`, `/api/v1/tipsters`. Sem seed
+compartilhado: cada schema de tenant nasce vazio, cada organização cadastra os próprios
+catálogos (decisão explícita do usuário, ver [[DECISIONS-LOG]] item 8) — sem isso, nenhum
+tenant conseguiria referenciar `sportId`/`leagueId`/`marketId`/`tipsterId` em `BET` (`feat-004`).
+`409 <catalog>-already-registered` para nome duplicado dentro do mesmo schema (`UNIQUE(name)`
+por tabela). Primeira introdução de multi-tenancy do Hibernate neste serviço
+(`CurrentTenantIdentifierResolver`/`MultiTenantConnectionProvider`, mesmo padrão de
+[[auth-service]] `feat-002`, ver [[CONVENTIONS]]) — e primeiro momento em que
+`TenantSchemaFilter` passa a exigir `X-Tenant-Id` (`400 missing-tenant-id`) em rotas de negócio,
+antecipando o que `feat-001` tinha deixado como residual para `feat-004`.
+
 ## Histórico (RF08)
 
 `GET /api/v1/bets` e `GET /api/v1/transactions` são endpoints de leitura paginados (ver
