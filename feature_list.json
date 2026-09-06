@@ -50,7 +50,7 @@
         "epic-009",
         "epic-003"
       ],
-      "status": "not-started",
+      "status": "in-progress",
       "evidence": "",
       "harness": "services/stats-service/"
     },
