@@ -157,6 +157,29 @@ que mostram dois eventos separados, não um único evento reaproveitado:
   upsert em `FACT_BET` por `betId` sem depender de já ter processado o `BetCreated`
   correspondente. Schema em `docs/contracts/bet-settled.schema.json`.
 
+**Nomes das dimensões denormalizados no payload** (achado real de `stats-service feat-002`,
+antes de qualquer código): `DIM_BETTING_HOUSE`/`DIM_SPORT`/`DIM_LEAGUE`/`DIM_MARKET`/
+`DIM_TIPSTER` (ver [[DATA-MODEL]]) têm coluna `name`, mas os IDs sozinhos (`bettingHouseId`,
+`sportId`, `leagueId`, `marketId`, `tipsterId`) não bastam para `stats-service` populá-la —
+`stats-service` só lê o evento, nunca chama `bets-service` de volta (consistência eventual é
+intencional, ver `CLAUDE.md` raiz). Por isso o payload de ambos os eventos ganhou os campos
+irmãos `bettingHouseName`/`sportName`/`leagueName`/`marketName` (obrigatórios, mesma
+obrigatoriedade dos IDs correspondentes) e `tipsterName` (opcional, acompanha `tipsterId`) —
+`bets-service` já tem esses nomes em mãos no momento de publicar (mesma consulta que valida a
+existência do catálogo antes de gravar a aposta), então é só encaminhar, sem custo extra de
+I/O. Mudança de contrato: `docs/contracts/*.schema.json` (`schemaVersion` continua `1` — aditivo,
+os dois campos eram opcionais... na verdade obrigatórios desde já, ver nota abaixo) e os dois
+serviços atualizados no mesmo ciclo de trabalho (não no mesmo commit — repositórios
+diferentes): `bets-service` ganha uma feature nova para popular os campos no publicador;
+`stats-service feat-002`/`feat-003` já nascem consumindo o schema já estendido.
+
+> **Nota sobre `schemaVersion`**: mesmo os dois campos sendo `required` no schema (não
+> opcionais), a mudança é tratada como aditiva e sem bump de `schemaVersion` porque nenhuma
+> versão do payload jamais foi publicada em produção sem eles — `bets-service` e `stats-service`
+> saem do zero e chegam à primeira versão real do evento já com os nomes inclusos. Um bump de
+> `schemaVersion` seria necessário se um payload já publicado precisasse mudar de formato depois
+> de já estar em uso.
+
 Mudanças de payload em qualquer um dos dois atualizam o schema correspondente, os testes de
 contrato (ver [[TESTING]]) e este parágrafo no mesmo commit.
 

@@ -81,7 +81,10 @@ Ver [[DATA-MODEL]] para o ERD completo (Mermaid + PNG original do TCC1).
   do TCC1 (que não tinha `status`) — necessária para RN06 (excluir `pending` das agregações) e
   para o padrão insert-then-upsert descrito acima.
 - Dimensões: `DIM_DATE` (day, month, year, quarter, dayOfWeek), `DIM_BETTING_HOUSE`,
-  `DIM_SPORT`, `DIM_LEAGUE`, `DIM_MARKET`, `DIM_TIPSTER`.
+  `DIM_SPORT`, `DIM_LEAGUE`, `DIM_MARKET`, `DIM_TIPSTER` (todas `id`+`name`). `id` é o mesmo uuid
+  do catálogo em `bets-service`; `name` vem denormalizado do payload do evento
+  (`bettingHouseName`/`sportName`/etc., ver [[API-CONTRACTS]]) — este serviço nunca consulta
+  `bets-service` de volta para resolver nome (ver [[DATA-MODEL]]).
 - `PROCESSED_EVENT` (id, eventId, processedAt) — controle técnico de idempotência, não é uma
   dimensão nem participa do esquema estrela.
 

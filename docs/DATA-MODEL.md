@@ -178,6 +178,16 @@ Ver [[stats-service]] para RN04/RN06/RN08/RN09 e as chaves de cache Redis. `stat
 exige excluir apostas `pending` das agregações; sem esses campos não haveria como o *insert*
 inicial de `BetCreated` conviver com o *upsert* posterior de `BetSettled` na mesma linha).
 
+`DIM_BETTING_HOUSE`/`DIM_SPORT`/`DIM_LEAGUE`/`DIM_MARKET`/`DIM_TIPSTER.name` são preenchidas a
+partir dos campos `bettingHouseName`/`sportName`/`leagueName`/`marketName`/`tipsterName`
+denormalizados no payload de `BetCreated`/`BetSettled` (ver [[API-CONTRACTS]] "Contratos de
+evento") — `stats-service` nunca consulta `bets-service` de volta para resolver nome (quebraria
+consistência eventual). `id` de cada dimensão é o MESMO uuid do catálogo em `bets-service` (`bettingHouseId` etc.), não
+um id gerado por `stats-service` — a dimensão é upsert (insere se a linha ainda não existe,
+ignora se já existe) por esse id na primeira aposta que a referencia. Os catálogos de
+`bets-service` não têm `PUT`/`DELETE` (só `POST`/`GET`, ver [[bets-service]]) — o nome nunca muda
+depois de criado, então não há caso de reconciliação a tratar aqui.
+
 ```mermaid
 erDiagram
     DIM_DATE ||--o{ FACT_BET : dimensiona

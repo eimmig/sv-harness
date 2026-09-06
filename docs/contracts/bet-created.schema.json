@@ -42,17 +42,25 @@
     "payload": {
       "type": "object",
       "required": [
-        "betId", "bettingHouseId", "sportId", "leagueId", "marketId",
-        "stake", "odd", "status", "betDate"
+        "betId", "bettingHouseId", "bettingHouseName", "sportId", "sportName", "leagueId",
+        "leagueName", "marketId", "marketName", "stake", "odd", "status", "betDate"
       ],
       "additionalProperties": false,
       "properties": {
         "betId": { "type": "string", "format": "uuid" },
         "bettingHouseId": { "type": "string", "format": "uuid" },
+        "bettingHouseName": {
+          "type": "string",
+          "description": "Denormalizado do catalogo de bets-service para popular DIM_BETTING_HOUSE.name em stats-service sem chamada sincrona entre servicos - ver docs/DATA-MODEL.md."
+        },
         "sportId": { "type": "string", "format": "uuid" },
+        "sportName": { "type": "string" },
         "leagueId": { "type": "string", "format": "uuid" },
+        "leagueName": { "type": "string" },
         "marketId": { "type": "string", "format": "uuid" },
+        "marketName": { "type": "string" },
         "tipsterId": { "type": ["string", "null"], "format": "uuid" },
+        "tipsterName": { "type": ["string", "null"] },
         "ticketNumber": { "type": ["string", "null"] },
         "team1": { "type": ["string", "null"] },
         "team2": { "type": ["string", "null"] },

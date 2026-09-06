@@ -157,6 +157,14 @@ da separação — fiel aos diagramas de fluxo do TCC1, que não reaproveitam um
 Contrato compartilhado com [[stats-service]] — não alterar nenhum dos dois payloads sem
 atualizar a nota daquele serviço e os JSON Schemas correspondentes no mesmo commit.
 
+> **Pendente** (achado de `stats-service feat-002`, ver [[API-CONTRACTS]] "Nomes das dimensões
+> denormalizados no payload"): o payload de ambos os eventos precisa ganhar
+> `bettingHouseName`/`sportName`/`leagueName`/`marketName`/`tipsterName`, denormalizados a partir
+> do catálogo já consultado antes de gravar a aposta (mesma consulta que valida a existência,
+> sem I/O extra) — necessário para `stats-service` popular `name` das dimensões OLAP sem chamada
+> síncrona de volta a este serviço. Feature nova a ser criada em `feature_list.json` deste
+> serviço quando essa mudança for implementada.
+
 **Mecanismo de publicação (`feat-006`/`feat-008`)**: `RabbitBetEventPublisher`
 (`adapter/out/messaging/`) publica ambos os eventos no exchange `bets.events` (routing keys
 `bet.created`/`bet.settled`) já provisionado por `infra/rabbitmq/definitions.json` — nunca

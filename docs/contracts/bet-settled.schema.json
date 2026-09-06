@@ -42,8 +42,8 @@
     "payload": {
       "type": "object",
       "required": [
-        "betId", "bettingHouseId", "sportId", "leagueId", "marketId",
-        "stake", "odd", "status", "profit", "settledAt"
+        "betId", "bettingHouseId", "bettingHouseName", "sportId", "sportName", "leagueId",
+        "leagueName", "marketId", "marketName", "stake", "odd", "status", "profit", "settledAt"
       ],
       "additionalProperties": false,
       "properties": {
@@ -53,10 +53,18 @@
           "description": "Correlaciona com o betId do BetCreated original - stats-service faz upsert em FACT_BET por este campo, nao insert."
         },
         "bettingHouseId": { "type": "string", "format": "uuid" },
+        "bettingHouseName": {
+          "type": "string",
+          "description": "Denormalizado do catalogo de bets-service para popular DIM_BETTING_HOUSE.name em stats-service sem chamada sincrona entre servicos - ver docs/DATA-MODEL.md. Repetido aqui (nao so no BetCreated) pelo mesmo motivo de stake/odd - o upsert em FACT_BET nao pode depender de o BetCreated correspondente ja ter sido processado."
+        },
         "sportId": { "type": "string", "format": "uuid" },
+        "sportName": { "type": "string" },
         "leagueId": { "type": "string", "format": "uuid" },
+        "leagueName": { "type": "string" },
         "marketId": { "type": "string", "format": "uuid" },
+        "marketName": { "type": "string" },
         "tipsterId": { "type": ["string", "null"], "format": "uuid" },
+        "tipsterName": { "type": ["string", "null"] },
         "stake": {
           "type": "number",
           "exclusiveMinimum": 0,
