@@ -205,6 +205,33 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   antes disso. Preferir este padrão (construtor recebendo o record de domínio inteiro) em vez de
   builder/Lombok assim que uma entidade JPA nova ultrapassar ~7 colunas, para não repetir o
   mesmo achado reativo em `auth-service`/`stats-service`.
+- **`com.networknt:json-schema-validator` — não pinar a versão mais recente sem checar a API**
+  (achado real de `bets-service feat-006`): a versão `3.0.7` (a mais nova no Maven Central no
+  momento) é uma reescrita completa da biblioteca — nenhuma das classes clássicas
+  (`JsonSchemaFactory`, `JsonSchema`, `SpecVersion`, `ValidationMessage`) existe mais no jar,
+  substituídas por uma API nova (`Error`, etc.) nunca documentada/usada neste projeto. Só
+  descoberto na compilação do teste (`test-compile` falhou com "package does not exist"), não
+  antes. Corrigido: pinado em `1.5.9` (última da linha 1.x, API clássica estável, amplamente
+  documentada). Antes de fixar a versão "mais recente" de uma biblioteca nova para o projeto,
+  checar o changelog/major version primeiro (ou aceitar o risco e confirmar via `mvn
+  test-compile` antes de escrever mais código em cima).
+- **`MessageProperties.getDeliveryMode()` só reflete o que VOCÊ setou, não o que a mensagem
+  recebida carrega** (achado real de `bets-service feat-006`, `RabbitBetEventPublisherIntegrationTest`):
+  `MessageBuilder...setDeliveryMode(MessageDeliveryMode.PERSISTENT)` no lado que publica funciona
+  (mensagem sobrevive a restart do broker mesmo em fila durable — sem isso, é não-persistente por
+  padrão do protocolo AMQP), mas um teste que consome a mensagem de volta via
+  `rabbitTemplate.receive(...)` e chama `getDeliveryMode()` no lado do CONSUMIDOR recebe `null`
+  sempre — o valor de fato recebido do broker fica em `getReceivedDeliveryMode()`, um accessor
+  separado (mesmo padrão de `getReceivedRoutingKey()`/`getReceivedExchange()` do Spring AMQP,
+  que distinguem metadado de entrada de propriedade que você está prestes a setar para uma
+  mensagem de saída). Vale para `stats-service` (lado consumidor) e para o publicador de
+  `BetSettled` (`feat-008`) reaproveitarem sem redescobrir.
+- **`java:S1135` (comentário "TODO") dispara em comentário em português com a palavra "todo"**
+  (achado real de `bets-service feat-006`, gate `feature -> develop`): a regra do SonarCloud
+  procura a substring "todo" sem diferenciar o marcador de tarefa pendente (inglês) da palavra
+  comum do português ("comum a todo evento..."). Não é bug de verdade, mas reprova o gate mesmo
+  assim. Evitar a palavra "todo" (preferir "qualquer"/"cada"/"todos os") no início de comentário
+  em código Java — vale para os 3 serviços Java, não só este.
 - **Lombok + Java 25**: `maven-compiler-plugin` precisa de `annotationProcessorPaths` explícito
   apontando pro Lombok — só declarar a dependência (mesmo com escopo `provided`) não basta nesta
   combinação de `javac`/Lombok, o processamento de anotação é pulado em silêncio (sem erro, sem

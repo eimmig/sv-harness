@@ -154,6 +154,18 @@ que mostram dois eventos separados, não um único evento reaproveitado:
 Mudanças de payload em qualquer um dos dois atualizam o schema correspondente, os testes de
 contrato (ver [[TESTING]]) e este parágrafo no mesmo commit.
 
+**Cópias vendorizadas do schema em cada repositório de serviço**: os arquivos `docs/contracts/
+*.schema.json` vivem no repositório `sv-harness` (raiz) — `bets-service` e `stats-service` são
+repositórios Git separados, e a pipeline de CI de cada um só faz checkout do próprio repositório
+(sem acesso aos `docs/` da raiz). Por isso, o teste que valida a mensagem publicada/consumida
+contra o schema real (exigido pela Definição de Pronto de ambos os serviços) precisa de uma cópia
+do `.schema.json` dentro do próprio repositório (`bets-service`: `src/test/resources/contracts/`,
+achado real de `feat-006`) — mesmo padrão de duplicação já aceito para `.github/scripts` (ver
+[[CI-CD]]). **Qualquer mudança num schema em `docs/contracts/` atualiza também as cópias
+vendorizadas nos repositórios que os testam**, no mesmo commit/PR daquele repositório (não
+simultâneo ao commit da raiz, já que são repositórios diferentes — mas a próxima sessão que tocar
+aquele schema não pode esquecer a cópia).
+
 Envelope (idêntico para os dois — todo evento do sistema, presente ou futuro, usa este
 envelope, só `eventType` e `payload` mudam):
 
