@@ -38,8 +38,8 @@
         "epic-009",
         "epic-002"
       ],
-      "status": "done",
-      "evidence": "Todas as 9 features de services/bets-service/feature_list.json estao done (feat-001..009, ultima fechada em 2026-09-06, story SV-107). Catalogos base, casas de apostas/movimentacoes, registro e ciclo de vida da aposta (RF04/RF12), liquidacao e bankroll consolidado (RF06/RF07), eventos BetCreated/BetSettled publicados e validados contra o schema vendorizado, historico paginado com filtros combinaveis (RF08), e pipeline de CI (GitHub Actions + SonarCloud) confirmado real em producao. ./init.sh do servico e da raiz verdes. Ver services/bets-service/feature_list.json e services/bets-service/progress.md para o detalhe por feature.",
+      "status": "in-progress",
+      "evidence": "Reaberto em 2026-09-06 (feat-010 nova: denormalizar nomes das dimensoes em BetCreated/BetSettled, achado real de stats-service feat-002, decidido com o usuario - ver docs/API-CONTRACTS.md). feat-001..009 continuam done (entregues 2026-09-06, story SV-107 foi a ultima) - historico completo em services/bets-service/feature_list.json e services/bets-service/progress.md.",
       "harness": "services/bets-service/"
     },
     {
