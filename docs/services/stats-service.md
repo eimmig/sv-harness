@@ -30,6 +30,17 @@ Consumo **assíncrono e idempotente** — consistência eventual, não síncrona
 aposta (ver [[ARCHITECTURE]] seção "Fluxos dinâmicos"). Falhas consecutivas vão para a DLQ (ver
 [[infra]]).
 
+> **Implementado em `feat-001.9`**: o listener técnico (`@RabbitListener` ligado à fila real
+> `stats.bet-events`, mesmo nome/argumentos de `infra/rabbitmq/definitions.json`) já valida cada
+> mensagem contra o JSON Schema do `eventType` correspondente (cópia vendorizada em
+> `src/main/resources/contracts/`, lida em runtime — diferente da cópia só-de-teste do lado
+> publicador em `bets-service`, ver [[API-CONTRACTS]] "Cópias vendorizadas do schema") antes de
+> processar. Mensagem que não bate com o schema é rejeitada sem reenfileirar
+> (`AmqpRejectAndDontRequeueException`, não o `x-delivery-limit`/retry — ver [[CONVENTIONS]]) e
+> cai direto na DLQ. **Ainda sem persistência** (insert/upsert em `FACT_BET` descritos acima e a
+> tabela `PROCESSED_EVENT` chegam em `feat-002`/`feat-003`) — por enquanto só prova que o
+> consumidor recebe, valida e loga corretamente.
+
 > O envelope de evento carrega `userId` além de `tenantId` desde 2026-08-02 (trilha de
 > auditoria, ver [[DECISIONS-LOG]] e [[bets-service]]) — **este serviço não persiste esse campo**
 > em `FACT_BET`. RN04/RN08/RN09 agregam por tenant/segmento (esporte/mercado/casa), não por

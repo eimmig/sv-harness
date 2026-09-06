@@ -236,6 +236,21 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   que distinguem metadado de entrada de propriedade que você está prestes a setar para uma
   mensagem de saída). Vale para `stats-service` (lado consumidor) e para o publicador de
   `BetSettled` (`feat-008`) reaproveitarem sem redescobrir.
+- **Falha de validação de schema num `@RabbitListener` precisa de `AmqpRejectAndDontRequeueException`,
+  não uma `RuntimeException` comum** (achado real de `stats-service feat-001.9`, primeiro consumidor
+  RabbitMQ do projeto): o mecanismo de "3 tentativas então DLQ" (`x-delivery-limit` da quorum
+  queue, ver `docs/API-CONTRACTS.md` "Topologia RabbitMQ") só funciona quando o container para de
+  pedir "requeue" ao broker — o `ConditionalRejectingErrorHandler` padrão do Spring AMQP trata uma
+  exceção comum como não-fatal e reenfileira (`requeue=true`) indefinidamente, então o
+  `x-delivery-limit` nunca é atingido do jeito esperado (achado em teste real: 128+ redeliveries em
+  ~10s sem nunca cair na DLQ, não só um número teórico). Mensagem que falha validação de schema
+  nunca vai passar validando de novo — é falha permanente, não transitória — então o correto
+  (funcional e não só para destravar o teste) é a exceção de validação estender
+  `org.springframework.amqp.AmqpRejectAndDontRequeueException`: o container rejeita sem reenfileirar
+  na primeira tentativa, e a mensagem cai direto na fila de dead-letter configurada
+  (`x-dead-letter-exchange`). Reservar o `x-delivery-limit`/retry automático só para falha
+  genuinamente transitória (ex.: uma futura falha de conexão com o banco ao persistir
+  `FACT_BET` em `feat-002`/`feat-003`) — não para erro de payload malformado.
 - **`java:S1135` (comentário "TODO") dispara em comentário em português com a palavra "todo"**
   (achado real de `bets-service feat-006`, gate `feature -> develop`): a regra do SonarCloud
   procura a substring "todo" sem diferenciar o marcador de tarefa pendente (inglês) da palavra
