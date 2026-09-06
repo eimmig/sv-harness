@@ -140,27 +140,32 @@ da separação — fiel aos diagramas de fluxo do TCC1, que não reaproveitam um
 
 - **`BetCreated`** (`feat-006`, implementado): publicado uma vez, logo após o `INSERT` de `BET`
   suceder (sempre `status: pending`). Envelope carrega `userId` = `BET.createdByUserId`.
-- **`BetSettled`** (`feat-008`, não implementado ainda): publicado quando `BET_RESULT` é
-  criado/`BET.status` muda para `won`/`lost`/`void` (RN06) — carrega `profit`/`settledAt`, que
-  `BetCreated` nunca tem. Envelope carrega `userId` = `BET_RESULT.settledByUserId` (pode ser
-  diferente do `userId` do `BetCreated` correspondente).
+- **`BetSettled`** (`feat-008`, implementado): publicado quando `BET_RESULT` é criado/`BET.status`
+  muda para `won`/`lost`/`void` (RN06) — carrega `profit`/`settledAt`, que `BetCreated` nunca tem,
+  e **não** carrega os campos descritivos de `BET` (`ticketNumber`/`team1`/`team2`/`description`/
+  `betType`/`playType` — confirmado contra o schema real, diferente de `BetCreated`). Envelope
+  carrega `userId` = `BET_RESULT.settledByUserId` (pode ser diferente do `userId` do `BetCreated`
+  correspondente). Publicado só quando a transição atômica (`feat-005`) e o `BET_RESULT` são
+  salvos com sucesso — nunca no ramo de transição inválida (`422`).
 
 Contrato compartilhado com [[stats-service]] — não alterar nenhum dos dois payloads sem
 atualizar a nota daquele serviço e os JSON Schemas correspondentes no mesmo commit.
 
-**Mecanismo de publicação (`feat-006`)**: `RabbitBetEventPublisher` (`adapter/out/messaging/`)
-publica no exchange `bets.events` (routing key `bet.created`) já provisionado por
-`infra/rabbitmq/definitions.json` — nunca redeclarado em código. Mensagem marcada
-`PERSISTENT` (sobrevive a restart do broker, já que a fila de produção é durable) — ver
-`docs/CONVENTIONS.md` para o gotcha de `getDeliveryMode()` vs `getReceivedDeliveryMode()`
-descoberto testando isso. Falha ao publicar é logada (nível ERROR) e nunca propagada como erro
-HTTP — a durabilidade do registro da aposta pesa mais que o sinal assíncrono nesta fase do
-projeto; **risco residual aceito**: sem outbox/retry, uma falha de publish nesse instante perde o
-evento permanentemente (a aposta existe no banco, mas nunca chega ao `stats-service`) — replay de
-`Idempotency-Key` não tenta republicar. Revisitar se o volume/criticidade justificar um
-mecanismo de outbox. Teste de contrato valida a mensagem publicada contra uma cópia vendorizada
-do schema (`src/test/resources/contracts/bet-created.schema.json` — ver `docs/API-CONTRACTS.md`
-seção "Cópias vendorizadas do schema").
+**Mecanismo de publicação (`feat-006`/`feat-008`)**: `RabbitBetEventPublisher`
+(`adapter/out/messaging/`) publica ambos os eventos no exchange `bets.events` (routing keys
+`bet.created`/`bet.settled`) já provisionado por `infra/rabbitmq/definitions.json` — nunca
+redeclarado em código; os dois compartilham o mesmo envelope genérico (`BetEventEnvelope<T>`) e
+o mesmo método privado de publish/log de erro. Mensagem marcada `PERSISTENT` (sobrevive a
+restart do broker, já que a fila de produção é durable) — ver `docs/CONVENTIONS.md` para o
+gotcha de `getDeliveryMode()` vs `getReceivedDeliveryMode()` descoberto testando isso. Falha ao
+publicar é logada (nível ERROR) e nunca propagada como erro HTTP — a durabilidade do registro da
+aposta/liquidação pesa mais que o sinal assíncrono nesta fase do projeto; **risco residual
+aceito**: sem outbox/retry, uma falha de publish nesse instante perde o evento permanentemente —
+replay de `Idempotency-Key` (`BetCreated`) e nova tentativa de liquidação já resolvida
+(`BetSettled`, bloqueada por `422`) não tentam republicar. Revisitar se o volume/criticidade
+justificar um mecanismo de outbox. Teste de contrato valida cada mensagem publicada contra a
+cópia vendorizada do schema correspondente (`src/test/resources/contracts/*.schema.json` — ver
+`docs/API-CONTRACTS.md` seção "Cópias vendorizadas do schema").
 
 ## Ver também
 
