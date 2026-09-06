@@ -104,15 +104,27 @@ Bean Validation). Header `Idempotency-Key` opcional: reenvio da mesma chave reto
 criada (200, não 201), sem checar se o corpo bate com o original (simplificação aceita, sem TTL).
 `GET /api/v1/bets/{id}` (recurso único, 404 `bet-not-found`) e `PATCH /api/v1/bets/{id}/status`
 (RF12) completam o ciclo mínimo — só `pending -> won|lost|void` é transição válida (422
-`invalid-status-transition` em qualquer outro caso, incluindo tentar voltar para `pending`). Esta
-feature não cria `BET_RESULT` nem calcula `profit`/atualiza saldo (RN02/RN03/RN05) — isso é
-`feat-005`, que reage à mesma transição de status.
+`invalid-status-transition` em qualquer outro caso, incluindo tentar voltar para `pending`).
 
-**Risco residual aceito**: `BetService.updateStatus` lê o status atual e só depois escreve (sem
-`WHERE status = 'pending'` atômico nem `@Version`) — duas chamadas `PATCH` concorrentes para a
-mesma aposta `pending` poderiam ambas passar a validação e a segunda sobrescrever a primeira
-(last-write-wins), sem nunca retornar `422`. Sem consequência hoje (não há `BET_RESULT`/`profit`
-associado ainda); revisitar quando `feat-005` passar a depender desta transição ser exatamente-uma-vez.
+## Liquidação de apostas e bankroll consolidado (`feat-005`)
+
+`PATCH /api/v1/bets/{id}/status` passou a exigir `X-User-Id` (401 `missing-caller-context`, mesmo
+padrão de `POST /api/v1/bets`) — vira `BET_RESULT.settledByUserId`. A transição de status deixou
+de ser "ler status atual, depois escrever" (residual TOCTOU aceito em `feat-004`) e virou um
+`UPDATE` atômico condicional (`WHERE status = 'pending'`, via `@Modifying @Query`) — só quem
+ganha a corrida muda o status; o perdedor recebe `422 invalid-status-transition` de verdade, nunca
+dado corrompido. Dentro da mesma transação (`@Transactional`, primeiro uso real deste mecanismo
+no serviço), calcula `profit` (RN02 `stake*odd-stake` para `won`, RN03 `-stake` para `lost`, `0`
+para `void`) e persiste `BET_RESULT` (1:1 com `BET` via `UNIQUE(bet_id)`, defesa em profundidade
+além da guarda atômica).
+
+`GET /api/v1/betting-houses` (`balance`) passou a somar também o profit líquido das apostas
+liquidadas daquela casa (RN01 "atualizado pelo resultado das apostas liquidadas", RN05
+"sincronização imediata") — `balance = initialBalance + depósitos - saques + profit líquido`,
+numa única query agregada por página (join implícito `BET_RESULT`/`BET`, `bet_result` não tem
+`bettingHouseId` direto). RF07 ("gerenciar bankroll") não ganhou endpoint de saldo consolidado
+próprio — nenhuma nota do vault documenta um; o total é a soma dos `balance` já retornados,
+responsabilidade do consumidor (ex.: `apps/web`).
 
 ## Histórico (RF08)
 

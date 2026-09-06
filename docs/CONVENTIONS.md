@@ -174,17 +174,26 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   o mesmo `validation-failed`.
 - **Atualizar uma linha já persistida (não criar)**: até `bets-service feat-004`, todas as
   features dos serviços Java só faziam `INSERT` (`save()` de uma entidade recém-construída,
-  `isNew=true`). Para um `UPDATE` de verdade (`JpaBetRepository.updateStatus`, `PATCH
-  /api/v1/bets/{id}/status`), **não** reconstruir a entidade via `new XJpaEntity(id, ...)` e
-  chamar `save()` — a instância nova nasce com `isNew=true` (nenhum `@PostLoad` rodou), e o
-  `Persistable` faz Spring Data chamar `entityManager.persist()`, tentando inserir uma linha com
-  PK já existente (constraint violation, não um update). O jeito certo: carregar a entidade via
+  `isNew=true`). Para um `UPDATE` de verdade, **não** reconstruir a entidade via
+  `new XJpaEntity(id, ...)` e chamar `save()` — a instância nova nasce com `isNew=true` (nenhum
+  `@PostLoad` rodou), e o `Persistable` faz Spring Data chamar `entityManager.persist()`,
+  tentando inserir uma linha com PK já existente (constraint violation, não um update). O jeito
+  certo para um update **incondicional** (sem risco de corrida importar): carregar a entidade via
   `jpaRepository.findById(id)` (isso roda `@PostLoad`, `isNew` vira `false`), mutar o campo
-  através de um método da própria entidade (não expor `@Setter` amplo — `BetJpaEntity` ganhou só
-  `void updateStatus(BetStatus)`, package-private) e salvar a MESMA instância carregada — aí sim
-  `Persistable.isNew()==false` faz Spring Data chamar `entityManager.merge()`. Reaproveitar este
-  padrão em `auth-service`/`stats-service` na primeira vez que precisarem atualizar uma linha
-  (não só criar/ler).
+  através de um método da própria entidade (não expor `@Setter` amplo) e salvar a MESMA instância
+  carregada — aí sim `Persistable.isNew()==false` faz Spring Data chamar `entityManager.merge()`.
+  **Correção em `bets-service feat-005`**: esse padrão (`findById` + mutar + `save`) tem uma
+  janela TOCTOU entre a leitura e a escrita — aceitável para um update sem efeito colateral
+  sensível, mas **não** para uma transição de estado guardada por uma condição de negócio (ex.:
+  `PATCH /api/v1/bets/{id}/status`, só válida a partir de `pending`) onde duas chamadas
+  concorrentes podem ambas passar a validação em memória antes de qualquer uma escrever. Nesse
+  caso, usar um `UPDATE` atômico condicional direto no banco: `@Modifying @Query("UPDATE
+  XJpaEntity x SET x.campo = :novo WHERE x.id = :id AND x.campo = :valorEsperado")` retornando o
+  número de linhas afetadas (`int`) — só quem "ganha" a corrida recebe `> 0`; o perdedor trata
+  como transição inválida, nunca sobrescreve em silêncio (`JpaBetRepository.transitionStatus`,
+  primeira query `@Modifying` do serviço). Reaproveitar em `auth-service`/`stats-service`: o
+  padrão simples (`findById`+mutar+`save`) para updates incondicionais, o `@Modifying` atômico
+  para qualquer transição de estado com condição de guarda.
 - **Entidade JPA com muitas colunas (`java:S107`, gate `feature -> develop` do SonarCloud)**:
   achado real em `bets-service feat-004` — `BetJpaEntity` (18 colunas) com um construtor
   posicional de 18 parâmetros reprovou o gate (`Constructor has 18 parameters, which is greater

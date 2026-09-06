@@ -73,6 +73,17 @@ código" em `docs/CONVENTIONS.md`).
   persistido. Comparar campos monetários com `isEqualByComparingTo(...)` (AssertJ) em vez de
   `contains`/`isEqualTo` sobre o objeto inteiro, ou extrair o campo e comparar à parte — vale para
   qualquer entidade futura com campo `BigDecimal` (`BET.stake`/`odd` em `feat-004`).
+- **`assertThatThrownBy(() -> ...)` — ZERO chamadas dentro do lambda além da que deve lançar**
+  (achado real, reincidente 3x em `bets-service feat-004`/`feat-005` antes de "grudar": regra
+  `java:S5778` do gate SonarCloud `feature -> develop`, invisível localmente e nos PRs de
+  subtask). Não é só `UUID.randomUUID()`/`BigDecimal.valueOf(...)`/construtor — **um getter de
+  record/objeto usado como argumento também conta** (`service.metodo(bet.id(), ...)` reprovou
+  mesmo com `bet` já sendo uma variável local, porque `.id()` em si é uma invocação). Regra
+  prática: todo argumento passado para a chamada dentro do lambda precisa já ser uma variável
+  local simples (sem `.metodo()`, sem `new X(...)`) declarada ANTES do `assertThatThrownBy` —
+  `UUID betId = bet.id(); assertThatThrownBy(() -> service.metodo(betId, valorJaConstruido))`.
+  Tratar como checklist ao escrever qualquer teste de exceção novo (não só lembrar se der erro no
+  CI) — reincidiu mesmo já documentado da primeira vez.
 
 ## Frontend (apps/web)
 
