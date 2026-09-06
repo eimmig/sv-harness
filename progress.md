@@ -1208,3 +1208,26 @@ em produção, não só em teste.
 `epic-004` continua `in-progress` (`feat-002`..`007` restam). Único epic de serviço de aplicação
 com múltiplos backlogs em paralelo elegíveis no momento: `epic-004` (`stats-service`, em
 andamento) e `epic-008` (`api-gateway`, ainda não iniciado).
+
+## Impedimento real resolvido com o usuário — `bets-service feat-010` fecha `epic-003` de novo (2026-09-06, mesmo dia)
+
+Antes de codificar `stats-service feat-002` (modelo OLAP), impedimento genuíno identificado: as
+tabelas de dimensão (`DIM_BETTING_HOUSE`/`DIM_SPORT`/`DIM_LEAGUE`/`DIM_MARKET`/`DIM_TIPSTER`) têm
+coluna `name`, mas o payload de `BetCreated`/`BetSettled` só carregava os IDs — sem chamada
+síncrona de `stats-service` de volta a `bets-service` (consistência eventual é intencional, ver
+`CLAUDE.md`), não havia como popular o nome. Pausado o trabalho e perguntado ao usuário; decisão:
+**estender os 2 schemas de evento** com `bettingHouseName`/`sportName`/`leagueName`/`marketName`
+(obrigatórios) e `tipsterName` (opcional), em vez de deixar a dimensão nascer sem nome ou fazer
+`stats-service` chamar `bets-service` de volta (as outras duas opções apresentadas).
+
+Trabalho cross-repo coordenado: `docs/contracts/*.schema.json`, `docs/API-CONTRACTS.md`,
+`docs/DATA-MODEL.md`, `docs/services/{bets-service,stats-service}.md` (este repositório,
+`sv-harness`) atualizados primeiro; depois `bets-service feat-010` (nova, reabre `epic-003`) —
+`findById` adicionado aos 5 repositórios de catálogo (só existiam `existsById`, achado do Plan
+Reviewer corrigindo a suposição inicial de que a consulta já existia), `BetDimensionNames`, e
+`BetService.resolveDimensionNames` chamado ao publicar; e por fim a cópia vendorizada do schema
+em `stats-service` (já em produção desde `feat-001.9`) resincronizada fora do ciclo normal daquele
+serviço, para não rejeitar as mensagens novas assim que `bets-service` passasse a publicá-las.
+
+`epic-003` fechado de novo (`feat-001..010` todos `done` em `bets-service`). Próximo passo:
+retomar `stats-service feat-002`, agora sem o bloqueio.
