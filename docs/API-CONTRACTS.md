@@ -33,9 +33,15 @@ e [[CONVENTIONS]] para arquitetura/código.
   400) para `page` negativo ou `size` não positivo; mais barato clampar no controller do que
   tratar a exceção. Mesmo padrão a reaproveitar em qualquer endpoint paginado novo (`bets-service
   feat-007`, `stats-service`).
-- **Filtros** (RF11, RN08): query params em inglês, nomeados igual ao domínio, não abreviados —
-  `?sport=football&league=brasileirao&market=over-under&from=2026-01-01&to=2026-01-31` — o
-  mesmo vocabulário usado em `bets-service` e `stats-service` para os mesmos conceitos.
+- **Filtros** (RF11, RN08): query params em inglês, nomeados igual ao campo do domínio (**com**
+  sufixo `Id` para referências a catálogo/entidade — `bettingHouseId`, `sportId`, `leagueId`,
+  `marketId`, `tipsterId` — não abreviados nem sem o sufixo), mais `from`/`to` para intervalo de
+  data: `?bettingHouseId=<uuid>&sportId=<uuid>&from=2026-01-01T00:00:00Z&to=2026-01-31T23:59:59Z`
+  — mesmo vocabulário usado em `bets-service` (`GET /api/v1/bets`, `feat-007`) e reaproveitável por
+  `stats-service` para os mesmos conceitos. Nomenclatura confirmada contra o código real já
+  enviado (`bets-service feat-003`, `TransactionsController.list`, parâmetro `bettingHouseId`) —
+  um exemplo anterior desta nota usava nomes sem o sufixo (`?sport=football`), nunca implementado
+  e corrigido aqui para não divergir do que o serviço realmente aceita.
 - **Idempotência do `POST /api/v1/bets`**: aceita um header opcional `Idempotency-Key`.
   Necessário porque `telegram-integration` pode reenviar a mesma mensagem em caso de retry do
   webhook — sem isso, uma falha de rede no bot pode duplicar uma aposta.

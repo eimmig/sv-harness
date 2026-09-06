@@ -205,6 +205,16 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   antes disso. Preferir este padrão (construtor recebendo o record de domínio inteiro) em vez de
   builder/Lombok assim que uma entidade JPA nova ultrapassar ~7 colunas, para não repetir o
   mesmo achado reativo em `auth-service`/`stats-service`.
+- **Método de `@Query` do Spring Data com muitos filtros opcionais (`java:S107`)**: achado real
+  em `bets-service feat-007` — `findFiltered(bettingHouseId, sportId, leagueId, marketId,
+  tipsterId, from, to, pageable)` (8 parâmetros) reprovou o mesmo gate. Como o método já é uma
+  interface do Spring Data (não dá pra "receber um record no construtor" como em `BetJpaEntity`),
+  a correção foi agrupar os filtros num único record de domínio (`BetFilter`, já existente para
+  o `port/in`) e referenciá-lo no JPQL via SpEL: `@Query("... :#{#filter.bettingHouseId()} ...")`
+  + `findFiltered(@Param("filter") BetFilter filter, Pageable pageable)` (2 parâmetros). SpEL do
+  Spring Data JPA chama o método de acesso do record diretamente (`#filter.campo()`, com
+  parênteses — não `#filter.campo`, que só funciona para getters JavaBean). Preferir este padrão
+  em qualquer método de repositório novo com mais de ~5 filtros opcionais combináveis.
 - **`com.networknt:json-schema-validator` — não pinar a versão mais recente sem checar a API**
   (achado real de `bets-service feat-006`): a versão `3.0.7` (a mais nova no Maven Central no
   momento) é uma reescrita completa da biblioteca — nenhuma das classes clássicas
@@ -232,6 +242,23 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   comum do português ("comum a todo evento..."). Não é bug de verdade, mas reprova o gate mesmo
   assim. Evitar a palavra "todo" (preferir "qualquer"/"cada"/"todos os") no início de comentário
   em código Java — vale para os 3 serviços Java, não só este.
+- **Filtro opcional `(:param IS NULL OR coluna >= :param)` sobre coluna `timestamp`/`date`/
+  numérica quebra no Postgres** (achado real de `bets-service feat-007`, `GET /api/v1/bets` e
+  `GET /api/v1/transactions`): `ERROR: could not determine data type of parameter $N`. Diferente
+  do mesmo padrão usado para colunas `UUID`/texto (`bettingHouseId`, `sportId` etc., já usado sem
+  problema desde `feat-003`/`feat-004`) — o Postgres não consegue inferir o tipo de um parâmetro
+  cujo **único** uso na query é um `? IS NULL` isolado, e é mais rígido para isso em tipos
+  temporais/numéricos do que em `uuid`/`text`. Corrigido trocando o padrão, só para os filtros de
+  intervalo (`from`/`to`), de `(:from IS NULL OR coluna >= :from)` para
+  `coluna >= COALESCE(:from, coluna)` — o parâmetro sempre aparece ao lado de uma coluna tipada,
+  nunca isolado; `coluna >= COALESCE(:from, coluna)` colapsa para `coluna >= coluna` (sempre
+  verdadeiro) quando `:from` é nulo. **Só é seguro quando a coluna é `NOT NULL`** (`betDate`/
+  `createdAt` são) — para uma coluna nullable (ex.: `tipsterId`), `COALESCE(:param, coluna) =
+  coluna` viraria `NULL = NULL` (nunca verdadeiro em SQL) e excluiria errado as linhas com a
+  coluna nula quando nenhum filtro é aplicado; nesses casos manter o padrão `IS NULL OR` original
+  (não reproduziu o erro em `tipsterId`/`bettingHouseId`, ambos `UUID`). Só descoberto rodando
+  `./init.sh` de verdade contra o Postgres real do Testcontainers, não na compilação — reaproveitar
+  para qualquer filtro de intervalo de data/número novo em `auth-service`/`stats-service`.
 - **Lombok + Java 25**: `maven-compiler-plugin` precisa de `annotationProcessorPaths` explícito
   apontando pro Lombok — só declarar a dependência (mesmo com escopo `provided`) não basta nesta
   combinação de `javac`/Lombok, o processamento de anotação é pulado em silêncio (sem erro, sem

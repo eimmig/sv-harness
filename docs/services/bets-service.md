@@ -126,12 +126,18 @@ numa única query agregada por página (join implícito `BET_RESULT`/`BET`, `bet
 próprio — nenhuma nota do vault documenta um; o total é a soma dos `balance` já retornados,
 responsabilidade do consumidor (ex.: `apps/web`).
 
-## Histórico (RF08)
+## Histórico (RF08, `feat-007`)
 
-`GET /api/v1/bets` e `GET /api/v1/transactions` são endpoints de leitura paginados (ver
-[[API-CONTRACTS]] seção "Convenções REST" para o envelope e os query params de filtro — mesmo
-vocabulário usado por [[stats-service]] para os filtros de dashboard, RF11/RN08). Alimentam a
-tela de histórico em [[web]] e servem como trilha de auditoria.
+`GET /api/v1/bets` (listagem, além do `GET /api/v1/bets/{id}` de `feat-004`) e
+`GET /api/v1/transactions` são endpoints de leitura paginados com filtros opcionais e
+combináveis (ver [[API-CONTRACTS]] seção "Convenções REST" para o envelope e os query params —
+mesmo vocabulário usado por [[stats-service]] para os filtros de dashboard, RF11/RN08):
+`bettingHouseId`/`sportId`/`leagueId`/`marketId`/`tipsterId` (só `/bets`) e `from`/`to` (ambos os
+endpoints, sobre `betDate`/`createdAt` respectivamente). Alimentam a tela de histórico em [[web]]
+e servem como trilha de auditoria. Uma única query JPQL por endpoint, com predicado condicional
+por filtro — **achado real**: `(:param IS NULL OR coluna >= :param)` quebra no Postgres para
+coluna `timestamp` (`could not determine data type of parameter`, mesmo padrão seguro para
+`UUID`) — corrigido com `coluna >= COALESCE(:param, coluna)`, ver `docs/CONVENTIONS.md`.
 
 ## Eventos publicados
 
