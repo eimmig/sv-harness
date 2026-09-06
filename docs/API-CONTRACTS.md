@@ -158,20 +158,24 @@ que mostram dois eventos separados, não um único evento reaproveitado:
   correspondente. Schema em `docs/contracts/bet-settled.schema.json`.
 
 **Nomes das dimensões denormalizados no payload** (achado real de `stats-service feat-002`,
-antes de qualquer código): `DIM_BETTING_HOUSE`/`DIM_SPORT`/`DIM_LEAGUE`/`DIM_MARKET`/
-`DIM_TIPSTER` (ver [[DATA-MODEL]]) têm coluna `name`, mas os IDs sozinhos (`bettingHouseId`,
-`sportId`, `leagueId`, `marketId`, `tipsterId`) não bastam para `stats-service` populá-la —
-`stats-service` só lê o evento, nunca chama `bets-service` de volta (consistência eventual é
-intencional, ver `CLAUDE.md` raiz). Por isso o payload de ambos os eventos ganhou os campos
-irmãos `bettingHouseName`/`sportName`/`leagueName`/`marketName` (obrigatórios, mesma
-obrigatoriedade dos IDs correspondentes) e `tipsterName` (opcional, acompanha `tipsterId`) —
-`bets-service` já tem esses nomes em mãos no momento de publicar (mesma consulta que valida a
-existência do catálogo antes de gravar a aposta), então é só encaminhar, sem custo extra de
-I/O. Mudança de contrato: `docs/contracts/*.schema.json` (`schemaVersion` continua `1` — aditivo,
-os dois campos eram opcionais... na verdade obrigatórios desde já, ver nota abaixo) e os dois
-serviços atualizados no mesmo ciclo de trabalho (não no mesmo commit — repositórios
-diferentes): `bets-service` ganha uma feature nova para popular os campos no publicador;
-`stats-service feat-002`/`feat-003` já nascem consumindo o schema já estendido.
+antes de qualquer código, implementado em `bets-service feat-010`):
+`DIM_BETTING_HOUSE`/`DIM_SPORT`/`DIM_LEAGUE`/`DIM_MARKET`/`DIM_TIPSTER` (ver [[DATA-MODEL]]) têm
+coluna `name`, mas os IDs sozinhos (`bettingHouseId`, `sportId`, `leagueId`, `marketId`,
+`tipsterId`) não bastam para `stats-service` populá-la — `stats-service` só lê o evento, nunca
+chama `bets-service` de volta (consistência eventual é intencional, ver `CLAUDE.md` raiz). Por
+isso o payload de ambos os eventos ganhou os campos irmãos
+`bettingHouseName`/`sportName`/`leagueName`/`marketName` (obrigatórios, mesma obrigatoriedade dos
+IDs correspondentes) e `tipsterName` (opcional, acompanha `tipsterId`). Consulta adicional, não
+gratuita: a validação de existência antes de gravar a aposta (`BetService.validateReferences`)
+usava só `existsById` (boolean) — não trazia o nome. `feat-010` acrescentou `findById` aos 5
+repositórios de catálogo (ports + adapters) e um `resolveDimensionNames` que busca as 5 entidades
+por PK no momento de publicar (`create()` e `updateStatus()`) — uma consulta a mais por PK em
+tabela pequena (catálogo), não um I/O caro nem síncrono cross-service, só mais específico do que
+o achado original sugeria. Mudança de contrato: `docs/contracts/*.schema.json` (`schemaVersion`
+continua `1` — ver nota abaixo) e os dois serviços atualizados no mesmo ciclo de trabalho (não no
+mesmo commit — repositórios diferentes): `bets-service feat-010` popula os campos no publicador;
+`stats-service feat-002`/`feat-003` consomem o schema já estendido (a cópia vendorizada de
+`feat-001.9` foi resincronizada com os campos novos antes de `feat-002` começar).
 
 > **Nota sobre `schemaVersion`**: mesmo os dois campos sendo `required` no schema (não
 > opcionais), a mudança é tratada como aditiva e sem bump de `schemaVersion` porque nenhuma
