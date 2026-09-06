@@ -165,12 +165,22 @@ contrato (ver [[TESTING]]) e este parágrafo no mesmo commit.
 repositórios Git separados, e a pipeline de CI de cada um só faz checkout do próprio repositório
 (sem acesso aos `docs/` da raiz). Por isso, o teste que valida a mensagem publicada/consumida
 contra o schema real (exigido pela Definição de Pronto de ambos os serviços) precisa de uma cópia
-do `.schema.json` dentro do próprio repositório (`bets-service`: `src/test/resources/contracts/`,
-achado real de `feat-006`) — mesmo padrão de duplicação já aceito para `.github/scripts` (ver
-[[CI-CD]]). **Qualquer mudança num schema em `docs/contracts/` atualiza também as cópias
-vendorizadas nos repositórios que os testam**, no mesmo commit/PR daquele repositório (não
-simultâneo ao commit da raiz, já que são repositórios diferentes — mas a próxima sessão que tocar
-aquele schema não pode esquecer a cópia).
+do `.schema.json` dentro do próprio repositório — mesmo padrão de duplicação já aceito para
+`.github/scripts` (ver [[CI-CD]]). O diretório da cópia depende de **quem lê o schema e quando**:
+- `bets-service` (produtor): só o **teste** valida a mensagem já publicada contra o schema —
+  produção nunca lê o arquivo. Cópia em `src/test/resources/contracts/` (achado real de
+  `feat-006`).
+- `stats-service` (consumidor): a **produção** precisa validar cada mensagem recebida contra o
+  schema correspondente ao `eventType` antes de decidir processar ou deixar ir para a DLQ — não é
+  só uma verificação de teste. Cópia em `src/main/resources/contracts/` (achado real de
+  `feat-001.9`), lida em runtime pelo listener; os testes reaproveitam a mesma cópia sem
+  duplicá-la de novo em `src/test/resources/`, já que o Maven inclui `src/main/resources` no
+  classpath de teste automaticamente.
+
+**Qualquer mudança num schema em `docs/contracts/` atualiza também as cópias vendorizadas nos
+repositórios que os leem/testam**, no mesmo commit/PR daquele repositório (não simultâneo ao
+commit da raiz, já que são repositórios diferentes — mas a próxima sessão que tocar aquele schema
+não pode esquecer a cópia, em nenhum dos dois repositórios).
 
 Envelope (idêntico para os dois — todo evento do sistema, presente ou futuro, usa este
 envelope, só `eventType` e `payload` mudam):
