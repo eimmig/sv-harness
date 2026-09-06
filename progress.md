@@ -1126,3 +1126,40 @@ escapado dentro de um literal JPQL (query reescrita sem indentação dentro da s
 Plan Reviewer (2 achados corrigidos no plano), Delivery Reviewer, Test Suite Auditor e Persistence
 Auditor — `PASS` nos quatro. `epic-003` continua `in-progress` — próxima feature elegível é
 `feat-004` (RF04/RF12, registro e ciclo de vida da aposta).
+
+## `epic-003` (bets-service) concluído — feat-004..009 entregues, backlog fechado (2026-09-06)
+
+Sessão de continuação autônoma ("continuar até encontrar dúvida ou impedimento"), sem nova
+solicitação do usuário. Todas as features restantes do backlog de `bets-service` foram
+implementadas, revisadas e mergeadas em sequência, cada uma seguindo o ciclo completo
+(`Plan Reviewer` → subtasks/Jira → PRs subtask→story→develop → skills de auditoria → `evidence`):
+
+- **feat-004** (RF04/RF12 — registro e ciclo de vida da aposta): entidade `BET`, `POST`/`GET`/
+  `PATCH /api/v1/bets`, idempotência via header, transição de status atômica.
+- **feat-005** (RF06/RF07 — liquidação e bankroll): `BET_RESULT`, cálculo de `profit`, transição
+  condicional via `@Modifying @Query` (corrige um TOCTOU real do `findById`+`save`), saldo
+  consolidado em `GET /api/v1/betting-houses`.
+- **feat-006** (evento `BetCreated`): publicação via RabbitMQ/Spring AMQP, envelope versionado,
+  validação de mensagem contra o JSON Schema vendorizado.
+- **feat-008** (evento `BetSettled`): mesmo mecanismo, payload sem os campos descritivos de `BET`.
+- **feat-007** (RF08 — histórico paginado): `GET /api/v1/bets` novo e `GET /api/v1/transactions`
+  com filtros `from`/`to`, um bug real de Postgres corrigido (`could not determine data type of
+  parameter` em filtro `IS NULL` isolado sobre coluna `timestamp` — trocado por
+  `COALESCE(:param, coluna)`).
+- **feat-009** (fechamento formal do pipeline de CI): sem código novo — só corrigiu a `description`
+  desatualizada da própria feature ("5 passos" → 6, mesmo achado já visto em
+  `auth-service/feat-007`) e formalizou `evidence`/`done`.
+
+**Defeitos reais encontrados e corrigidos ao longo da sessão** (documentados em `docs/CONVENTIONS.md`/
+`docs/TESTING.md`/`docs/CI-CD.md`, ver `services/bets-service/progress.md` para o detalhe por
+feature): 2 ocorrências de `java:S107` (construtor de entidade JPA e método `@Query` com muitos
+parâmetros — ambas resolvidas consolidando os parâmetros num record de domínio já existente),
+`java:S5778` (lambda com múltiplas invocações em `assertThatThrownBy`, recorrente 3 vezes),
+downgrade de `com.networknt:json-schema-validator` de `3.0.7` (reescrita sem API clássica) para
+`1.5.9`, mensagem AMQP não marcada `PERSISTENT` (accessor errado no teste mascarava o bug), e o
+bug de `COALESCE` do Postgres acima.
+
+`epic-003` marcado `done` em `feature_list.json` (raiz) — todas as 9 features de
+`services/bets-service/feature_list.json` estão `done`. `./init.sh` da raiz e do serviço verdes.
+Único epic de serviço de aplicação fechado até agora além de `epic-001`/`epic-002`
+(`auth-service`).
