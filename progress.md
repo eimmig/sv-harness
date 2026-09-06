@@ -1163,3 +1163,48 @@ bug de `COALESCE` do Postgres acima.
 `services/bets-service/feature_list.json` estão `done`. `./init.sh` da raiz e do serviço verdes.
 Único epic de serviço de aplicação fechado até agora além de `epic-001`/`epic-002`
 (`auth-service`).
+
+## `epic-004` (stats-service) iniciado — `feat-001` entregue (2026-09-06, mesmo dia)
+
+Continuação da mesma sessão autônoma. Com `bets-service` fechado, `epic-004` (`stats-service`) e
+`epic-008` (`api-gateway`) ficaram ambos elegíveis (dependências satisfeitas); escolhido
+`epic-004` por reaproveitar o contexto fresco dos eventos `BetCreated`/`BetSettled` recém-fechados
+em `bets-service`. Reivindicado em `feature_list.json` (raiz).
+
+`stats-service feat-001` (Setup do projeto + consumidor RabbitMQ) entregue via 10 subtasks
+(story SV-110): bootstrap Spring Boot 4.1.1/Java 25/Maven (mesmo `groupId com.stakevault.betting`
+compartilhado com `auth-service`/`bets-service`, gerado via Spring Initializr real —
+`curl` para `start.spring.io`), Postgres dev/test/prod, schema-per-tenant (Flyway lazy) + filtro
+`X-Tenant-Id` + rota admin `X-Admin-Api-Key` (mesmo mecanismo de `bets-service feat-001.4`), gate
+JaCoCo 80%, i18n (3 locales), health checks do Actuator, `.env.example`+logging estruturado, e o
+consumidor RabbitMQ dos eventos `BetCreated`/`BetSettled` — sem persistência ainda
+(`FACT_BET`/`PROCESSED_EVENT` ficam para `feat-002`/`feat-003`, conforme a própria description da
+feature já previa).
+
+**Dois achados reais de execução, ambos documentados em `docs/CONVENTIONS.md`**:
+1. `spring-boot-starter-amqp` já no classpath desde o bootstrap (o consumidor é escopo do próprio
+   `feat-001`, diferente de `bets-service` onde o publicador só chegou em `feat-006`) ativa o
+   `RabbitHealthIndicator` automaticamente — derrubou a liveness (`/actuator/health`, que agrega
+   todos os indicators) antes de existir conexão RabbitMQ real. Corrigido temporariamente com
+   `management.health.rabbit.enabled: false`, revertido quando o consumidor real foi conectado.
+2. **O mais significativo**: uma falha de validação de schema classificada como `RuntimeException`
+   comum é reenfileirada indefinidamente pelo error handler padrão do Spring AMQP — medido em
+   teste real, 128+ redeliveries em ~10s, porque o `x-delivery-limit` da quorum queue só é
+   respeitado quando o container para de pedir `requeue`. Corrigido fazendo as exceções de
+   validação estenderem `AmqpRejectAndDontRequeueException` — correto também semanticamente (erro
+   de schema é permanente, nunca passa numa retentativa) e reserva o retry automático
+   (`x-delivery-limit`) para falha genuinamente transitória.
+
+Gate `feature→develop` (PR #10) reprovou 4 achados reais do SonarCloud antes do merge —
+`java:S2699` BLOCKER (teste de integração copiado verbatim de `bets-service` sem nenhuma
+asserção, nunca pego lá porque PRs de subtask pulam SonarCloud de propósito), `S5838`, `S1130`,
+`S2629` — todos corrigidos.
+
+`docs/API-CONTRACTS.md` ganhou uma distinção nova: a cópia vendorizada do schema em
+`bets-service` (produtor) vive só em `src/test/resources/` (validação só em teste), mas em
+`stats-service` (consumidor) precisa estar em `src/main/resources/` porque a validação acontece
+em produção, não só em teste.
+
+`epic-004` continua `in-progress` (`feat-002`..`007` restam). Único epic de serviço de aplicação
+com múltiplos backlogs em paralelo elegíveis no momento: `epic-004` (`stats-service`, em
+andamento) e `epic-008` (`api-gateway`, ainda não iniciado).
