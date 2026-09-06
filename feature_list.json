@@ -38,8 +38,8 @@
         "epic-009",
         "epic-002"
       ],
-      "status": "in-progress",
-      "evidence": "Reaberto em 2026-09-06 (feat-010 nova: denormalizar nomes das dimensoes em BetCreated/BetSettled, achado real de stats-service feat-002, decidido com o usuario - ver docs/API-CONTRACTS.md). feat-001..009 continuam done (entregues 2026-09-06, story SV-107 foi a ultima) - historico completo em services/bets-service/feature_list.json e services/bets-service/progress.md.",
+      "status": "done",
+      "evidence": "Todas as 10 features de services/bets-service/feature_list.json estao done (feat-001..010, ultima fechada em 2026-09-06, story SV-121 - denormalizar nomes das dimensoes em BetCreated/BetSettled, mudanca de contrato cross-service decidida com o usuario a partir de um achado real de stats-service feat-002). ./init.sh do servico e da raiz verdes. Ver services/bets-service/feature_list.json e services/bets-service/progress.md para o detalhe por feature.",
       "harness": "services/bets-service/"
     },
     {
