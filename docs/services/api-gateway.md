@@ -31,9 +31,10 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
 ## Responsabilidades
 
 1. **Validação de token PASETO**: toda rota autenticada exige um token PASETO válido (emitido
-   por [[auth-service]]). Token ausente/inválido/expirado → `401`, `application/problem+json`
-   (`title`/`detail` localizados por `Accept-Language`, ver [[API-CONTRACTS]] seção
-   "Internacionalização (i18n)").
+   por [[auth-service]]), enviado no header `Authorization: Bearer <token>` (ver
+   [[API-CONTRACTS]] seção "Confiança entre serviços"). Token ausente/inválido/expirado → `401`,
+   `application/problem+json` (`title`/`detail` localizados por `Accept-Language`, ver
+   [[API-CONTRACTS]] seção "Internacionalização (i18n)").
 2. **Injeção de `X-User-Id`/`X-Tenant-Id`**: após validar o token, injeta o `userId` e o
    `tenantId` (slug do tenant) extraídos dele como headers `X-User-Id`/`X-Tenant-Id` antes de
    rotear. Nunca aceita esses headers vindo do cliente — sempre derivados aqui. **Os dois

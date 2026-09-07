@@ -123,8 +123,13 @@ o código-fonte do outro serviço.
 > injeta **dois** headers distintos — não confundir os dois nem tratá-los como intercambiáveis.
 
 - O **[[api-gateway]]** (`epic-008`, `services/api-gateway/`) é o único ponto que valida o token
-  PASETO. Ao validar, injeta dois headers na requisição antes de rotear para
-  `bets-service`/`stats-service`:
+  PASETO. O cliente (web ou qualquer chamador autenticado por usuário) envia o token no header
+  padrão **`Authorization: Bearer <token>`** — convenção HTTP usual para credencial de usuário,
+  reservada para esse caso; os headers `X-Admin-Api-Key`/`X-Service-Key` abaixo continuam
+  dedicados aos dois caminhos que não são "usuário logado com token PASETO" (decisão implícita
+  ao criar `api-gateway feat-002`, nunca antes escrita nesta nota — nenhum outro documento do
+  vault fixava o transporte do token até este ponto). Ao validar, injeta dois headers na
+  requisição antes de rotear para `bets-service`/`stats-service`:
   - `X-User-Id`: qual usuário fez a chamada. **Persistido como trilha de auditoria** (decisão de
     2026-08-02, ver [[DECISIONS-LOG]]): `BET.createdByUserId` e `BET_RESULT.settledByUserId` em
     [[bets-service]] gravam esse valor (ver [[DATA-MODEL]]), e o envelope de evento (seção
