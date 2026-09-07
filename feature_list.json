@@ -50,8 +50,8 @@
         "epic-009",
         "epic-003"
       ],
-      "status": "in-progress",
-      "evidence": "",
+      "status": "done",
+      "evidence": "Todas as 7 features de services/stats-service/feature_list.json estao done (feat-001..007, ultima fechada em 2026-09-07). feat-001 (setup + consumidor RabbitMQ), feat-002 (modelo OLAP + idempotencia), feat-003 (consumo real dos eventos - insert/upsert em FACT_BET), feat-004 (RF09 - calculo de ROI/taxa de acerto), feat-005 (cache Redis cache-aside com invalidacao real no consumo do evento - decisao do usuario sobre so BetSettled evictar, RN06), feat-006 (RF11 - GET /api/v1/statistics com 7 filtros dinamicos, resposta em bundle unico - decisao do usuario), feat-007 (fechamento formal do pipeline de CI, achado tardio de feature esquecida no planejamento inicial do fechamento do epic). Dois achados de arquitetura resolvidos com o usuario nesta sessao (invalidacao de cache em feat-005, formato de resposta do endpoint em feat-006), varios achados reais de implementacao corrigidos antes de cada merge (erro de inferencia de tipo do Postgres em CAST/FUNCTION, SonarCloud java:S107/S1192, teste de void nao coberto, mes-vazio-nunca-cacheado). ./init.sh do servico e da raiz verdes. Ver services/stats-service/feature_list.json e services/stats-service/progress.md para o detalhe por feature.",
       "harness": "services/stats-service/"
     },
     {

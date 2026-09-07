@@ -1231,3 +1231,51 @@ serviço, para não rejeitar as mensagens novas assim que `bets-service` passass
 
 `epic-003` fechado de novo (`feat-001..010` todos `done` em `bets-service`). Próximo passo:
 retomar `stats-service feat-002`, agora sem o bloqueio.
+
+## `epic-004` (stats-service) concluído — feat-002..007 entregues, backlog fechado (2026-09-07)
+
+Continuação da mesma sessão autônoma (instrução padrão do usuário: continuar implementando até
+encontrar dúvida ou impedimento real). `feat-002`/`feat-003` já estavam em andamento quando esta
+sessão retomou o trabalho; `feat-004`, `feat-005`, `feat-006` e `feat-007` foram implementadas do
+zero, cada uma com pelo menos um achado real corrigido antes do merge.
+
+- **`feat-004` (RF09 — cálculo de métricas)**: `FactBetRepository` ganha agregação bruta (overall
+  + segmentado por sport/market/betting-house) via JPQL, join explícito por condição (as
+  dimensões não têm `@ManyToOne`). `CalculateMetricsService` calcula ROI/taxa de acerto (RN04/
+  RN09) a partir do agregado — divisão por zero retorna `ZERO`, não exceção. Achado do
+  self-review: teste de agregação não cobria explicitamente o status `void` (RN06 o inclui ao
+  lado de `won`/`lost`), corrigido antes do fechamento.
+- **`feat-005` (cache Redis cache-aside)**: primeiro cache do projeto. Divergência real entre
+  `docs/ARCHITECTURE.md` (fluxo já dizia que `stats-service` "atualiza o cache Redis" ao consumir
+  evento) e a `description` original da feature (só cache-aside puro, sem invalidação) —
+  **impedimento real escalado ao usuário via `AskUserQuestion`**: sem invalidação, o dashboard
+  mostraria métricas desatualizadas por todo o TTL após uma aposta ser liquidada. Usuário
+  escolheu cache-aside **com** invalidação no consumo do evento. Implementação revelou um
+  segundo achado: só `BetSettled` precisa evictar — `BetCreated` insere `status=pending`, e RN06
+  exclui `pending` de toda agregação, então aquele insert é invisível pras métricas cacheadas
+  (evictar ali seria desperdício). TTL de segurança de 1h (rede de segurança, não regra de
+  negócio). Achado adicional do self-review: mês sem nenhuma aposta liquidada nunca ficava em
+  cache, forçando recomputo da série inteira a cada consulta.
+- **`feat-006` (RF11 — `GET /api/v1/statistics`)**: RF11/RN08 já definiam os filtros (query
+  params convencionados em `docs/API-CONTRACTS.md`), mas nenhuma nota fixava o **formato de
+  resposta** — contrato externo que `apps/web` (ainda não construído) vai consumir. **Segundo
+  impedimento real escalado ao usuário via `AskUserQuestion`**: 3 opções (bundle único, resposta
+  mínima com `groupBy`, endpoints separados por segmento) — usuário escolheu bundle único
+  (`{overall, bySport, byMarket, byBettingHouse, monthly}`), coerente com `docs/services/web.md`
+  ("cada mudança de filtro é uma única consulta a esta rota"). `StatisticsFilter` substituiu as
+  assinaturas sem parâmetro de `feat-004`/`feat-005` (uma mecânica só, não dois conjuntos
+  paralelos). Dois achados reais de implementação: Postgres não infere o tipo de um parâmetro
+  `null` usado só dentro de `CAST`/`FUNCTION` (corrigido com limites-sentinela de data em vez de
+  outro `IS NULL OR`); SonarCloud `java:S107` (métodos com mais de 7 parâmetros, consolidados num
+  único parâmetro via SpEL).
+- **`feat-007` (fechamento formal do pipeline de CI)**: sem código/workflow novo — o pipeline de
+  6 passos já rodava em produção desde `feat-001.1`. Achado tardio de planejamento: esta feature
+  não estava no escopo que a sessão tinha em mente ao fechar o epic, só percebida ao reler o
+  `feature_list.json` completo do serviço antes de declarar `epic-004` concluído — mesma lição já
+  registrada para `bets-service feat-007` (a description de uma feature de fechamento formal
+  também pode ficar desatualizada, e o próprio backlog precisa ser relido por inteiro, não só
+  presumido a partir da memória da sessão).
+
+`epic-004` marcado `done` em `feature_list.json` (raiz) — todas as 7 features de
+`services/stats-service/feature_list.json` estão `done`. `./init.sh` da raiz e do serviço verdes.
+Ver `services/stats-service/progress.md` para o detalhe por feature.
