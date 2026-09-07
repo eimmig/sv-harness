@@ -102,13 +102,36 @@ Chaves padronizadas (inglês, mesma decisão de nomenclatura técnica — ver [[
 
 - `tenant:{tenantId}:dashboard:consolidated` — ROI total, taxa de acerto macro, saldo unificado.
 - `tenant:{tenantId}:stats:monthly:{year}_{month}` — série histórica para gráficos de linha.
-- `tenant:{tenantId}:segment:{sport|market}` — ranking de performance por segmento.
+- `tenant:{tenantId}:segment:{sport|market|house}` — ranking de performance por segmento.
 
 > **Corrigido em 2026-08-02** (ver [[DECISIONS-LOG]]): as chaves eram `user:{id}:...`, coerente
 > com o modelo antigo (tenant = usuário). Como `FACT_BET` é isolado por schema de **tenant**, não
 > tem coluna de usuário, e é compartilhado por todos os usuários daquela organização, a chave
 > correta é por `tenantId`, não por `userId` — do contrário dois usuários do mesmo tenant veriam
 > caches (e portanto dashboards) diferentes sem motivo.
+
+> **Implementado em `feat-005`**: `MetricsCacheRepository` (`domain/port/out`) não recebe o
+> tenant como parâmetro em nenhum método — o adapter Redis (`RedisMetricsCacheRepository`)
+> resolve o slug internamente via `TenantContextHolder.current().slug()`, a mesma simetria que
+> `TenantIdentifierResolver` já usa pra rotear o schema do Hibernate. O segmento `house` (casa de
+> apostas) foi acrescentado ao padrão de chave original (que só citava `sport|market`) — RN09 já
+> exige ROI por mercado/esporte/**casa**, e `feat-004` já implementava `calculateByBettingHouse`,
+> então deixar aquele segmento sem cache seria uma assimetria sem motivo. `GetDashboardMetricsService`
+> (`application`) orquestra o cache-aside: hit no Redis responde direto, miss chama
+> `CalculateMetricsUseCase` e grava antes de retornar (uma consulta a `stats:monthly:{year}_{month}`
+> ausente recalcula e cacheia a série inteira de uma vez, aproveitando pra aquecer os outros
+> meses). TTL de segurança de 1h em toda gravação — não é regra de negócio (nenhum RNF define
+> TTL), é rede de segurança contra uma invalidação esquecida.
+>
+> **Invalidação no consumo do evento, não só TTL** (decisão do usuário, 2026-09-07, resolvendo
+> uma divergência real entre [[ARCHITECTURE]], cujo fluxo já dizia que `stats-service` "atualiza
+> o cache Redis" ao processar o evento, e o backlog original desta feature, que só descrevia
+> cache-aside puro): sem invalidação, uma aposta liquidada só refletiria no dashboard depois do
+> TTL inteiro expirar. **Só `BetSettled` evicta** as 5 chaves do tenant (incluindo o mês
+> específico da liquidação) — `BetCreated` nunca evicta: ele só insere `FACT_BET` com
+> `status=pending`, e RN06 exclui `pending` de toda agregação, então aquele insert é invisível
+> para qualquer métrica cacheada (evictar ali seria desperdício, sem nenhuma mudança de valor).
+> Achado real durante a implementação, corrigindo a premissa inicial do plano.
 
 Meta de performance (RNF03): resposta de dashboard < 300 ms (depende do cache estar quente).
 
