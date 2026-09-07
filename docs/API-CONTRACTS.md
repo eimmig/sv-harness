@@ -54,12 +54,19 @@ e [[CONVENTIONS]] para arquitetura/código.
   ```json
   {
     "overall": { "totalStaked": 1000.00, "netProfit": 150.00, "roi": 0.15, "winRate": 0.55, "settledCount": 42 },
-    "bySport": [ { "dimensionId": "...", "dimensionName": "Soccer", "totalStaked": 600.00, "netProfit": 90.00, "roi": 0.15, "winRate": 0.55, "settledCount": 25 } ],
-    "byMarket": [ { "dimensionId": "...", "dimensionName": "Over/Under", "totalStaked": 400.00, "netProfit": 60.00, "roi": 0.15, "winRate": 0.55, "settledCount": 17 } ],
-    "byBettingHouse": [ { "dimensionId": "...", "dimensionName": "Bet365", "totalStaked": 1000.00, "netProfit": 150.00, "roi": 0.15, "winRate": 0.55, "settledCount": 42 } ],
-    "monthly": [ { "year": 2026, "month": 1, "totalStaked": 200.00, "netProfit": 30.00, "roi": 0.15, "winRate": 0.5, "settledCount": 8 } ]
+    "bySport": [ { "dimensionId": "...", "dimensionName": "Soccer", "metrics": { "totalStaked": 600.00, "netProfit": 90.00, "roi": 0.15, "winRate": 0.55, "settledCount": 25 } } ],
+    "byMarket": [ { "dimensionId": "...", "dimensionName": "Over/Under", "metrics": { "totalStaked": 400.00, "netProfit": 60.00, "roi": 0.15, "winRate": 0.55, "settledCount": 17 } } ],
+    "byBettingHouse": [ { "dimensionId": "...", "dimensionName": "Bet365", "metrics": { "totalStaked": 1000.00, "netProfit": 150.00, "roi": 0.15, "winRate": 0.55, "settledCount": 42 } } ],
+    "monthly": [ { "year": 2026, "month": 1, "metrics": { "totalStaked": 200.00, "netProfit": 30.00, "roi": 0.15, "winRate": 0.5, "settledCount": 8 } } ]
   }
   ```
+  Cada item de `bySport`/`byMarket`/`byBettingHouse`/`monthly` aninha as métricas sob `metrics`
+  (em vez de achatadas ao lado de `dimensionId`/`dimensionName`/`year`/`month`) — reaproveita os
+  mesmos `record`s de domínio já usados internamente desde `feat-004`/`feat-005`
+  (`SegmentedBetMetrics`, `MonthlyBetMetrics`), sem duplicar um DTO HTTP só para achatar o
+  formato. Achado do self-review de `feat-006.3`: o exemplo apresentado ao usuário na decisão do
+  formato (`AskUserQuestion`, acima) mostrava os campos achatados só para ilustrar a escolha
+  *bundle único vs. endpoints separados* — a resposta real, aninhada, não muda essa decisão.
   Sem nenhum dos 7 filtros, a resposta vem do cache-aside de `feat-005` (RNF03, meta < 300 ms com
   cache quente); qualquer filtro presente bypassa o cache (as chaves só cobrem a vista sem filtro
   nenhum por tenant) e calcula direto contra `FACT_BET` — ver [[stats-service]].
