@@ -1279,3 +1279,49 @@ zero, cada uma com pelo menos um achado real corrigido antes do merge.
 `epic-004` marcado `done` em `feature_list.json` (raiz) — todas as 7 features de
 `services/stats-service/feature_list.json` estão `done`. `./init.sh` da raiz e do serviço verdes.
 Ver `services/stats-service/progress.md` para o detalhe por feature.
+
+## `epic-008` (api-gateway) iniciado — `feat-001` fechada (2026-09-07)
+
+`epic-002`/`epic-003`/`epic-004` já `done`; único epic elegível era `epic-008` (deps `epic-009`/
+`epic-002`, ambos `done`). Antes de reivindicar, commit pendente de sessão anterior em
+`docs/API-CONTRACTS.md` (correção de `feat-006.3` de `stats-service`, nunca commitado) foi
+verificado contra o código real e commitado primeiro, deixando o repositório limpo.
+
+**Lacuna real encontrada antes de codificar `feat-001`**: `docs/OBSERVABILITY-AND-CONFIG.md`
+atribui a `api-gateway` gerar/propagar `X-Correlation-Id`, e `bets-service` já documenta o campo
+`correlationId` do envelope de evento como pendente até esse filtro existir — mas nenhuma das 5
+features originais do backlog (`feat-001..005`) cobria isso. Decisão do usuário
+(`AskUserQuestion`): nova `feat-006` dedicada, em vez de embutir em `feat-002` ou adiar.
+
+**Decisão tomada com o usuário antes de codificar**: `api-gateway` usa **Spring Cloud Gateway
+Server WebMVC** (bloqueante/servlet), não o Gateway reativo/WebFlux — mantém a mesma pilha
+síncrona dos outros 3 serviços Java em vez de introduzir o único serviço assíncrono do projeto.
+Registrado em `docs/DECISIONS-LOG.md` (2026-09-07).
+
+`feat-001` (Setup do projeto) implementada e mergeada em `develop` — bootstrap Spring Boot
+4.1.1/Java 25/Maven, pacotes `config/filter/route` (sem hexagonal), gate JaCoCo 80% (real 100%
+na única classe com lógica, `LocaleConfig`), scaffold de i18n (`messages.properties` base desde
+o início, evitando o gotcha de `auth-service feat-003.6`), health checks do Actuator
+(liveness+readiness testados via HTTP real), logging estruturado ECS. 6 subtasks (SV-148..153,
+story SV-147).
+
+**Dois achados reais corrigidos durante a implementação**, ambos documentação desatualizada:
+1. `services/api-gateway/CLAUDE.md` ainda sugeria o pacote com o groupId antigo
+   (`com.eduardoimmig.betting`), nunca atualizado após a correção para `com.stakevault.betting`
+   em `auth-service feat-001` — pego pelo Plan Review antes de codificar.
+2. `docs/CI-CD.md` já alertava explicitamente ("mesma armadilha latente ainda não corrigida em
+   `sv-api-gateway`/`sv-stats-backend`") que o `ci.yml` deste serviço tinha 3 armadilhas de
+   sequenciamento de subtask conhecidas (i18n guardado só por `pom.xml`, goal solto do JaCoCo,
+   atalho do `sonar:sonar`) — o Plan Review desta sessão buscou por palavra-chave na nota em vez
+   de lê-la inteira e não pegou o aviso; só percebido quando o PR de `feat-001.1` quebrou de
+   verdade no passo de i18n. Corrigido reativamente, portando o `ci.yml` já endurecido de
+   `stats-service`. `docs/CI-CD.md` atualizado para fechar a pendência (era o último dos 6
+   repositórios de aplicação com essa lacuna).
+
+Delivery Reviewer: `PASS`. Test Suite Auditor: `CONCERNS` — dois achados aceitos como diferidos
+para `feat-002` (mesmo tradeoff já aceito em `auth-service feat-001.5`: nenhuma exceção de
+negócio real existe ainda para localizar de verdade, então `MessagesTest`/`LocaleConfigTest`
+provam o mecanismo isoladamente, não via o bean real do Spring numa resposta HTTP). `./init.sh`
+da raiz e do serviço verdes. `epic-008` continua `in-progress` (raiz) — `feat-002..006` de
+`api-gateway` seguem `not-started`. Ver `services/api-gateway/progress.md` para o detalhe
+completo por subtask.
