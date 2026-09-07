@@ -1325,3 +1325,30 @@ provam o mecanismo isoladamente, não via o bean real do Spring numa resposta HT
 da raiz e do serviço verdes. `epic-008` continua `in-progress` (raiz) — `feat-002..006` de
 `api-gateway` seguem `not-started`. Ver `services/api-gateway/progress.md` para o detalhe
 completo por subtask.
+
+## `api-gateway feat-002` fechada — primeiro filtro de autenticação real do serviço (2026-09-07, mesmo dia)
+
+Continuação da mesma sessão, dentro de `epic-008`. Decisão tomada com o usuário antes de
+codificar: token PASETO transportado em `Authorization: Bearer <token>` — nenhuma nota do vault
+fixava isso antes (achado real, fechado em `docs/API-CONTRACTS.md` "Confiança entre serviços").
+
+`PasetoAuthenticationFilter` implementado e mergeado em `develop` — decripta via `Paseto.decrypt`
+(gotcha documentado: a biblioteca não tem um único tipo de exceção pra token inválido, confirmado
+via `javap`), valida claims (`userId`/`tenantId` presentes, `exp` estritamente no futuro), injeta
+`X-User-Id`/`X-Tenant-Id` via `ResolvedIdentityRequestWrapper` (nunca repassa `Authorization`
+nem aceita identidade do cliente). 4 subtasks (SV-155..158, story SV-154).
+
+**Achados reais corrigidos**: 4 pelo `/code-review` durante a implementação (NPE em claim nula,
+falta de validação de claims presentes, `Authorization` vazando pro downstream, limite de
+expiração `<` em vez de `<=`); 1 regressão real só encontrada rodando `mvn verify` completo (o
+filtro, uma vez virando bean, passou a bloquear `/actuator/health` do `feat-001.4` — corrigido com
+`shouldNotFilter`, novo gotcha documentado: todo filtro *bloqueante* deste serviço precisa dessa
+exclusão); 2 rodadas de `java:S1075` do SonarCloud no gate `feature -> develop` (path hardcoded,
+depois o delimitador `"/"` concatenado — corrigido evitando concatenação de string, comparando por
+`charAt` com literal `char`); 2 achados do Test Suite Auditor (cobertura assimétrica
+`userId`/`tenantId`, teste de token adulterado conflado com token de chave errada).
+
+Delivery Reviewer: `PASS`. Test Suite Auditor: `CONCERNS` → corrigido antes de fechar. 24 testes /
+0 falhas, gate JaCoCo 80% real. `./init.sh` da raiz e do serviço verdes. `epic-008` continua
+`in-progress` — `feat-003..006` seguem `not-started`. Ver
+`services/api-gateway/progress.md` para o detalhe completo.
