@@ -310,6 +310,14 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   acima — health checks precisam continuar acessíveis sem token pro `docker-compose.yml`
   funcionar (ver [[OBSERVABILITY-AND-CONFIG]]). Vale para o filtro de `X-Service-Key` de
   `feat-004` também.
+  > **Gate `feature -> develop` do SonarCloud pegou o próprio prefixo hardcoded** (`java:S1075`,
+  > "Refactor your code to get this URI from a customizable parameter"): a string literal
+  > `/actuator/` usada na comparação de prefixo. Correção real, não supressão de regra — o base
+  > path do Actuator já é configurável via `management.endpoints.web.base-path` (default
+  > `/actuator`), então o filtro passa a ler esse valor via
+  > `@Value("${management.endpoints.web.base-path:/actuator}")` em vez de hardcodar o default —
+  > se o base path for reconfigurado, a exclusão continua funcionando (com o literal fixo, ela
+  > silenciosamente pararia de funcionar). Vale para o filtro de `feat-004` também.
 - **`Paseto.decrypt` (paseto4j-version4) não tem um único tipo de exceção para "token
   inválido"** (achado real de pesquisa em `api-gateway feat-002`, primeiro consumidor de
   `decrypt` no projeto — `auth-service` só chama `encrypt`): confirmado via `javap` contra o jar
