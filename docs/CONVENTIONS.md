@@ -194,6 +194,14 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   primeira query `@Modifying` do serviço). Reaproveitar em `auth-service`/`stats-service`: o
   padrão simples (`findById`+mutar+`save`) para updates incondicionais, o `@Modifying` atômico
   para qualquer transição de estado com condição de guarda.
+  **Reaproveitado em `stats-service feat-003.1`** (`FACT_BET`, upsert de verdade — `BetSettled`
+  pode chegar depois de `BetCreated` já ter inserido a linha, sem condição de guarda a proteger):
+  `JpaFactBetRepository.save()` faz `findById` primeiro; se a linha existe, chama
+  `FactBetJpaEntity.applyFrom(FactBet)` (método da própria entidade, não `@Setter` amplo — a
+  primeira tentativa desta feature usou `@Setter` do Lombok na classe inteira antes de reler esta
+  nota e corrigir) na instância já rastreada; senão constrói uma nova. Sem risco de corrida a
+  proteger aqui — RabbitMQ entrega mensagens da mesma fila sequencialmente a um consumidor, sem
+  paralelismo entre eventos do mesmo `betId`.
 - **Entidade JPA com muitas colunas (`java:S107`, gate `feature -> develop` do SonarCloud)**:
   achado real em `bets-service feat-004` — `BetJpaEntity` (18 colunas) com um construtor
   posicional de 18 parâmetros reprovou o gate (`Constructor has 18 parameters, which is greater
