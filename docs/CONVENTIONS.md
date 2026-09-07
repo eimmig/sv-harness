@@ -295,6 +295,21 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   prefixo. Achado real via `/code-review`, não do Plan Review original — vale para qualquer
   filtro futuro que gate por prefixo de path nos 4 serviços Java (`api-gateway` incluso, que
   roteia por path).
+- **Todo filtro *bloqueante* em `api-gateway` precisa excluir `/actuator/**` via
+  `shouldNotFilter`** (achado real, `feat-002`, só percebido rodando `mvn verify` de verdade —
+  nem o Plan Review nem `/code-review` do diff isolado do filtro pegaram, porque o efeito só
+  aparece ao rodar a suíte inteira do módulo): assim que um `OncePerRequestFilter` que **rejeita**
+  requisição sem credencial válida vira `@Component` (ex.: `PasetoAuthenticationFilter`), o Spring
+  Boot o registra automaticamente pra **toda** rota do servlet container, inclusive
+  `/actuator/health`/`/actuator/health/readiness` — os testes de `feat-001.4`
+  (`HealthChecksTest`) passaram a receber `401` em vez de `200`. Diferente do
+  `TenantSchemaFilter`/`X-Tenant-Id` de `auth-service`/`bets-service` (que **nunca** rejeita por
+  header ausente, só age quando o header existe — não precisa de exclusão), qualquer filtro deste
+  serviço que rejeita por padrão (nenhuma credencial = `401`) precisa do mesmo
+  `shouldNotFilter` decodificado (`UriUtils.decode` + `startsWith("/actuator/")`) do achado
+  acima — health checks precisam continuar acessíveis sem token pro `docker-compose.yml`
+  funcionar (ver [[OBSERVABILITY-AND-CONFIG]]). Vale para o filtro de `X-Service-Key` de
+  `feat-004` também.
 - **`Paseto.decrypt` (paseto4j-version4) não tem um único tipo de exceção para "token
   inválido"** (achado real de pesquisa em `api-gateway feat-002`, primeiro consumidor de
   `decrypt` no projeto — `auth-service` só chama `encrypt`): confirmado via `javap` contra o jar
