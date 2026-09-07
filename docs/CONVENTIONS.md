@@ -295,6 +295,19 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   prefixo. Achado real via `/code-review`, não do Plan Review original — vale para qualquer
   filtro futuro que gate por prefixo de path nos 4 serviços Java (`api-gateway` incluso, que
   roteia por path).
+- **`Paseto.decrypt` (paseto4j-version4) não tem um único tipo de exceção para "token
+  inválido"** (achado real de pesquisa em `api-gateway feat-002`, primeiro consumidor de
+  `decrypt` no projeto — `auth-service` só chama `encrypt`): confirmado via `javap` contra o jar
+  real (`paseto4j-version4-2024.3.jar`/`paseto4j-commons-2024.3.jar`) que token malformado,
+  adulterado ou com MAC inválido pode lançar `PasetoException`, `IllegalArgumentException` **ou**
+  `IllegalStateException` dependendo de qual verificação falha primeiro — as três `extends
+  RuntimeException`, sem uma exception dedicada comum. Um filtro de validação precisa capturar
+  `RuntimeException` genérica ao redor de `decrypt`+parse do payload (não uma das três
+  isoladamente) para tratar qualquer falha de token como `401` — não é descuido de tratamento de
+  exceção amplo demais, é a única forma de cobrir os três caminhos de falha da biblioteca.
+  Também não valida `exp` (expiração) sozinho — o payload decifrado é só o JSON puro que
+  `auth-service` serializou; checagem de expiração é responsabilidade de quem valida (comparar
+  `exp` contra `Instant.now().getEpochSecond()`).
 
 ## Internacionalização (i18n)
 
