@@ -263,6 +263,16 @@ qualquer escopo novo.
   `BLOCKED` por uma decisão que só o usuário pode tomar, pergunte antes de codificar e registre a
   decisão junto. Os epics do `feature_list.json` da raiz **não** têm esse campo: nenhum epic é
   implementado diretamente, o trabalho real acontece nas features do harness correspondente.
+- **Cuidado ao inserir `evidence`/`plan_review` num objeto de feature que já tem esse campo mais
+  à frente** (achado real, `api-gateway feat-001`, 2026-09-07): o template original de uma
+  feature já nasce com `"evidence": ""` no fim do objeto. Editar o arquivo à mão para acrescentar
+  `"evidence": "texto real"` logo após `status` sem remover a ocorrência vazia mais à frente cria
+  duas chaves `evidence` no mesmo objeto — JSON válido sintaticamente, mas qualquer parser (o
+  próprio `python -c "json.load(...)"` usado para validar, ou `tools/jira_story.py` na próxima
+  vez que tocar no arquivo) aplica "a última chave vence" e apaga o texto silenciosamente, sem
+  erro nenhum. Antes de inserir um campo que pode já existir no objeto, `grep -c` o nome do campo
+  dentro daquele bloco (ou reler o objeto inteiro) para confirmar que só há uma ocorrência depois
+  da edição.
 - **Harness se retroalimenta pela nota do vault, não por um log de lições à parte**: toda
   descoberta com valor além da sessão atual — bug cuja causa raiz não era óbvia, lacuna de
   especificação, edge case não coberto, gotcha de configuração/lib — vira edição na nota do
