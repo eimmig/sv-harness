@@ -158,6 +158,25 @@ Meta de performance (RNF03): resposta de dashboard < 300 ms (depende do cache es
 > Sem endpoint HTTP ainda (`feat-006`) nem cache (`feat-005`) — métricas verificadas por teste
 > direto (integração no repositório, unitário no cálculo).
 
+> **Implementado em `feat-006`**: RF11/RN08 completos — `GET /api/v1/statistics` (rota já exigida
+> pelo `TenantSchemaFilter` existente, sem middleware novo) aceita 7 filtros opcionais
+> (`bettingHouseId`/`sportId`/`leagueId`/`marketId`/`tipsterId`/`from`/`to`, ver
+> [[API-CONTRACTS]]) e responde um bundle único (`StatisticsDashboard`) com as 5 vistas de uma vez
+> — decisão do usuário (2026-09-07) entre bundle único, resposta mínima com `groupBy` ou
+> endpoints separados por segmento. `StatisticsFilter` (todos os campos opcionais,
+> `StatisticsFilter.none()` = sem filtro) substituiu as assinaturas sem parâmetro de `feat-004`/
+> `feat-005` em vez de manter dois conjuntos paralelos de método. Sem nenhum filtro, a resposta
+> vem do cache-aside de `feat-005`; qualquer filtro presente bypassa o cache (as chaves só cobrem
+> a vista sem filtro nenhum por tenant) e calcula direto — o campo `monthly` do bundle é sempre
+> calculado direto (nunca via o cache por mês de `feat-005`), por ser uma agregação `GROUP BY`
+> barata e de baixa cardinalidade. Filtro por `from`/`to` junta `DIM_DATE` e compara
+> `FUNCTION('make_date', ...)` (Postgres) contra os limites — **achado real**: o Postgres não
+> consegue inferir o tipo de um parâmetro `null` usado só dentro de `CAST`/`FUNCTION`
+> (`could not determine data type of parameter`), corrigido substituindo `from`/`to` ausentes por
+> limites-sentinela (`1900-01-01`/`2999-12-31`) em vez de outro predicado `IS NULL OR` — ver
+> `JpaFactBetRepository`. **Fecha o backlog planejado deste serviço** (`feat-001`..`feat-006`,
+> `epic-004` da raiz).
+
 ## Ver também
 
 - [[bets-service]] — produtor de `BetCreated` e `BetSettled`.

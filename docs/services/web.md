@@ -62,11 +62,15 @@ citadas explicitamente no escopo do TCC:
 
 ## Dashboards e filtros (RN08)
 
-Filtros por período, esporte, liga, mercado e tipster devem recalcular as métricas
-dinamicamente — não são apenas um filtro client-side sobre dados já carregados; cada mudança de
-filtro é uma nova consulta a `GET /api/v1/statistics` (ver [[stats-service]]). Rótulos de filtro
-na UI são localizados (ver [[CONVENTIONS]]) mesmo os query params enviados sendo sempre em
-inglês (`sport`, `league`, `market` — ver [[API-CONTRACTS]]).
+Filtros por período, casa de apostas, esporte, liga, mercado e tipster devem recalcular as
+métricas dinamicamente — não são apenas um filtro client-side sobre dados já carregados; cada
+mudança de filtro é uma nova consulta a `GET /api/v1/statistics`, que responde um bundle único
+com todas as vistas do dashboard de uma vez (ver [[stats-service]]). Rótulos de filtro na UI são
+localizados (ver [[CONVENTIONS]]) mesmo os query params enviados sendo sempre em inglês —
+**corrigido em `feat-006`**: os nomes reais implementados usam sufixo `Id` (`bettingHouseId`,
+`sportId`, `leagueId`, `marketId`, `tipsterId`) mais `from`/`to` (data, `yyyy-MM-dd`), não
+`sport`/`league`/`market` como esta nota dizia antes — mesma correção de nomenclatura já feita em
+[[API-CONTRACTS]] para `bets-service`, só não tinha sido propagada até aqui.
 
 ## Ver também
 
