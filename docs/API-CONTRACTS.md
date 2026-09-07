@@ -42,6 +42,27 @@ e [[CONVENTIONS]] para arquitetura/código.
   enviado (`bets-service feat-003`, `TransactionsController.list`, parâmetro `bettingHouseId`) —
   um exemplo anterior desta nota usava nomes sem o sufixo (`?sport=football`), nunca implementado
   e corrigido aqui para não divergir do que o serviço realmente aceita.
+- **`GET /api/v1/statistics` (`stats-service`, RF11/RN08, `feat-006`)**: os mesmos 7 filtros
+  acima, mas `from`/`to` usam **data sem hora** (`yyyy-MM-dd`, ex. `from=2026-01-01&to=2026-01-31`)
+  — diferente do `GET /api/v1/bets` de `bets-service` (timestamp completo, granularidade real de
+  aposta), porque `FACT_BET` é OLAP e a dimensão de data (`DIM_DATE`) só guarda dia/mês/ano, sem
+  hora; um `from`/`to` com timestamp completo sugeriria uma precisão que o modelo não tem.
+  Resposta é um **bundle único** (decisão do usuário, 2026-09-07, escolhida entre bundle
+  único/resposta mínima com `groupBy`/endpoints separados por segmento — a segunda e a terceira
+  opção exigiriam múltiplas chamadas por atualização de dashboard, contra a premissa de
+  `docs/services/web.md` de que cada mudança de filtro é uma única consulta a esta rota):
+  ```json
+  {
+    "overall": { "totalStaked": 1000.00, "netProfit": 150.00, "roi": 0.15, "winRate": 0.55, "settledCount": 42 },
+    "bySport": [ { "dimensionId": "...", "dimensionName": "Soccer", "totalStaked": 600.00, "netProfit": 90.00, "roi": 0.15, "winRate": 0.55, "settledCount": 25 } ],
+    "byMarket": [ { "dimensionId": "...", "dimensionName": "Over/Under", "totalStaked": 400.00, "netProfit": 60.00, "roi": 0.15, "winRate": 0.55, "settledCount": 17 } ],
+    "byBettingHouse": [ { "dimensionId": "...", "dimensionName": "Bet365", "totalStaked": 1000.00, "netProfit": 150.00, "roi": 0.15, "winRate": 0.55, "settledCount": 42 } ],
+    "monthly": [ { "year": 2026, "month": 1, "totalStaked": 200.00, "netProfit": 30.00, "roi": 0.15, "winRate": 0.5, "settledCount": 8 } ]
+  }
+  ```
+  Sem nenhum dos 7 filtros, a resposta vem do cache-aside de `feat-005` (RNF03, meta < 300 ms com
+  cache quente); qualquer filtro presente bypassa o cache (as chaves só cobrem a vista sem filtro
+  nenhum por tenant) e calcula direto contra `FACT_BET` — ver [[stats-service]].
 - **Idempotência do `POST /api/v1/bets`**: aceita um header opcional `Idempotency-Key`.
   Necessário porque `telegram-integration` pode reenviar a mesma mensagem em caso de retry do
   webhook — sem isso, uma falha de rede no bot pode duplicar uma aposta.
