@@ -61,6 +61,12 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
    - Se houver vínculo, injeta `X-User-Id`/`X-Tenant-Id` resolvidos e roteia normalmente para
      `POST /api/v1/bets` em [[bets-service]] — o mesmo endpoint usado pelo formulário web.
 
+5. **Filtro global de `X-Correlation-Id`**: gera o header se a requisição chegar sem ele,
+   propaga se já existir, injeta no MDC/log estruturado e repassa no request roteado para
+   `auth-service`/`bets-service`/`stats-service` (ver [[OBSERVABILITY-AND-CONFIG]]). Roda para
+   toda rota, independente de validação PASETO (item 1) ou credencial de serviço (item 4) — sem
+   ele, o campo `correlationId` do envelope de evento de [[bets-service]] fica sem origem real.
+
 ## O que este serviço não faz
 
 - **Não roteia a criação de tenant**: o operador da plataforma chama a rota administrativa de

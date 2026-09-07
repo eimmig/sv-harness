@@ -62,7 +62,7 @@
         "epic-009",
         "epic-002"
       ],
-      "status": "not-started",
+      "status": "in-progress",
       "evidence": "",
       "harness": "services/api-gateway/"
     },
