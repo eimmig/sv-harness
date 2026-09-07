@@ -120,6 +120,21 @@ Meta de performance (RNF03): resposta de dashboard < 300 ms (depende do cache es
 - RN08 — dashboards recalculam métricas dinamicamente conforme filtros aplicados.
 - RN09 — ROI por mercado/esporte/casa considera exclusivamente as apostas daquele agrupamento.
 
+> **Implementado em `feat-004`**: `FactBetRepository` (`adapter/out/persistence`) expõe 4 métodos
+> de agregação bruta (`aggregateOverall`/`aggregateBySport`/`aggregateByMarket`/
+> `aggregateByBettingHouse`) via JPQL com `SUM`/`COUNT`, filtrando `status <> PENDING` (equivalente
+> a RN06 já que `BetStatus` só tem 4 valores) — `FactBetJpaEntity` não tem `@ManyToOne` para as
+> dimensões (colunas UUID simples), então a query segmentada faz join explícito por condição
+> (`FROM FactBetJpaEntity f, DimSportJpaEntity s WHERE f.sportId = s.id`) para trazer o nome.
+> `CalculateMetricsService` (`application`) transforma o agregado bruto (`BetAggregate`) em
+> métricas de negócio (`BetMetrics`): `roi = netProfit / totalStaked`, `taxa de acerto =
+> wonCount / settledCount` — **`settledCount` inclui apostas `void`** (RN06 as inclui na
+> agregação), então uma aposta devolvida conta no denominador da taxa de acerto sem contar como
+> vitória nem derrota (decisão de interpretação, RN04/RN09 não desambiguam o denominador).
+> Divisão por zero (nenhuma aposta liquidada ainda) retorna `BigDecimal.ZERO`, não lança exceção.
+> Sem endpoint HTTP ainda (`feat-006`) nem cache (`feat-005`) — métricas verificadas por teste
+> direto (integração no repositório, unitário no cálculo).
+
 ## Ver também
 
 - [[bets-service]] — produtor de `BetCreated` e `BetSettled`.
