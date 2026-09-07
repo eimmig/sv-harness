@@ -30,16 +30,23 @@ Consumo **assíncrono e idempotente** — consistência eventual, não síncrona
 aposta (ver [[ARCHITECTURE]] seção "Fluxos dinâmicos"). Falhas consecutivas vão para a DLQ (ver
 [[infra]]).
 
-> **Implementado em `feat-001.9`**: o listener técnico (`@RabbitListener` ligado à fila real
-> `stats.bet-events`, mesmo nome/argumentos de `infra/rabbitmq/definitions.json`) já valida cada
-> mensagem contra o JSON Schema do `eventType` correspondente (cópia vendorizada em
+> **Implementado em `feat-001.9`/`feat-002`/`feat-003`**: o listener (`@RabbitListener` ligado à
+> fila real `stats.bet-events`, mesmo nome/argumentos de `infra/rabbitmq/definitions.json`) valida
+> cada mensagem contra o JSON Schema do `eventType` correspondente (cópia vendorizada em
 > `src/main/resources/contracts/`, lida em runtime — diferente da cópia só-de-teste do lado
 > publicador em `bets-service`, ver [[API-CONTRACTS]] "Cópias vendorizadas do schema") antes de
-> processar. Mensagem que não bate com o schema é rejeitada sem reenfileirar
-> (`AmqpRejectAndDontRequeueException`, não o `x-delivery-limit`/retry — ver [[CONVENTIONS]]) e
-> cai direto na DLQ. **Ainda sem persistência** (insert/upsert em `FACT_BET` descritos acima e a
-> tabela `PROCESSED_EVENT` chegam em `feat-002`/`feat-003`) — por enquanto só prova que o
-> consumidor recebe, valida e loga corretamente.
+> processar. Mensagem que não bate com o schema, ou cujo `tenantId` não resolve para um tenant
+> provisionado, é rejeitada sem reenfileirar (`AmqpRejectAndDontRequeueException`, não o
+> `x-delivery-limit`/retry — ver [[CONVENTIONS]]) e cai direto na DLQ — nos dois casos a falha é
+> permanente, retentar não ajuda. `BetCreated` faz *insert* em `FACT_BET` (`status: pending`) só
+> quando a linha ainda não existe — se `BetSettled` já chegou primeiro (mensagens fora de ordem),
+> `BetCreated` é um no-op além de marcar o evento processado, nunca reverte a liquidação já
+> aplicada. `BetSettled` sempre faz *upsert* de verdade (carrega a linha existente via `findById`
+> e muta a instância rastreada pelo Hibernate — `FactBetJpaEntity.applyFrom`, não reconstrói a
+> entidade do zero, que tentaria `INSERT` de novo e falharia por chave duplicada; ver
+> [[CONVENTIONS]] "Atualizar uma linha já persistida"). As 6 dimensões são resolvidas por
+> `DimensionResolver`: as 5 nominais (upsert-if-missing por `existsById`) e `DIM_DATE` (única sem
+> id vindo do evento — localizada por chave natural dia/mês/ano, criada sob demanda).
 
 > O envelope de evento carrega `userId` além de `tenantId` desde 2026-08-02 (trilha de
 > auditoria, ver [[DECISIONS-LOG]] e [[bets-service]]) — **este serviço não persiste esse campo**
