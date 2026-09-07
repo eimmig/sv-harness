@@ -44,6 +44,7 @@ que não devem ser reinterpretadas" para as decisões já consolidadas como defi
 - [2026-09-03 — Templates do Jira alinhados ao padrão de `oficina/tools`](#2026-09-03-templates-do-jira-alinhados-ao-padrao-de-oficinatools)
 - [2026-08-19 — Raiz vira o 8º repositório (`sv-harness`), reverte "a raiz nunca vai para o GitHub"](#2026-08-19-raiz-vira-o-8-repositorio-sv-harness-reverte-a-raiz-nunca-vai-para-o-github)
 - [2026-09-04 — `mustChangePassword` não bloqueia login, reverte a intenção original da entrada de 2026-08-02](#2026-09-04-mustchangepassword-nao-bloqueia-login-reverte-a-intencao-original-da-entrada-de-2026-08-02)
+- [2026-09-07 — `api-gateway` usa Spring Cloud Gateway Server WebMVC, não o reativo](#2026-09-07-api-gateway-usa-spring-cloud-gateway-server-webmvc-nao-o-reativo)
 
 ---
 
@@ -1186,3 +1187,28 @@ no backlog.
   `services/auth-service/feature_list.json`), decidir se o bloqueio real volta a ser implementado
   ali, ou se a mitigação por si só (senha aleatória de alta entropia, nunca logada, só na resposta
   de `feat-003`) é considerada suficiente.
+
+## 2026-09-07 — `api-gateway` usa Spring Cloud Gateway Server WebMVC, não o reativo
+
+**O que mudou**: nenhuma nota do vault (`docs/services/api-gateway.md`,
+`services/api-gateway/CLAUDE.md`) fixava qual variante de Spring Cloud Gateway usar — só "Spring
+Cloud Gateway" genérico. Existem duas com filtro/roteamento incompatíveis entre si: o Gateway
+clássico (`spring-cloud-starter-gateway`, reativo, WebFlux/Netty) e o Gateway Server WebMVC
+(`spring-cloud-starter-gateway-server-webmvc`, mais novo, bloqueante/servlet). Decisão, tomada com
+o usuário antes de `feat-001`: **Gateway Server WebMVC**.
+
+**Por quê**: `auth-service`, `bets-service` e `stats-service` são todos Spring MVC bloqueante
+(`spring-boot-starter-webmvc`, ver [[CONVENTIONS]]). Adotar o Gateway reativo tornaria
+`api-gateway` o único serviço rodando em WebFlux/Reactor no projeto inteiro — paradigma
+assíncrono novo, `Mono`/`GatewayFilter` em vez de `HandlerFilterFunction`/`RestClient`,
+sem nenhum outro serviço para amortizar a curva de aprendizado, e sem benefício de performance
+relevante no escopo de um TCC. A variante WebMVC entrega o mesmo modelo de roteamento por
+predicado/filtro com a mesma pilha servlet bloqueante já usada em todo o resto do backend.
+
+**Impacto**:
+- `services/api-gateway/feature_list.json` (`feat-001`) e `services/api-gateway/CLAUDE.md`
+  devem citar `spring-cloud-starter-gateway-server-webmvc` explicitamente ao montar o `pom.xml`
+  — não pinar `spring-cloud-starter-gateway` (reativo) por engano ao seguir tutorial genérico.
+  Filtros de `feat-002`/`feat-004`/`feat-006` são `HandlerFilterFunction`/`ServletFilter`, não
+  `GatewayFilter` reativo.
+- Sem impacto em nenhum outro serviço — decisão interna de `api-gateway`.

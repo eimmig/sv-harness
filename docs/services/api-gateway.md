@@ -4,7 +4,9 @@ tags: [service, backend, infra]
 
 # api-gateway
 
-Java 25 + Spring Boot 4.x + Spring Cloud Gateway. Ver [[ARCHITECTURE]] para o panorama geral e
+Java 25 + Spring Boot 4.x + **Spring Cloud Gateway Server WebMVC** (bloqueante/servlet, não o
+Gateway reativo/WebFlux — decisão de 2026-09-07, ver [[DECISIONS-LOG]], para não introduzir o
+único serviço assíncrono do projeto). Ver [[ARCHITECTURE]] para o panorama geral e
 [[API-CONTRACTS]] para o modelo de confiança que este serviço implementa. Harness de código em
 `services/api-gateway/CLAUDE.md`.
 
