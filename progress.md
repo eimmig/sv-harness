@@ -2,9 +2,14 @@
 
 ## Estado Atual (Current State)
 
-**Última atualização:** 2026-08-03
-**Sessão:** Primeiro código do projeto — `epic-001` (infraestrutura base) implementado e fechado
-**Epic ativo:** nenhum (`epic-001` `done`; `epic-002` liberado)
+**Última atualização:** 2026-09-08
+**Epic ativo:** `epic-005` (telegram-integration), `in-progress` — `feat-001`..`feat-004` `done`,
+restam `feat-005` (CI, fechamento formal) e `feat-006` (checklist de validação pré-deploy).
+**Demais epics**: `epic-001`/`epic-002`/`epic-003`/`epic-004`/`epic-008`/`epic-009` `done`.
+`epic-006` (web) e `epic-007` (resiliência DLQ) `not-started` — ver seções datadas abaixo (o
+bloco "Estado Atual" acima não foi mantido em sincronia sessão a sessão; o histórico
+cronológico completo, esse sim atualizado, começa em "Atualização — convenções cross-service"
+logo adiante).
 
 ## Status
 
@@ -1567,3 +1572,50 @@ já combinado com o usuário (heurística genérica + pergunta quando incerto) f
 diante de bilhetes genuinamente difíceis. Delivery Reviewer: PASS (1 residual menor — `bet_date`
 usa UTC, não horário de Brasília). 1 subtask (SV-190), 2 PRs (subtask + story), CI + SonarCloud
 verdes. 45 testes, 0 falhas, cobertura 100%.
+
+## `telegram-integration feat-003` fechada — vínculo de conta Telegram (2026-09-08)
+
+Achado bloqueante real encontrado lendo o código de `api-gateway` (não no Plan Review): aquele
+serviço não roteia `/api/v1/telegram-accounts/**` e seu `ServiceKeyAuthenticationFilter` exige um
+vínculo **já confirmado** pra resolver identidade — circular pro próprio endpoint que cria o
+vínculo. Resolvido com o usuário via `AskUserQuestion`: `telegram-integration` passou a chamar
+`auth-service` **direto**, bypassando o Gateway (mesmo precedente das rotas admin). `auth_client.py`
+(mapeia 201/404/422/409/outros pra `LinkOutcome`) + endpoint `POST /telegram/link`. 3 subtasks
+(SV-192..194, story SV-191), CI/SonarCloud verdes. 58 testes, 0 falhas, cobertura 99.57%. `epic-005`
+continua `in-progress` — libera `feat-004`.
+
+## `api-gateway feat-007` fechada — rotear catálogos pra bets-service (2026-09-08)
+
+Bloqueador real encontrado durante o Plan Review de `telegram-integration feat-004`:
+`RouteConfig.betsServiceRoute` só roteava `/api/v1/betting-houses`/`bets`/`transactions` — os 3
+catálogos (`/sports`, `/leagues`, `/markets`) usados pra resolver `sport`/`league`/`market` nunca
+tinham rota, apesar de existirem em `bets-service` desde a `feat-002` daquele serviço. `epic-008`
+já estava `done` — reaberto só pra este gap, mesmo precedente de `feat-004`/`feat-008` daquele
+epic. 1 subtask (SV-196, story SV-195), 2 PRs (#24 subtask, #25 story), CI/SonarCloud verdes.
+Achado do Delivery Reviewer corrigido: os 3 testes novos só provavam o caminho PASETO, não o
+`X-Service-Key` que é o consumidor real que motivou a feature — corrigido com 1 teste via
+`X-Service-Key`. Achado do SonarCloud (`java:S5976`) corrigido: 4 testes estruturalmente idênticos
+(incluindo um pré-existente) viraram 1 `@ParameterizedTest`. Fechado **antes** de
+`telegram-integration feat-004` começar a ser codificada.
+
+## `telegram-integration feat-004` fechada — resolução de catálogo + submissão a bets-service (2026-09-08)
+
+Decisão de produto resolvida com o usuário antes do Plan Review (`bets-service` exige 4 FKs
+obrigatórias que `extraction.py` nunca resolve pra ID): `sport`/`league`/`market` sempre
+perguntados por lista numerada; `betting_house` por fuzzy match exato contra o nome extraído;
+catálogo vazio bloqueia orientando cadastro em `apps/web`. `catalog_client.py` (busca paginada via
+`api-gateway`) + `bets_client.py` (submissão final, `Idempotency-Key` derivada do `update_id`
+nativo do Telegram — não um hash do conteúdo, que colidiria entre apostas legítimas iguais;
+`bet_date` convertido de data pura pra `Instant` completo, achado MAJOR do Plan Review —
+`CreateBetRequest.betDate` é `@NotNull Instant`). Decisão de arquitetura durante a implementação:
+`"complete"` passou a significar "pronto pra submeter", não "submetido" — estado só é limpo após
+confirmar o outcome real. Achado real do Delivery Reviewer corrigido: `CATALOG_ENTRY_NOT_FOUND`/
+`VALIDATION_FAILED` preservavam estado e diziam "tente novamente", mas isso reenviaria o mesmo
+dado inválido pra sempre — corrigido pra limpar o estado nesses 2 casos (ao contrário de
+`NO_TELEGRAM_LINK`/`SERVICE_UNAVAILABLE`, onde só uma condição externa precisa mudar). 2 achados
+reais do Test Suite Auditor corrigidos: fuzzy match sem teste pro caso ambíguo (2+ matches);
+nenhum teste provava que a resposta usa o snapshot da pergunta, não uma busca ao vivo. 4 subtasks
+(SV-198..201, story SV-197), CI/SonarCloud verdes. 85 testes, 0 falhas, cobertura 100%. `feat-006`
+criada como backlog (checklist de validação pré-deploy — n8n nunca importado numa instância real,
+endpoints internos sem auth/limite enquanto não containerizados). `epic-005` (raiz) continua
+`in-progress` — restam `feat-005` (CI, fechamento formal) e `feat-006`.
