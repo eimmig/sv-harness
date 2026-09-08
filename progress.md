@@ -1377,3 +1377,20 @@ Só então `api-gateway feat-003` (`RouteConfig`, 3 `RouterFunction` beans) pros
 `/api/v1/telegram-links/**` faltava na tabela de rotas). `epic-008` (raiz) continua
 `in-progress` — libera `api-gateway feat-004` (credencial de serviço `X-Service-Key`); `feat-006`
 (correlation-id) também segue elegível em paralelo.
+
+## `api-gateway feat-004` fechada — credencial de serviço X-Service-Key (2026-09-08)
+
+Segundo impedimento real da mesma sequência (`epic-008`): nenhuma nota do vault fixava **como**
+o Gateway recebe o `telegramUserId` na chamada `POST /api/v1/bets` com `X-Service-Key` — todas
+diziam "o Gateway resolve", nenhuma dizia de onde. Levado ao usuário antes de codificar: header
+dedicado `X-Telegram-User-Id`, não campo no corpo (evita acoplar o Gateway ao schema do DTO de
+`bets-service`). Registrado em `docs/DECISIONS-LOG.md`, propagado para `docs/API-CONTRACTS.md`,
+`docs/ARCHITECTURE.md`, `docs/services/{api-gateway,telegram-integration}.md` antes do código.
+
+`ServiceKeyAuthenticationFilter` implementado e mergeado em `develop` (PR `feature/SV-169`,
+SonarCloud zero-issue) — ver `services/api-gateway/progress.md` para o detalhe completo. 2
+achados reais de segurança do próprio self-review corrigidos antes do merge (vazamento de
+`X-Service-Key`/`X-Telegram-User-Id` para `bets-service`; chamada a `auth-service` sem timeout,
+travando a thread do Gateway indefinidamente em caso de falha lenta). `epic-008` (raiz) continua
+`in-progress` — libera `feat-005` (CI, já roda de verdade); `feat-006` (correlation-id) segue
+elegível.
