@@ -48,6 +48,7 @@ que não devem ser reinterpretadas" para as decisões já consolidadas como defi
 - [2026-09-07 — Porta HTTP fixa por serviço Java + URL de roteamento configurável no Gateway](#2026-09-07-porta-http-fixa-por-servico-java--url-de-roteamento-configuravel-no-gateway)
 - [2026-09-07 — Header X-Telegram-User-Id para o caminho de credencial de serviço do Gateway](#2026-09-07-header-x-telegram-user-id-para-o-caminho-de-credencial-de-servico-do-gateway)
 - [2026-09-08 — Captura de aposta via foto do bilhete (OCR) + fallback conversacional](#2026-09-08-captura-de-aposta-via-foto-do-bilhete-ocr--fallback-conversacional)
+- [2026-09-08 — Confirmação de vínculo Telegram bypassa o api-gateway](#2026-09-08-confirmacao-de-vinculo-telegram-bypassa-o-api-gateway)
 
 ---
 
@@ -1360,3 +1361,34 @@ Resultado final contra as 5 amostras reais, ponta a ponta: **stake correto 5/5**
 confirma que o design "heurística genérica + pergunta quando incerto" já combinado com o usuário
 funciona como esperado diante de bilhetes genuinamente difíceis (odd em texto colorido/riscado de
 boost, layout em coluna), sem precisar de template por casa de apostas.
+
+## 2026-09-08 — Confirmação de vínculo Telegram bypassa o api-gateway
+
+**O que mudou**: `telegram-integration` (`feat-003`, fluxo `/vincular <codigo>`) chama
+`POST /api/v1/telegram-accounts` **direto** em `auth-service`, sem passar pelo `api-gateway` —
+apesar de `docs/services/telegram-integration.md` (antes desta entrada) e a `description` de
+`feat-003` dizerem "chamado através do api-gateway com X-Service-Key".
+
+**Por quê**: achado real, lendo o código de verdade nesta sessão (não hipótese): `RouteConfig`
+do `api-gateway` não roteia `/api/v1/telegram-accounts/**` (só `/api/v1/telegram-links/**`, usado
+por `web` pra *gerar* o código, rota diferente). E o `ServiceKeyAuthenticationFilter` intercepta
+**qualquer** requisição que traga o header `X-Service-Key`, exigindo `X-Telegram-User-Id` e
+fazendo lookup do vínculo *já confirmado* antes de deixar a requisição passar adiante — circular
+para o próprio endpoint que existe pra **criar** esse vínculo (no momento da chamada, o vínculo
+ainda não existe, então o lookup sempre devolveria 404 antes de a confirmação sequer acontecer).
+Decisão tomada com o usuário via `AskUserQuestion` (2 opções: bypass do Gateway vs. estender
+`api-gateway` com rota nova + exceção no filtro) — escolhido o bypass, mesmo precedente já usado
+pelas rotas administrativas (`X-Admin-Api-Key`, também fora da tabela de roteamento do Gateway),
+por não exigir tocar num serviço/repositório já fechado (`epic-008`, `done`) pra uma feature de
+outro serviço. O código de vínculo em si (aleatório, 8 caracteres/32 símbolos, TTL curto, uso
+único, gerado por `auth-service GenerateTelegramLinkCodeService`) é o mecanismo de segurança
+desta chamada específica — não há usuário logado nem credencial de serviço aplicável aqui, então
+nenhum dos dois mecanismos existentes do Gateway (PASETO ou `X-Service-Key`) se encaixa. Rate
+limiting ausente no endpoint do `auth-service` foi avaliado e aceito como risco residual (fora de
+escopo desta feature): TTL curto + espaço de busca grande (~1,1×10¹² combinações) tornam
+brute-force impraticável mesmo sem limite de taxa.
+
+**Impacto**: `docs/services/telegram-integration.md` seção "Vínculo de conta",
+`docs/API-CONTRACTS.md` seção "Confiança entre serviços" (novo bullet, mesmo padrão do bullet de
+chamadas administrativas). Não afeta `auth-service` nem `api-gateway` — nenhum código desses dois
+repositórios muda; a chamada simplesmente não passa pela tabela de rotas do Gateway.

@@ -174,6 +174,18 @@ o código-fonte do outro serviço.
   [[auth-service]] seção "Modelo de tenant" para o payload/resposta exatos. `bets-service`
   implementa a mesma rota (`feat-001.4`) só criando o schema, sem usuário/senha — ver
   [[bets-service]] seção "Provisionamento de tenant (rota admin)".
+- **Confirmação de vínculo de conta Telegram** (`telegram-integration feat-003`, decisão de
+  2026-09-08): `POST /api/v1/telegram-accounts` em `auth-service` também **não passa pelo
+  `api-gateway`**, mesmo precedente das chamadas administrativas acima. Motivo diferente das
+  chamadas admin: não é por convenção de operador, é porque o mecanismo de identidade do
+  Gateway pra chamadas sem usuário logado (`X-Service-Key` + `X-Telegram-User-Id`, bullet acima)
+  **resolve identidade fazendo lookup no próprio vínculo já confirmado** — circular pro endpoint
+  que existe justamente pra criar esse vínculo, e `RouteConfig` do Gateway nem roteia
+  `/api/v1/telegram-accounts/**` (só `/api/v1/telegram-links/**`, usado por [[web]] pra *gerar*
+  o código). Segurança desta chamada específica não vem de header nenhum: vem do próprio código
+  de vínculo (aleatório, TTL curto, uso único, ver [[auth-service]]) — sem usuário logado e sem
+  credencial de serviço aplicável a este endpoint. Ver [[telegram-integration]] seção "Vínculo
+  de conta" e [[DECISIONS-LOG]].
 
 ## Contratos de evento: `BetCreated` e `BetSettled`
 

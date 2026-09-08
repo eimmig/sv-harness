@@ -24,11 +24,24 @@ linguagem — não reescrever em Java "para unificar a stack" (ver [[ARCHITECTUR
 
 Antes de capturar apostas de um `telegramUserId`, precisa existir um vínculo com um usuário
 cadastrado (`TELEGRAM_ACCOUNT` em [[auth-service]]). Fluxo: usuário gera um código de vínculo na
-tela de perfil em [[web]] (chama um endpoint de [[auth-service]]) e envia esse código ao bot;
-`telegram-integration` repassa `telegramUserId` + código para [[auth-service]] confirmar e
-persistir o vínculo. Sem vínculo, o [[api-gateway]] rejeita a chamada de captura automática (ver
-abaixo) e o bot deve responder ao usuário pedindo para vincular a conta primeiro — nunca deve
-tentar adivinhar ou criar um tenant novo a partir de uma mensagem do Telegram.
+tela de perfil em [[web]] (chama `POST /api/v1/telegram-links` de [[auth-service]], através do
+[[api-gateway]] — rota já roteada) e envia esse código ao bot via `/vincular <codigo>`;
+`telegram-integration` repassa `telegramUserId` + código para `POST /api/v1/telegram-accounts`
+em [[auth-service]] confirmar e persistir o vínculo. Sem vínculo, o [[api-gateway]] rejeita a
+chamada de captura automática (ver abaixo) e o bot deve responder ao usuário pedindo para
+vincular a conta primeiro (comportamento de `bets-service feat-004`, tratando o `401` do
+Gateway) — nunca deve tentar adivinhar ou criar um tenant novo a partir de uma mensagem do
+Telegram.
+
+> **Decisão de 2026-09-08** (ver [[DECISIONS-LOG]]): a chamada de confirmação
+> (`POST /api/v1/telegram-accounts`) vai **direto** em `auth-service`, sem passar pelo
+> `api-gateway` — `api-gateway` não roteia `/api/v1/telegram-accounts/**` (só
+> `/api/v1/telegram-links/**`), e seu `ServiceKeyAuthenticationFilter` exige um vínculo **já
+> confirmado** pra resolver identidade antes de deixar a requisição passar, o que é circular
+> pro próprio endpoint que cria o vínculo. Mesmo precedente das rotas admin (`X-Admin-Api-Key`
+> fora da tabela de roteamento do Gateway). O código de vínculo em si (aleatório, TTL curto, uso
+> único, gerado por `auth-service`) é o mecanismo de segurança desta chamada — sem usuário
+> logado e sem `X-Service-Key` aplicável aqui.
 
 ## Fluxo de captura de aposta
 
