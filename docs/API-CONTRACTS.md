@@ -72,7 +72,14 @@ e [[CONVENTIONS]] para arquitetura/código.
   nenhum por tenant) e calcula direto contra `FACT_BET` — ver [[stats-service]].
 - **Idempotência do `POST /api/v1/bets`**: aceita um header opcional `Idempotency-Key`.
   Necessário porque `telegram-integration` pode reenviar a mesma mensagem em caso de retry do
-  webhook — sem isso, uma falha de rede no bot pode duplicar uma aposta.
+  webhook — sem isso, uma falha de rede no bot pode duplicar uma aposta. `bets-service` apenas
+  verifica se a chave já foi vista (reenvio devolve a aposta já criada, `200` em vez de `201`,
+  sem comparar o corpo contra o original — simplificação aceita, sem TTL, ver
+  [[bets-service]]); é `telegram-integration` (`feat-004`) quem decide o valor da chave — usa o
+  `update_id` nativo do Telegram (identifica de forma estável um reenvio real do mesmo webhook
+  pelo próprio Telegram; um hash do conteúdo da aposta foi cogitado e descartado por colidir
+  entre duas apostas legítimas com odd/stake/casa iguais) — ver [[telegram-integration]] seção
+  "Envio da aposta resolvida".
 - **Valores de status de aposta** (campo `status`, em `BET` e nos eventos): sempre em inglês —
   `pending`, `won`, `lost`, `void`. Correspondem a `pendente`/`ganha`/`perdida`/`devolvida` na
   especificação original do TCC1 (RF12/RN06, ver [[REQUIREMENTS]] — a tabela de RF/RN em si

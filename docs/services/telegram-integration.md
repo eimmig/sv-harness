@@ -29,9 +29,9 @@ tela de perfil em [[web]] (chama `POST /api/v1/telegram-links` de [[auth-service
 `telegram-integration` repassa `telegramUserId` + código para `POST /api/v1/telegram-accounts`
 em [[auth-service]] confirmar e persistir o vínculo. Sem vínculo, o [[api-gateway]] rejeita a
 chamada de captura automática (ver abaixo) e o bot deve responder ao usuário pedindo para
-vincular a conta primeiro (comportamento de `bets-service feat-004`, tratando o `401` do
-Gateway) — nunca deve tentar adivinhar ou criar um tenant novo a partir de uma mensagem do
-Telegram.
+vincular a conta primeiro (comportamento de `telegram-integration feat-004`, tratando o `401` do
+Gateway na submissão final — ver passo 6 abaixo) — nunca deve tentar adivinhar ou criar um tenant
+novo a partir de uma mensagem do Telegram.
 
 > **Decisão de 2026-09-08** (ver [[DECISIONS-LOG]]): a chamada de confirmação
 > (`POST /api/v1/telegram-accounts`) vai **direto** em `auth-service`, sem passar pelo
@@ -76,7 +76,25 @@ Telegram.
    > diretório `TELEGRAM_LINK` no schema `public` (fora de qualquer schema de tenant) que
    > resolve `telegramUserId -> tenantId`/`userId` diretamente — o Gateway não precisa mais
    > varrer schemas nem o bot informar o slug do tenant.
-6. Resto do fluxo (evento `BetCreated`, consumo assíncrono por [[stats-service]]) é idêntico
+6. **Envio da aposta resolvida** (`feat-004`): a chamada leva `Idempotency-Key` derivada do
+   `update_id` nativo do Telegram (repassado pelo n8n como `telegramUpdateId` — protege contra o
+   Telegram reentregar o mesmo webhook; um hash do conteúdo da aposta foi cogitado e descartado
+   por colidir entre duas apostas legítimas com odd/stake/casa iguais, ver [[API-CONTRACTS]]).
+   `bettingHouseId`/`sportId`/`leagueId`/`marketId` resolvidos no passo 4; `betDate` convertido de
+   data pura (`aaaa-mm-dd`) para instante completo (`aaaa-mm-ddT00:00:00Z`) — `CreateBetRequest`
+   exige `Instant`, não data pura. Resposta do Gateway vira uma de seis mensagens localizadas:
+   sucesso (`201` ou reenvio idempotente `200`), sem vínculo (`401` — orienta `/vincular`), FK não
+   encontrada (`404`, raro — a resolução do passo 4 já validou os IDs momentos antes), validação
+   de negócio falhou (`422`, RN07) ou erro genérico (indisponibilidade). **Limpeza do estado da
+   conversa depende de qual parte falhou, não só de sucesso/falha genérico**: sem vínculo (`401`)
+   e erro genérico (indisponibilidade) preservam os campos/IDs já resolvidos no Redis — o dado da
+   aposta está correto, só uma condição externa precisa mudar (vincular a conta; a infra voltar),
+   então a próxima mensagem do usuário repete a tentativa de envio imediatamente, sem pedir os
+   dados de novo. FK não encontrada (`404`) e validação de negócio (`422`) **limpam o estado**
+   como sucesso — insistir com o mesmo `catalogId` obsoleto ou a mesma `odd`/`stake` inválida só
+   repetiria a falha para sempre; a próxima mensagem do usuário começa uma conversa nova (achado
+   real corrigido durante a implementação, não previsto no Plan Review original).
+7. Resto do fluxo (evento `BetCreated`, consumo assíncrono por [[stats-service]]) é idêntico
    ao registro manual.
 
 ## Internacionalização (i18n)
