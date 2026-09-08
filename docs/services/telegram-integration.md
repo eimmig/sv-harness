@@ -32,10 +32,17 @@ tentar adivinhar ou criar um tenant novo a partir de uma mensagem do Telegram.
 
 ## Fluxo de captura de aposta
 
-1. Usuário envia mensagem de texto não estruturada ao bot.
-2. n8n recebe o webhook do Telegram, normaliza o payload em JSON.
-3. Rotina Python faz o parsing/higienização da string (esporte, liga, mercado, odd, stake, casa
-   de apostas, etc.).
+1. Usuário envia **uma foto do bilhete da aposta** (print do comprovante gerado pela casa de
+   apostas) **ou uma mensagem de texto livre** ao bot — decisão de 2026-09-08, ver
+   [[DECISIONS-LOG]] (nenhuma nota fixava o formato antes).
+2. n8n recebe o webhook do Telegram, normaliza o payload em JSON (texto ou referência da foto).
+3. Rotina Python roda OCR (Tesseract, via `pytesseract`) quando for foto, e aplica extração
+   heurística genérica (esporte, liga, mercado, odd, stake, casa de apostas, etc.) sobre o texto
+   resultante — sem template por casa de apostas, sem garantia de acerto (não há amostra real de
+   bilhete disponível pra validar contra o layout de nenhuma casa específica). Campo não
+   extraído com confiança faz o bot perguntar ao usuário diretamente, um de cada vez — estado da
+   conversa (quais campos já foram resolvidos, qual está pendente) guardado no Redis já
+   provisionado em [[infra]], chave por `telegramUserId`, TTL curto.
 4. Chama `POST /api/v1/bets` através do [[api-gateway]], autenticando com um header `X-Service-Key`
    (credencial de serviço, não token PASETO — não há usuário logado neste fluxo) e informando o
    autor da mensagem via `X-Telegram-User-Id` (decisão de 2026-09-07, ver [[DECISIONS-LOG]] —

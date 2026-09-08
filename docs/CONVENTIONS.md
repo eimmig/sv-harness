@@ -500,6 +500,16 @@ princípios que não se misturam (ver também [[API-CONTRACTS]] seção "Interna
   n8n chama este serviço via HTTP depois de normalizar o payload do webhook do Telegram (ver
   [[telegram-integration]]) — o endpoint real de parsing só existe a partir de `feat-002`, mas o
   framework já fica fixado aqui para não ser redecidido por sessão.
+- **OCR: Tesseract local via `pytesseract`** (decisão de `feat-002`, 2026-09-08, ver
+  [[DECISIONS-LOG]]) — não API de nuvem, para não introduzir a primeira dependência paga/externa
+  do projeto. Precisa do binário `tesseract-ocr` instalado no sistema (não é só pacote `pip`) —
+  trivial via `apt-get` no CI/Docker, precisa de instalação manual (`choco` no Windows) em
+  máquina de desenvolvimento.
+- **Cliente Redis: `redis` (redis-py)**, síncrono — mesma instância já provisionada em
+  `infra/docker-compose.yml` para `stats-service`, reaproveitada aqui só para guardar o estado
+  do fallback conversacional de captura de aposta (ver [[DECISIONS-LOG]] 2026-09-08), não para
+  cache de leitura como em `stats-service`. Mesmas variáveis de ambiente
+  (`REDIS_HOST`/`REDIS_PORT`/`REDIS_PASSWORD`, ver `.env.example` de `stats-service`).
 
 ## Git — fluxo de trabalho
 

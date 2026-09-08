@@ -47,6 +47,7 @@ que não devem ser reinterpretadas" para as decisões já consolidadas como defi
 - [2026-09-07 — `api-gateway` usa Spring Cloud Gateway Server WebMVC, não o reativo](#2026-09-07-api-gateway-usa-spring-cloud-gateway-server-webmvc-nao-o-reativo)
 - [2026-09-07 — Porta HTTP fixa por serviço Java + URL de roteamento configurável no Gateway](#2026-09-07-porta-http-fixa-por-servico-java--url-de-roteamento-configuravel-no-gateway)
 - [2026-09-07 — Header X-Telegram-User-Id para o caminho de credencial de serviço do Gateway](#2026-09-07-header-x-telegram-user-id-para-o-caminho-de-credencial-de-servico-do-gateway)
+- [2026-09-08 — Captura de aposta via foto do bilhete (OCR) + fallback conversacional](#2026-09-08-captura-de-aposta-via-foto-do-bilhete-ocr--fallback-conversacional)
 
 ---
 
@@ -1284,3 +1285,51 @@ requisição, consistente com o resto do roteamento (`feat-003`).
   `X-Telegram-User-Id` explicitamente, não só "X-Service-Key".
 - `docs/API-CONTRACTS.md` seção "Confiança entre serviços" ganha o header na descrição do
   caminho de credencial de serviço.
+
+## 2026-09-08 — Captura de aposta via foto do bilhete (OCR) + fallback conversacional
+
+**O que mudou**: `telegram-integration feat-002` ("Parsing de mensagens não estruturadas")
+nunca teve o formato da mensagem definido em nenhuma nota — nem RF05 (`docs/REQUIREMENTS.md`)
+nem os diagramas originais do TCC1 especificam como o usuário escreve a aposta pro bot. Decisão
+tomada com o usuário (`AskUserQuestion`, duas perguntas): **usuário pode enviar uma foto/print
+do bilhete da aposta** (a casa de apostas gera esse comprovante nativamente) **ou uma mensagem de
+texto livre**; o serviço roda OCR na imagem (quando for foto) e aplica extração heurística
+genérica sobre o texto resultante (ou sobre o texto digitado diretamente) — não há template por
+casa de apostas nem amostra real disponível pra validar contra o layout de nenhuma casa
+específica (Bet365, Betano etc. têm bilhetes visualmente muito diferentes). Campos que a
+heurística não conseguir extrair com confiança (a extração é best-effort, não garantida) fazem o
+bot perguntar ao usuário diretamente, um campo por vez — mesmo padrão que o usuário já tinha
+sugerido como alternativa mais simples ("modelo do cadastro bot pergunta e tu responde") caso o
+OCR genérico se mostrasse "demais" (palavras do usuário).
+
+**Motor de OCR: Tesseract local (`pytesseract`), não API de nuvem** — decisão tomada com o
+usuário. Motivo: sem custo, sem chave de API, sem dependência de rede externa pro fluxo
+funcionar — alinhado ao resto do projeto (self-hosted via `infra/docker-compose.yml`, nenhuma
+outra integração de nuvem paga existe hoje). Trade-off aceito: precisão de OCR geralmente pior
+que APIs de nuvem (Google Vision/AWS Textract), e é a **primeira dependência de binário de
+sistema** do projeto (não é só pacote `pip`) — trivial de instalar no runner do GitHub Actions
+(`apt-get install tesseract-ocr`) e no container Docker de produção, mas precisa ser instalado
+manualmente em máquina de desenvolvimento (via `choco` no Windows).
+
+**Estado da conversa (fallback) usa o Redis já provisionado em `infra/`** — decisão minha, sem
+tradeoff real o suficiente pra perguntar: o bot precisa lembrar, entre chamadas separadas do
+webhook, quais campos já foram extraídos e qual está pendente. Reaproveita a mesma instância
+Redis que `stats-service` já usa pra cache (`infra/docker-compose.yml`), não introduz
+infraestrutura nova — chave por `telegramUserId`, TTL curto (ex.: 15 min) pra não deixar fluxo
+abandonado preso pra sempre.
+
+**Impacto**:
+- `services/telegram-integration/feature_list.json` (`feat-002`) reescrita pra refletir OCR +
+  fallback conversacional, não mais "parsing de string" simples.
+- `docs/services/telegram-integration.md` (fluxo de captura, passo 3) e `docs/ARCHITECTURE.md`
+  (diagrama de sequência) atualizados.
+- `services/telegram-integration/n8n/telegram-bot.json` (`feat-001`) precisa ser estendido em
+  `feat-002` pra normalizar também mensagens do tipo foto (`message.photo`), não só texto
+  (`message.text`) — o `Telegram Trigger` já escuta `updates: ["message"]`, que cobre os dois
+  tipos, só o nó `Normalize payload` precisava do campo extra.
+- `docs/CONVENTIONS.md` (seção Python) ganha `pytesseract`/Tesseract e o cliente Redis como
+  dependências deste serviço.
+- **Risco residual aceito, registrado explicitamente**: sem amostra real de bilhete pra validar,
+  a extração heurística pode errar com frequência em produção — o fallback conversacional existe
+  justamente pra isso não ser catastrófico (nenhum campo obrigatório passa sem confirmação
+  implícita ou explícita do usuário). Revisitar a precisão real assim que houver uso de verdade.

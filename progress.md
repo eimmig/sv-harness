@@ -1505,3 +1505,45 @@ develop): Security Rating E por bind em `0.0.0.0` no entrypoint de dev — corri
 cobertura 100%. `./init.sh` do serviço e da raiz verdes. `epic-005` (raiz) passou de
 `not-started` para `in-progress` — libera `feat-002` (parsing de mensagens) como próxima feature
 elegível.
+
+## `telegram-integration feat-002` fechada — OCR + fallback conversacional (2026-09-08)
+
+Impedimento real: `feat-002` nunca teve o formato de mensagem definido em nenhuma nota. Levado ao
+usuário via `AskUserQuestion` (2 perguntas): usuário pode enviar **foto do bilhete** (OCR) **ou
+texto livre**; motor de OCR = **Tesseract local** via `pytesseract`, não API de nuvem (sem custo,
+sem segredo, sem dependência de rede externa — alinhado ao resto do projeto). Sem amostra real de
+bilhete disponível — extração heurística genérica, sem template por casa de apostas, com fallback
+conversacional explicitamente autorizado pelo usuário ("caso ache isso demais, pode usar o modelo
+bot pergunta e tu responde"). Decisão completa registrada em `docs/DECISIONS-LOG.md` 2026-09-08.
+
+Ambiente: Tesseract não instalado nesta máquina — `choco` falhou por falta de admin (erro de
+permissão em `C:\ProgramData\chocolatey`), resolvido via `winget` (o pacote já estava instalado,
+só fora do PATH) + `tessdata` `por`/`eng` baixados pra `~/.local/tessdata` (Program Files é
+read-only sem admin) + `TESSDATA_PREFIX`/`TESSERACT_CMD` persistidos via PowerShell.
+
+Módulos novos: `conversation.py` (estado de conversa no Redis já provisionado em `infra/` para
+`stats-service`, TTL 15min, testado com `testcontainers.community.redis` real). `ocr.py`
+(`pytesseract` `por+eng`, nunca lança exceção, testado com imagem sintética via Pillow — sem
+bilhete real disponível). `extraction.py` (só `odd`/`stake`/`bet_date` — padrão léxico universal
+— e `betting_house` — lista curta de casas conhecidas — extraídos com confiança real;
+`sport`/`league`/`market`/`team1`/`team2` **sempre `None`**, documentado como não tentado em vez
+de fingir robustez inexistente). `orchestration.py` + `main.py` (`POST /bets/capture`).
+
+2 achados reais MAJOR do Plan Review, corrigidos antes de codificar: `bets-service` espera IDs de
+catálogo (UUID), não nomes — escopo reduzido pra produzir campos brutos, resolução nome→catálogo
+fica pra `feat-004`; download de foto movido pro n8n (já tem a credencial do Telegram desde
+`feat-001`) em vez do Python, evitando `TELEGRAM_BOT_TOKEN` como segredo novo. 2 achados reais
+encontrados durante a implementação/revisão: normalização inconsistente no caminho de resposta
+direta a uma pergunta (corrigido com `parse_direct_answer`); Delivery Reviewer encontrou dict de
+campos esparso no fluxo multi-turno — só exposto depois de um teste novo ponta a ponta pela HTTP
+real ser escrito (os testes de `orchestration.py` sozinhos não pegavam).
+
+`n8n/telegram-bot.json` estendido (IF ramifica foto/texto, Telegram baixa a foto, HTTP Request
+chama o endpoint novo, Telegram `sendMessage` responde ao usuário) — residual risk expandido em
+`n8n/README.md` (4 pontos não validados contra instância real).
+
+4 subtasks (SV-186..189, story SV-185), 4 PRs de subtask + 1 PR de story, CI real e verde
+(Tesseract + Redis via testcontainers rodando de verdade no runner), SonarCloud verde de
+primeira. 45 testes, 0 falhas, cobertura 100%. `./init.sh` do serviço e da raiz verdes. `epic-005`
+(raiz) continua `in-progress` — libera `feat-003` (vínculo de conta Telegram) como próxima
+feature elegível.

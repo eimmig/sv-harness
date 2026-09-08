@@ -9,29 +9,37 @@
 
 - `epic-002` (auth-service), `epic-003` (bets-service), `epic-004` (stats-service) e `epic-008`
   (api-gateway) — todos `done`.
-- `epic-005` (telegram-integration) **em andamento** — `feat-001` (bootstrap) entregue e
-  mergeado em `develop`. 4 features restam (`feat-002` parsing, `feat-003` vínculo de conta,
+- `epic-005` (telegram-integration) **em andamento** — `feat-001` (bootstrap) e `feat-002`
+  (parsing) entregues e mergeados em `develop`. 3 features restam (`feat-003` vínculo de conta,
   `feat-004` integração com `api-gateway`, `feat-005` CI).
 - Situação: 6 de 9 epics `done`. `epic-005` é o único `in-progress` no momento. `epic-006`
-  (web) segue elegível (dependências satisfeitas) mas não iniciado nesta sessão.
+  (web) segue elegível (dependências satisfeitas) mas não iniciado.
 
 ## Concluído nesta sessão (2026-09-08)
 
-- [x] **`telegram-integration feat-001` (Setup do projeto Python + webhook n8n) implementado e
-      mergeado em `develop`** — primeiro serviço Python do backlog, nenhum código existia antes.
-      Bootstrap real via `uv init`/`uv add` (não escrito à mão), FastAPI+Uvicorn como framework
-      HTTP (decisão registrada em `docs/CONVENTIONS.md`), i18n (`locales/{pt-BR,en-US,es}.json`
-      + loader com fallback), `n8n/telegram-bot.json` (Telegram Trigger + normalização, parando
-      antes do `HTTP Request` — isso é `feat-002`). 3 subtasks (SV-182..184, story SV-181), 4 PRs
-      com CI real e verde (incluindo SonarCloud no PR de story). Ver
-      `services/telegram-integration/progress.md` para o detalhe completo (achados reais: 2
-      armadilhas de sequenciamento de CI, 1 achado de documentação, 1 achado do Delivery Review,
-      1 achado real do SonarCloud).
-- [x] **Impedimento de ambiente resolvido**: `uv` não estava instalado nesta máquina — corrigido
-      via `pip install --user uv` + cópia do executável para `~/.local/bin` (mesmo mecanismo do
-      gotcha anterior do `claude.exe`), PATH persistido via PowerShell para sessões futuras.
-- [x] (continuação, mesmo dia) `api-gateway feat-005` fechou `epic-008` — ver entrada anterior
-      deste log/`progress.md`.
+- [x] **`telegram-integration feat-001`** (bootstrap uv/FastAPI/i18n/n8n) — ver entrada anterior
+      deste log/`progress.md` para o detalhe completo.
+- [x] **`telegram-integration feat-002` (Parsing de mensagens não estruturadas) implementado e
+      mergeado em `develop`** — 4 subtasks (SV-186..189, story SV-185), 4 PRs de subtask + 1 PR
+      de story, todos com CI real e verde. Ver `services/telegram-integration/progress.md` para
+      o detalhe completo.
+- [x] **Decisão de produto tomada com o usuário via `AskUserQuestion`** (nenhuma nota fixava o
+      formato antes): captura de aposta via **foto do bilhete (OCR) ou texto livre**; motor de
+      OCR = **Tesseract local**, não API de nuvem. Registrado em `docs/DECISIONS-LOG.md`
+      2026-09-08, propagado para `docs/CONVENTIONS.md`, `docs/services/telegram-integration.md`,
+      `docs/ARCHITECTURE.md`.
+- [x] **2 achados reais MAJOR do Plan Review**, corrigidos antes de codificar: escopo de
+      `feat-002` reduzido pra não resolver nomes extraídos contra o catálogo de `bets-service`
+      (exige UUID, não nome — fica pra `feat-004`); download de foto movido pro n8n em vez do
+      Python (evita segredo novo — `TELEGRAM_BOT_TOKEN` — neste serviço).
+- [x] **2 achados reais encontrados durante a implementação/revisão**, corrigidos antes de
+      fechar: normalização inconsistente no caminho de resposta direta a uma pergunta; dict de
+      campos esparso no fluxo multi-turno (achado do Delivery Review, só exposto por um teste
+      novo ponta a ponta pela HTTP real).
+- [x] **Impedimento de ambiente resolvido**: Tesseract não estava instalado — `choco` falhou por
+      falta de admin, resolvido via `winget` (já instalado, fora do PATH) + `tessdata`
+      `por`/`eng` baixados pra `~/.local/tessdata` + `TESSDATA_PREFIX`/`TESSERACT_CMD`.
+- [x] (continuação, mesmo dia) `api-gateway feat-005` fechou `epic-008` — ver entrada anterior.
 
 ## Bloqueios / Riscos
 
@@ -40,15 +48,18 @@
 | DLQ local usa `at-most-once` | Aberto **por desenho**. Só reavaliável quando `infra/feat-002` rodar, que depende de `epic-004`/`epic-005` (`epic-004` já `done`, `epic-005` `in-progress`). Ver `docs/DECISIONS-LOG.md` (2026-08-03). |
 | Topologia RabbitMQ é contrato | `bets-service` e `stats-service` publicam/consomem **sem redeclarar** exchange ou fila. Ver `docs/API-CONTRACTS.md`. |
 | `bets-service` não consome `X-Correlation-Id` real ainda | Sinalizado em `docs/services/bets-service.md`, não é blocker de nada. |
-| `n8n/telegram-bot.json` não testado contra instância real | Risco residual aceito, documentado em `services/telegram-integration/n8n/README.md`. Validar antes de considerar o fluxo pronto pra produção. |
+| `n8n/telegram-bot.json` tem 4 pontos não validados contra instância real | Risco residual aceito, documentado em `services/telegram-integration/n8n/README.md`. Validar antes de produção. |
+| `POST /bets/capture` sem autenticação própria | Aceitável no estágio atual (rede local/interna, serviço não containerizado/exposto). Revisitar quando containerizado. |
 | `web` sem código de aplicação | Só o commit de bootstrap do `epic-009`. Elegível, não iniciado. |
 
 ## Próxima sessão — por onde começar
 
-1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. **`telegram-integration feat-002`** (Parsing de mensagens não estruturadas) é a próxima
-   natural — única feature elegível de `epic-005` agora (`feat-003`/`feat-004` dependem dela).
-   É o que de fato liga o nó `HTTP Request` no workflow n8n ao endpoint Python.
+1. Rodar `./init.sh` na raiz (deve sair `0`) — em `services/telegram-integration`, exportar
+   `TESSDATA_PREFIX`/`TESSERACT_CMD` se o terminal ainda não tiver o PATH persistido (deveria
+   pegar sozinho após reiniciar o terminal, ver `docs/CONVENTIONS.md`).
+2. **`telegram-integration feat-003`** (vínculo de conta Telegram, `/vincular <codigo>`) é a
+   próxima natural — única feature elegível de `epic-005` agora (`feat-004` depende dela). Sem
+   ela, `feat-004` não tem como resolver `telegramUserId -> userId/tenantId` de verdade.
 3. Alternativa em paralelo (sessão/serviço diferente): **`epic-006` (`web`, Angular)** — todas
    as dependências satisfeitas, ainda não iniciado. WIP máximo 1 por lane de serviço continua
    valendo — não trabalhar em `telegram-integration` e `web` na mesma sessão.

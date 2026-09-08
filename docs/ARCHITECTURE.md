@@ -153,7 +153,9 @@ sequenceDiagram
 
 ### 2. Registro via Telegram
 
-Mensagem → [[telegram-integration]] (n8n + Python) faz parsing → chama `POST /api/v1/bets`
+Foto do bilhete ou mensagem de texto → [[telegram-integration]] (n8n + Python) roda OCR (se foto)
+e extrai os campos por heurística genérica, completando o que faltar via pergunta ao usuário
+(decisão de 2026-09-08, ver [[DECISIONS-LOG]]) → chama `POST /api/v1/bets`
 através do [[api-gateway]], autenticando com credencial de serviço (`X-Service-Key`) e
 informando o autor via `X-Telegram-User-Id` (decisão de 2026-09-07, ver [[DECISIONS-LOG]]) em
 vez de token PASETO — o Gateway resolve `telegramUserId -> userId` via [[auth-service]] e injeta
