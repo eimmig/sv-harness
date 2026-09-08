@@ -9,45 +9,48 @@
 
 - `epic-002` (auth-service), `epic-003` (bets-service), `epic-004` (stats-service) e `epic-008`
   (api-gateway) — todos `done`.
-- Situação: 6 de 9 epics `done` (`epic-001` infra, `epic-009` bootstrap+SonarCloud, `epic-002`
-  auth-service, `epic-003` bets-service, `epic-004` stats-service, `epic-008` api-gateway).
-  Nenhum epic `in-progress` no momento — `epic-005` (telegram-integration) e `epic-006` (web)
-  ambos ficaram elegíveis agora que `epic-008` fechou.
+- `epic-005` (telegram-integration) **em andamento** — `feat-001` (bootstrap) entregue e
+  mergeado em `develop`. 4 features restam (`feat-002` parsing, `feat-003` vínculo de conta,
+  `feat-004` integração com `api-gateway`, `feat-005` CI).
+- Situação: 6 de 9 epics `done`. `epic-005` é o único `in-progress` no momento. `epic-006`
+  (web) segue elegível (dependências satisfeitas) mas não iniciado nesta sessão.
 
 ## Concluído nesta sessão (2026-09-08)
 
-- [x] **`api-gateway feat-005` (fechamento formal do pipeline de CI) implementado e mergeado em
-      `develop`** — feature de fechamento sem código/workflow novo, mesmo padrão de
-      `auth-service feat-007`/`stats-service feat-007`: `description` corrigida de "5 passos com
-      atalho `mvn sonar:sonar`" pra "6 passos reais" (changelog, i18n, build, testes+cobertura,
-      SonarCloud com coordenadas completas, gate de zero issue) — o pipeline já rodava assim de
-      verdade desde `feat-001.1` e já tinha passado verde, com SonarCloud, em todas as 8 PRs desta
-      sessão (SV-148 até SV-178). 1 subtask (SV-180, story SV-179).
-- [x] **`epic-008` (api-gateway) fechado** — todas as 6 features (`feat-001..006`) `done`.
-      `feature_list.json` da raiz atualizado (evidência completa, `harness` → `status: done`).
-- [x] (continuação de sessão anterior, mesmo dia) `api-gateway feat-006` — filtro global
-      `X-Correlation-Id`, ver entrada anterior deste log/`progress.md` para o detalhe.
+- [x] **`telegram-integration feat-001` (Setup do projeto Python + webhook n8n) implementado e
+      mergeado em `develop`** — primeiro serviço Python do backlog, nenhum código existia antes.
+      Bootstrap real via `uv init`/`uv add` (não escrito à mão), FastAPI+Uvicorn como framework
+      HTTP (decisão registrada em `docs/CONVENTIONS.md`), i18n (`locales/{pt-BR,en-US,es}.json`
+      + loader com fallback), `n8n/telegram-bot.json` (Telegram Trigger + normalização, parando
+      antes do `HTTP Request` — isso é `feat-002`). 3 subtasks (SV-182..184, story SV-181), 4 PRs
+      com CI real e verde (incluindo SonarCloud no PR de story). Ver
+      `services/telegram-integration/progress.md` para o detalhe completo (achados reais: 2
+      armadilhas de sequenciamento de CI, 1 achado de documentação, 1 achado do Delivery Review,
+      1 achado real do SonarCloud).
+- [x] **Impedimento de ambiente resolvido**: `uv` não estava instalado nesta máquina — corrigido
+      via `pip install --user uv` + cópia do executável para `~/.local/bin` (mesmo mecanismo do
+      gotcha anterior do `claude.exe`), PATH persistido via PowerShell para sessões futuras.
+- [x] (continuação, mesmo dia) `api-gateway feat-005` fechou `epic-008` — ver entrada anterior
+      deste log/`progress.md`.
 
 ## Bloqueios / Riscos
 
 | Item | Estado |
 |---|---|
-| DLQ local usa `at-most-once` | Aberto **por desenho**. Só reavaliável quando `infra/feat-002` rodar, que depende de `epic-004`/`epic-005` (`epic-004` já `done`, `epic-005` agora elegível). Ver `docs/DECISIONS-LOG.md` (2026-08-03). |
+| DLQ local usa `at-most-once` | Aberto **por desenho**. Só reavaliável quando `infra/feat-002` rodar, que depende de `epic-004`/`epic-005` (`epic-004` já `done`, `epic-005` `in-progress`). Ver `docs/DECISIONS-LOG.md` (2026-08-03). |
 | Topologia RabbitMQ é contrato | `bets-service` e `stats-service` publicam/consomem **sem redeclarar** exchange ou fila. Ver `docs/API-CONTRACTS.md`. |
-| `bets-service` não consome `X-Correlation-Id` real ainda | `BetEventEnvelope` não tem campo `correlationId` apesar do header agora existir de verdade (`api-gateway feat-006`). Sinalizado em `docs/services/bets-service.md`, não é blocker de nada — fica pra uma sessão futura de `bets-service` decidir se/quando fechar. |
-| 2 repositórios ainda sem código de aplicação | `telegram-integration`, `web` — só o commit de bootstrap do `epic-009`. Ambos elegíveis agora. |
+| `bets-service` não consome `X-Correlation-Id` real ainda | Sinalizado em `docs/services/bets-service.md`, não é blocker de nada. |
+| `n8n/telegram-bot.json` não testado contra instância real | Risco residual aceito, documentado em `services/telegram-integration/n8n/README.md`. Validar antes de considerar o fluxo pronto pra produção. |
+| `web` sem código de aplicação | Só o commit de bootstrap do `epic-009`. Elegível, não iniciado. |
 
 ## Próxima sessão — por onde começar
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. **`epic-005` (`telegram-integration`)** e **`epic-006` (`web`)** são os dois epics elegíveis
-   agora — dependências (`epic-002`/`epic-003`/`epic-004`/`epic-008`) todas `done`. Diferentes
-   serviços, podem avançar em paralelo (WIP máximo 1 por lane de serviço, não globalmente) — mas
-   numa sessão só, escolher um. `epic-005` é o mais natural de priorizar: também libera `epic-007`
-   (resiliência DLQ/retry, que depende de `epic-004` + `epic-005`).
-3. `telegram-integration` é Python (primeiro serviço não-Java do backlog) — ler
-   `services/telegram-integration/CLAUDE.md` com atenção especial antes de começar (convenções
-   `uv`/`ruff`/`mypy`, formato de i18n JSON já decidido em `docs/DECISIONS-LOG.md`, `python3` vs
-   `python` no PATH desta máquina — ver `docs/DECISIONS-LOG.md` 2026-08-02).
-4. `epic-007` (resiliência DLQ/retry) continua **não elegível** até `epic-005` fechar também
-   (depende de `epic-004` + `epic-005`).
+2. **`telegram-integration feat-002`** (Parsing de mensagens não estruturadas) é a próxima
+   natural — única feature elegível de `epic-005` agora (`feat-003`/`feat-004` dependem dela).
+   É o que de fato liga o nó `HTTP Request` no workflow n8n ao endpoint Python.
+3. Alternativa em paralelo (sessão/serviço diferente): **`epic-006` (`web`, Angular)** — todas
+   as dependências satisfeitas, ainda não iniciado. WIP máximo 1 por lane de serviço continua
+   valendo — não trabalhar em `telegram-integration` e `web` na mesma sessão.
+4. `epic-007` (resiliência DLQ/retry) continua **não elegível** até `epic-005` fechar por
+   completo (depende de `epic-004` + `epic-005`, não apenas `epic-005` `in-progress`).

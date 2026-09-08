@@ -75,7 +75,7 @@
         "epic-003",
         "epic-008"
       ],
-      "status": "not-started",
+      "status": "in-progress",
       "evidence": "",
       "harness": "services/telegram-integration/"
     },

@@ -493,6 +493,13 @@ princípios que não se misturam (ver também [[API-CONTRACTS]] seção "Interna
   local, mesmo em um serviço pequeno — facilita retomar o código entre sessões.
 - **i18n**: mensagens do bot para o usuário são localizadas (`pt-BR`/`en-US`/`es`) via o
   `language_code` do update do Telegram — ver seção "Internacionalização (i18n)" acima.
+- **Framework HTTP: FastAPI + Uvicorn** (decisão de `feat-001`, 2026-09-08 — nenhuma nota fixava
+  isso antes). Motivo: type hints nativos (já convenção deste serviço, mypy-friendly), validação
+  automática via Pydantic para o JSON normalizado que chega do n8n (reduz parsing defensivo
+  manual), `TestClient` síncrono embutido facilita `pytest` sem depender de `pytest-asyncio`.
+  n8n chama este serviço via HTTP depois de normalizar o payload do webhook do Telegram (ver
+  [[telegram-integration]]) — o endpoint real de parsing só existe a partir de `feat-002`, mas o
+  framework já fica fixado aqui para não ser redecidido por sessão.
 
 ## Git — fluxo de trabalho
 

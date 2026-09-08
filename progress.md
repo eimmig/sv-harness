@@ -1466,3 +1466,42 @@ realidade; nenhum comportamento mudou.
 (`telegram-integration`) e `epic-006` (`web`), os dois únicos epics ainda `not-started` com
 dependências agora satisfeitas — `epic-007` (resiliência) continua preso a `epic-005` ainda não
 começar.
+
+## `telegram-integration feat-001` fechada — `epic-005` iniciado (2026-09-08)
+
+Primeiro serviço Python do backlog — nenhum código existia antes desta sessão. Impedimento real
+resolvido antes de codificar: `uv` (gerenciador de dependências já decidido em
+`docs/CONVENTIONS.md`) não estava instalado nesta máquina — `Scripts` global do Python é
+read-only sem admin; corrigido via `pip install --user uv` + cópia do executável para
+`~/.local/bin` (já no PATH, mesmo mecanismo do gotcha anterior do `claude.exe`) + PATH do usuário
+persistido via PowerShell.
+
+`pyproject.toml`/`uv.lock` gerados via `uv init`/`uv add` reais (versões resolvidas do PyPI, não
+escritas à mão — mesmo padrão de `start.spring.io` usado em `api-gateway feat-001`). **FastAPI +
+Uvicorn** decidido como framework HTTP (decisão minha, sem nota anterior fixando isso, registrada
+em `docs/CONVENTIONS.md`) — type hints nativos, validação via Pydantic para o payload normalizado
+do n8n, `TestClient` síncrono. `GET /health` prova o app de pé; i18n
+(`locales/{pt-BR,en-US,es}.json` + `resolve_locale`/`get_message`, uma chave real
+`generic_error`) prova o mecanismo ponta a ponta, mesmo padrão já aceito em
+`auth-service feat-001.5`/`api-gateway feat-001.3`. `n8n/telegram-bot.json` (Telegram Trigger +
+normalização) exportado parando propositalmente antes do nó `HTTP Request` — a chamada real
+n8n → Python fica para `feat-002`; risco residual documentado em `n8n/README.md` (JSON não
+validado contra instância real de n8n, `docs.n8n.io/workflows/export-import` retornou 404 durante
+a pesquisa, grounding via fonte secundária via WebSearch/WebFetch).
+
+2 achados reais de sequenciamento de CI corrigidos rodando os PRs de verdade (mesma armadilha já
+documentada em `docs/CI-CD.md` para os outros 6 repositórios, nunca portada para este até agora):
+i18n guardado só por `pyproject.toml` (quebraria a subtask de bootstrap antes de `locales/`
+existir) e changelog rodando em todo PR em vez de só `story -> develop`. Achado real de
+documentação corrigido: `docs/OBSERVABILITY-AND-CONFIG.md` dizia que o `/health` deste serviço
+verifica RabbitMQ/n8n — nenhuma nota sustentava isso, corrigido. Delivery Reviewer: PASS (1
+achado real corrigido — `resolve_locale` com match frouxo via `startswith`). Test Suite Auditor:
+PASS. Achado real do SonarCloud na primeira análise de verdade deste repositório (PR story →
+develop): Security Rating E por bind em `0.0.0.0` no entrypoint de dev — corrigido para
+`127.0.0.1`.
+
+3 subtasks (SV-182..184, story SV-181), 4 PRs (3 de subtask + 1 de story) com CI real e verde
+(execução de verdade, não guarda pulada), SonarCloud verde no PR de story. 12 testes, 0 falhas,
+cobertura 100%. `./init.sh` do serviço e da raiz verdes. `epic-005` (raiz) passou de
+`not-started` para `in-progress` — libera `feat-002` (parsing de mensagens) como próxima feature
+elegível.

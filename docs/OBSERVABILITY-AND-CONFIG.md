@@ -33,8 +33,13 @@ Convenções operacionais que evitam cada serviço logar/configurar de um jeito 
 
 - Serviços Java: Spring Boot Actuator, `/actuator/health` (liveness) e `/actuator/health/readiness`
   (readiness — inclui checagem de conexão com Postgres/RabbitMQ/Redis conforme o serviço).
-- `telegram-integration`: endpoint simples `/health` retornando 200 se o processo consegue
-  alcançar o RabbitMQ/n8n configurados.
+- `telegram-integration`: endpoint simples `GET /health` (FastAPI, ver
+  [[telegram-integration]]) retornando 200 se o processo está de pé. **Correção de 2026-09-08**:
+  esta nota chegou a dizer que o endpoint verificava conectividade com "RabbitMQ/n8n configurados"
+  — nenhuma outra nota sustenta este serviço falando com RabbitMQ diretamente (ele nunca publica
+  nem consome evento; só `bets-service`/`stats-service` fazem isso) nem com n8n (é n8n quem chama
+  este serviço, não o contrário) — era erro de cópia, achado ao planejar `feat-001`. Se o design
+  evoluir para checar alguma dependência real (ex.: alcançar `api-gateway`), atualizar aqui.
 - `infra/docker-compose.yml` deve usar esses endpoints em `healthcheck:` para que serviços
   dependentes (ex.: `stats-service` esperando o RabbitMQ) só subam depois que a dependência
   estiver de fato pronta, não apenas com a porta aberta.
