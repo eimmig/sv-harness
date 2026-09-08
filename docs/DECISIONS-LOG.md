@@ -46,6 +46,7 @@ que não devem ser reinterpretadas" para as decisões já consolidadas como defi
 - [2026-09-04 — `mustChangePassword` não bloqueia login, reverte a intenção original da entrada de 2026-08-02](#2026-09-04-mustchangepassword-nao-bloqueia-login-reverte-a-intencao-original-da-entrada-de-2026-08-02)
 - [2026-09-07 — `api-gateway` usa Spring Cloud Gateway Server WebMVC, não o reativo](#2026-09-07-api-gateway-usa-spring-cloud-gateway-server-webmvc-nao-o-reativo)
 - [2026-09-07 — Porta HTTP fixa por serviço Java + URL de roteamento configurável no Gateway](#2026-09-07-porta-http-fixa-por-servico-java--url-de-roteamento-configuravel-no-gateway)
+- [2026-09-07 — Header X-Telegram-User-Id para o caminho de credencial de serviço do Gateway](#2026-09-07-header-x-telegram-user-id-para-o-caminho-de-credencial-de-servico-do-gateway)
 
 ---
 
@@ -1254,3 +1255,32 @@ mudar o mecanismo).
 - `docs/OBSERVABILITY-AND-CONFIG.md` ganha uma tabela "Portas HTTP" com a alocação acima.
 - `services/api-gateway/.env.example`, `services/api-gateway/CLAUDE.md` e
   `docs/services/api-gateway.md` documentam as 3 variáveis de URL a partir de `feat-003`.
+
+## 2026-09-07 — Header X-Telegram-User-Id para o caminho de credencial de serviço do Gateway
+
+**O que mudou**: lacuna encontrada ao planejar `api-gateway feat-004` (credencial de serviço
+`X-Service-Key`): toda nota do vault que descreve esse caminho (`docs/ARCHITECTURE.md`,
+`docs/API-CONTRACTS.md`, `docs/services/{api-gateway,telegram-integration,auth-service}.md`)
+afirma que "o Gateway resolve `telegramUserId -> userId/tenantId`", mas nenhuma fixava **como**
+o Gateway recebe esse `telegramUserId` na requisição `POST /api/v1/bets` — não é um header
+nomeado em lugar nenhum, e o corpo da requisição é o mesmo DTO de aposta usado pelo formulário
+web (sem esse campo). Decisão, tomada com o usuário: **header dedicado `X-Telegram-User-Id`**,
+paralelo ao `X-Service-Key` — o corpo da requisição continua idêntico ao do formulário web (só
+dados da aposta); o Gateway lê o header, resolve via `auth-service`, injeta
+`X-User-Id`/`X-Tenant-Id` e repassa ao `bets-service` sem o header extra (mesmo padrão de nunca
+repassar a credencial/identidade original, já usado para `Authorization` no caminho PASETO).
+
+**Por quê**: rejeitada a alternativa de colocar `telegramUserId` no corpo JSON — acoplaria o
+Gateway ao schema do DTO de `bets-service` (hoje ele não desserializa nem conhece esse corpo,
+só faz proxy bruto via `HandlerFunctions.http()`), só para extrair um campo presente apenas
+nesse caminho de autenticação. Um header dedicado mantém o Gateway agnóstico ao corpo da
+requisição, consistente com o resto do roteamento (`feat-003`).
+
+**Impacto**:
+- `services/api-gateway/CLAUDE.md` e `docs/services/api-gateway.md` documentam o header a partir
+  de `feat-004`.
+- `docs/services/telegram-integration.md` (passo 4 do fluxo de captura) e
+  `docs/ARCHITECTURE.md` (diagrama de sequência de captura via Telegram) atualizados para citar
+  `X-Telegram-User-Id` explicitamente, não só "X-Service-Key".
+- `docs/API-CONTRACTS.md` seção "Confiança entre serviços" ganha o header na descrição do
+  caminho de credencial de serviço.

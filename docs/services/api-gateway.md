@@ -60,9 +60,13 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
 4. **Credencial de serviço para [[telegram-integration]]**: o bot não tem um usuário logado com
    token PASETO — só sabe o `telegramUserId` de quem mandou a mensagem. Para esse caminho:
    - `telegram-integration` chama o Gateway com um header `X-Service-Key` (segredo estático por
-     ambiente, ver [[OBSERVABILITY-AND-CONFIG]]) em vez de um token PASETO.
+     ambiente, ver [[OBSERVABILITY-AND-CONFIG]]) em vez de um token PASETO, e informa **qual**
+     usuário do Telegram fez a chamada via `X-Telegram-User-Id` (decisão de 2026-09-07, ver
+     [[DECISIONS-LOG]] — header dedicado, o corpo da requisição continua idêntico ao do
+     formulário web).
    - O Gateway valida a `X-Service-Key` e, se válida, chama internamente
-     `GET /api/v1/telegram-accounts/{telegramUserId}` em [[auth-service]] para resolver o
+     `GET /api/v1/telegram-accounts/{telegramUserId}` em [[auth-service]] (usando o valor de
+     `X-Telegram-User-Id`) para resolver o
      `userId`/`tenantId` vinculados (ver [[auth-service]] seção "Vínculo de conta Telegram").
      > **Resolvido em 2026-08-02** (ver [[DECISIONS-LOG]] item 15): `auth-service` resolve esse
      > lookup consultando um diretório `TELEGRAM_LINK` no schema `public` (fora de qualquer

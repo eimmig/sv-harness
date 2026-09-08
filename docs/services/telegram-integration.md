@@ -37,10 +37,12 @@ tentar adivinhar ou criar um tenant novo a partir de uma mensagem do Telegram.
 3. Rotina Python faz o parsing/higienização da string (esporte, liga, mercado, odd, stake, casa
    de apostas, etc.).
 4. Chama `POST /api/v1/bets` através do [[api-gateway]], autenticando com um header `X-Service-Key`
-   (credencial de serviço, não token PASETO — não há usuário logado neste fluxo) em vez de
-   chamar [[bets-service]] diretamente. O Gateway resolve `telegramUserId -> userId`/`tenantId`
-   via o vínculo criado acima e injeta `X-User-Id`/`X-Tenant-Id` antes de rotear — **mesmo
-   endpoint** `POST /api/v1/bets` usado pelo formulário web, não um endpoint separado.
+   (credencial de serviço, não token PASETO — não há usuário logado neste fluxo) e informando o
+   autor da mensagem via `X-Telegram-User-Id` (decisão de 2026-09-07, ver [[DECISIONS-LOG]] —
+   header dedicado, corpo da requisição idêntico ao do formulário web) em vez de chamar
+   [[bets-service]] diretamente. O Gateway resolve `telegramUserId -> userId`/`tenantId` via o
+   vínculo criado acima e injeta `X-User-Id`/`X-Tenant-Id` antes de rotear — **mesmo endpoint**
+   `POST /api/v1/bets` usado pelo formulário web, não um endpoint separado.
    > **Resolvido em 2026-08-02** (ver [[DECISIONS-LOG]] item 15): `auth-service` mantém um
    > diretório `TELEGRAM_LINK` no schema `public` (fora de qualquer schema de tenant) que
    > resolve `telegramUserId -> tenantId`/`userId` diretamente — o Gateway não precisa mais

@@ -148,10 +148,14 @@ o código-fonte do outro serviço.
   assumir que pode confiar em qualquer requisição que chegue sem passar pelo Gateway.
 - **Chamadas sem usuário logado** (hoje só `telegram-integration`, que não tem token PASETO):
   autenticam no `api-gateway` com um header `X-Service-Key` (segredo estático por ambiente, ver
-  [[OBSERVABILITY-AND-CONFIG]]) em vez de um token PASETO. O `api-gateway` resolve o
+  [[OBSERVABILITY-AND-CONFIG]]) em vez de um token PASETO, e informam **qual** usuário do
+  Telegram fez a chamada via um segundo header, `X-Telegram-User-Id` (decisão de 2026-09-07, ver
+  [[DECISIONS-LOG]] — nenhuma nota fixava isso antes de `api-gateway feat-004`; o corpo da
+  requisição continua idêntico ao do formulário web, sem esse campo). O `api-gateway` resolve o
   usuário/tenant chamando `auth-service` (lookup de `TELEGRAM_ACCOUNT`, ver [[auth-service]]) e
   injeta `X-User-Id`/`X-Tenant-Id` resolvidos antes de rotear — o chamador nunca informa esses
-  headers diretamente, o mesmo invariante do caminho autenticado por PASETO.
+  dois headers diretamente (só `X-Telegram-User-Id`), o mesmo invariante do caminho autenticado
+  por PASETO.
   > **Resolvido em 2026-08-02** (ver [[DECISIONS-LOG]] item 15): `auth-service` mantém um
   > diretório `TELEGRAM_LINK` (`telegramUserId -> tenantId`/`userId`) no schema `public` do seu
   > próprio banco, fora de qualquer schema de tenant — o lookup é uma consulta direta a essa

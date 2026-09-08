@@ -154,8 +154,9 @@ sequenceDiagram
 ### 2. Registro via Telegram
 
 Mensagem → [[telegram-integration]] (n8n + Python) faz parsing → chama `POST /api/v1/bets`
-através do [[api-gateway]], autenticando com credencial de serviço (`X-Service-Key`) em vez de
-token PASETO — o Gateway resolve `telegramUserId -> userId` via [[auth-service]] e injeta
+através do [[api-gateway]], autenticando com credencial de serviço (`X-Service-Key`) e
+informando o autor via `X-Telegram-User-Id` (decisão de 2026-09-07, ver [[DECISIONS-LOG]]) em
+vez de token PASETO — o Gateway resolve `telegramUserId -> userId` via [[auth-service]] e injeta
 `X-User-Id` antes de rotear para [[bets-service]], o mesmo endpoint usado pelo formulário web →
 resto do fluxo é idêntico ao manual (evento `BetCreated`, consumo assíncrono).
 
@@ -171,7 +172,7 @@ sequenceDiagram
 
     U->>TG: envia mensagem com aposta
     TG->>TI: webhook
-    TI->>GW: POST /api/v1/bets (X-Service-Key)
+    TI->>GW: POST /api/v1/bets (X-Service-Key, X-Telegram-User-Id)
     GW->>AUTH: GET /api/v1/telegram-accounts/{telegramUserId}
     AUTH-->>GW: userId vinculado (404 se não houver vínculo)
     GW->>BS: encaminha (injeta X-User-Id resolvido)
