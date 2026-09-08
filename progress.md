@@ -1394,3 +1394,22 @@ achados reais de segurança do próprio self-review corrigidos antes do merge (v
 travando a thread do Gateway indefinidamente em caso de falha lenta). `epic-008` (raiz) continua
 `in-progress` — libera `feat-005` (CI, já roda de verdade); `feat-006` (correlation-id) segue
 elegível.
+
+## Limpeza de avisos do painel Problems do VSCode (2026-09-08)
+
+Usuário reportou 7 problemas no painel Problems do VSCode. Investigação: 2 eram só cache do
+Java Language Server desatualizado (`auth-service`/`stats-service` pedindo reload de projeto,
+sem ação de código); os outros 5 eram 3 achados reais — `org.testcontainers.containers.RabbitMQContainer`
+deprecado em `bets-service` (2 ocorrências) e `stats-service` (2 ocorrências), migrado para o
+módulo dedicado `org.testcontainers.rabbitmq` (mesmo construtor, confirmado via `javap` contra o
+jar real antes de trocar o import — já era dependência do `pom.xml` dos dois); warning de
+varargs genérico do Mockito em `bets-service BetServiceTest` (1 ocorrência), suprimido com
+`@SuppressWarnings("unchecked")` no único método afetado.
+
+Mesmo processo formal da porta fixa (Plan Reviewer + Jira + branch + PR + CI) aplicado nos 2
+serviços, por decisão do usuário — `bets-service feat-012`/SV-172 e `stats-service feat-009`/SV-174,
+ambos com epic já `done`, reabertos só para essa correção mínima. Zero mudança de comportamento;
+`Delivery Reviewer` (passe próprio) confirmou via `grep` que nenhuma referência ao pacote antigo
+sobrou. `./init.sh` dos 2 serviços verde, CI/SonarCloud verde nos 2 PRs `feature -> develop`
+(`sv-bets-backend` PR #52, `sv-stats-backend` PR #35). `feature_list.json` da raiz ganhou o
+adendo correspondente na evidência de `epic-003`/`epic-004`.
