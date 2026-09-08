@@ -34,7 +34,10 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
    por [[auth-service]]), enviado no header `Authorization: Bearer <token>` (ver
    [[API-CONTRACTS]] seção "Confiança entre serviços"). Token ausente/inválido/expirado → `401`,
    `application/problem+json` (`title`/`detail` localizados por `Accept-Language`, ver
-   [[API-CONTRACTS]] seção "Internacionalização (i18n)").
+   [[API-CONTRACTS]] seção "Internacionalização (i18n)"). **Exceção: `POST /api/v1/auth/login` é
+   pública** (achado real de `feat-003`, corrigido antes de existir tráfego real) - exigir token
+   para emitir o próprio token impediria qualquer login. Único caminho isento além de
+   `/actuator/**`.
 2. **Injeção de `X-User-Id`/`X-Tenant-Id`**: após validar o token, injeta o `userId` e o
    `tenantId` (slug do tenant) extraídos dele como headers `X-User-Id`/`X-Tenant-Id` antes de
    rotear. Nunca aceita esses headers vindo do cliente — sempre derivados aqui. **Os dois
@@ -44,9 +47,15 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
 
    | Prefixo | Destino |
    |---|---|
-   | `/api/v1/users/**`, `/api/v1/auth/**` | [[auth-service]] |
+   | `/api/v1/users/**`, `/api/v1/auth/**`, `/api/v1/telegram-links/**` | [[auth-service]] |
    | `/api/v1/betting-houses/**`, `/api/v1/bets/**`, `/api/v1/transactions/**` | [[bets-service]] |
    | `/api/v1/statistics/**` | [[stats-service]] |
+
+   `/api/v1/telegram-links/**` acrescentada em `feat-003` (achado real): endpoint já existia em
+   `auth-service` (`feat-006`, gera código de vínculo para usuário logado) mas não estava coberto
+   por nenhum prefixo desta tabela. `/api/v1/telegram-accounts/**` (confirmação via bot, lookup
+   interno) fica de fora até `feat-004` introduzi-la com o caminho de credencial de serviço
+   (`X-Service-Key`), não PASETO.
 
 4. **Credencial de serviço para [[telegram-integration]]**: o bot não tem um usuário logado com
    token PASETO — só sabe o `telegramUserId` de quem mandou a mensagem. Para esse caminho:

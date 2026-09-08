@@ -39,6 +39,27 @@ Convenções operacionais que evitam cada serviço logar/configurar de um jeito 
   dependentes (ex.: `stats-service` esperando o RabbitMQ) só subam depois que a dependência
   estiver de fato pronta, não apenas com a porta aberta.
 
+## Portas HTTP
+
+Decisão de 2026-09-07 (ver [[DECISIONS-LOG]] "Porta HTTP fixa por serviço Java + URL de
+roteamento configurável no Gateway"), fechada ao planejar `api-gateway feat-003`: nenhum dos
+quatro serviços Java tinha porta HTTP explícita antes disso (todos no default `8080` do Spring
+Boot, colidindo em desenvolvimento local — nenhum ainda é containerizado, `infra/docker-compose.yml`
+só cobre Postgres/RabbitMQ/Redis). Alocação fixa via `server.port` no `application.yml` de cada
+serviço:
+
+| Serviço | Porta |
+|---|---|
+| `api-gateway` | `8080` (default — único ponto de entrada público) |
+| `auth-service` | `8081` |
+| `bets-service` | `8082` |
+| `stats-service` | `8083` |
+
+`api-gateway` resolve a URL de cada destino por variável de ambiente (`AUTH_SERVICE_URL`,
+`BETS_SERVICE_URL`, `STATS_SERVICE_URL`, ver `.env.example` daquele serviço), default
+`http://localhost:808x` correspondente — nunca hardcoded, para sobreviver à containerização
+futura dos quatro serviços sem mudar o mecanismo (só o default deixa de ser `localhost`).
+
 ## Configuração e segredos
 
 - Cada serviço tem um `.env.example` versionado (nunca `.env` real) listando as variáveis

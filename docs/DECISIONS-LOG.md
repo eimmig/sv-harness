@@ -45,6 +45,7 @@ que não devem ser reinterpretadas" para as decisões já consolidadas como defi
 - [2026-08-19 — Raiz vira o 8º repositório (`sv-harness`), reverte "a raiz nunca vai para o GitHub"](#2026-08-19-raiz-vira-o-8-repositorio-sv-harness-reverte-a-raiz-nunca-vai-para-o-github)
 - [2026-09-04 — `mustChangePassword` não bloqueia login, reverte a intenção original da entrada de 2026-08-02](#2026-09-04-mustchangepassword-nao-bloqueia-login-reverte-a-intencao-original-da-entrada-de-2026-08-02)
 - [2026-09-07 — `api-gateway` usa Spring Cloud Gateway Server WebMVC, não o reativo](#2026-09-07-api-gateway-usa-spring-cloud-gateway-server-webmvc-nao-o-reativo)
+- [2026-09-07 — Porta HTTP fixa por serviço Java + URL de roteamento configurável no Gateway](#2026-09-07-porta-http-fixa-por-servico-java--url-de-roteamento-configuravel-no-gateway)
 
 ---
 
@@ -1212,3 +1213,44 @@ predicado/filtro com a mesma pilha servlet bloqueante já usada em todo o resto 
   Filtros de `feat-002`/`feat-004`/`feat-006` são `HandlerFilterFunction`/`ServletFilter`, não
   `GatewayFilter` reativo.
 - Sem impacto em nenhum outro serviço — decisão interna de `api-gateway`.
+
+## 2026-09-07 — Porta HTTP fixa por serviço Java + URL de roteamento configurável no Gateway
+
+**O que mudou**: lacuna encontrada ao planejar `api-gateway feat-003` (tabela de rotas): nenhuma
+nota do vault fixava a porta HTTP de `auth-service`/`bets-service`/`stats-service`/`api-gateway`
+nem como o Gateway resolveria a URL base de cada serviço destino ao rotear. Os quatro usavam o
+default `8080` do Spring Boot sem nenhuma configuração — colidiria em runtime se rodados juntos
+na mesma máquina de desenvolvimento (nenhum deles ainda é containerizado;
+`infra/docker-compose.yml` só tem Postgres/RabbitMQ/Redis). Decisão, tomada com o usuário:
+**porta fixa por serviço** (`server.port` explícito no `application.yml` de cada um) **+ URL de
+destino configurável por variável de ambiente no Gateway** (não hardcoded, não service discovery).
+
+- `api-gateway`: `8080` (mantém o default — é o único ponto de entrada público, sem motivo pra
+  mudar).
+- `auth-service`: `8081`.
+- `bets-service`: `8082`.
+- `stats-service`: `8083`.
+- `api-gateway` ganha `AUTH_SERVICE_URL`/`BETS_SERVICE_URL`/`STATS_SERVICE_URL` em
+  `.env.example` (default `http://localhost:808x` de cada um, mesmo padrão já usado para
+  `DB_HOST`/`RABBITMQ_HOST` — variável de ambiente com default de container/processo local).
+
+**Por quê**: as portas precisavam de um valor concreto e estável para a tabela de rotas de
+`feat-003` existir de fato — sem isso o Gateway não tem para onde apontar em desenvolvimento.
+Porta fixa (em vez de só documentar "suba em portas diferentes manualmente") evita que cada
+sessão/desenvolvedor escolha um valor diferente e quebre o `.env.example` do Gateway a cada
+setup. Variável de ambiente (em vez de hardcoded) segue a mesma convenção já usada para toda
+conexão externa nos outros 3 serviços (`docs/OBSERVABILITY-AND-CONFIG.md`) e deixa o valor
+sobrescrevível quando os serviços forem containerizados (`epic-001`/`infra` ainda não cobre os
+apps — quando cobrir, os defaults viram nome de serviço do compose em vez de `localhost`, sem
+mudar o mecanismo).
+
+**Impacto**:
+- `services/auth-service/src/main/resources/application.yml`,
+  `services/bets-service/src/main/resources/application.yml` e
+  `services/stats-service/src/main/resources/application.yml` ganham `server.port` explícito
+  (`8081`/`8082`/`8083`) — mudança mínima, fora do escopo de qualquer feature aberta desses três
+  serviços, aplicada aqui só para destravar `api-gateway feat-003`; cada serviço registra a
+  mudança no próprio `CHANGELOG.md`/commit, no próprio repositório.
+- `docs/OBSERVABILITY-AND-CONFIG.md` ganha uma tabela "Portas HTTP" com a alocação acima.
+- `services/api-gateway/.env.example`, `services/api-gateway/CLAUDE.md` e
+  `docs/services/api-gateway.md` documentam as 3 variáveis de URL a partir de `feat-003`.
