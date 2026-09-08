@@ -1352,3 +1352,28 @@ Delivery Reviewer: `PASS`. Test Suite Auditor: `CONCERNS` → corrigido antes de
 0 falhas, gate JaCoCo 80% real. `./init.sh` da raiz e do serviço verdes. `epic-008` continua
 `in-progress` — `feat-003..006` seguem `not-started`. Ver
 `services/api-gateway/progress.md` para o detalhe completo.
+
+## `api-gateway feat-003` fechada — roteamento + porta HTTP fixa cross-service (2026-09-07, sessão seguinte)
+
+Impedimento real encontrado ao planejar a tabela de rotas: nenhuma nota do vault fixava porta
+HTTP nem URL de destino de `auth-service`/`bets-service`/`stats-service` — todos no default 8080
+do Spring Boot, colidindo em dev local (nenhum containerizado ainda). Levado ao usuário
+(`AskUserQuestion`) antes de codificar: **porta fixa por serviço** (`auth-service` 8081,
+`bets-service` 8082, `stats-service` 8083, `api-gateway` mantém 8080) **+ URL configurável no
+Gateway** (`AUTH_SERVICE_URL`/`BETS_SERVICE_URL`/`STATS_SERVICE_URL`). Registrado em
+`docs/DECISIONS-LOG.md` e `docs/OBSERVABILITY-AND-CONFIG.md` (seção "Portas HTTP" nova).
+
+Como os 3 serviços já estavam com epic `done`, uma segunda pergunta ao usuário definiu o
+processo para essa mudança mínima cross-repo: **feature formal em cada um** (Plan Reviewer +
+Jira + branch + PR + CI), não commit direto — feito assim: `auth-service feat-008`/SV-159,
+`bets-service feat-011`/SV-161, `stats-service feat-008`/SV-163, cada um com PR próprio
+(`feature/SV-15x` → `develop`) e pipeline verde (incluindo SonarCloud). `feature_list.json` da
+raiz ganhou um adendo na evidência de `epic-002`/`epic-003`/`epic-004` registrando essas 3
+features pós-fechamento, sem reabrir o status `done` dos epics.
+
+Só então `api-gateway feat-003` (`RouteConfig`, 3 `RouterFunction` beans) prosseguiu — ver
+`services/api-gateway/progress.md` para o detalhe completo (2 achados reais corrigidos:
+`/api/v1/auth/login` ficaria bloqueado para sempre pelo filtro global de PASETO, e
+`/api/v1/telegram-links/**` faltava na tabela de rotas). `epic-008` (raiz) continua
+`in-progress` — libera `api-gateway feat-004` (credencial de serviço `X-Service-Key`); `feat-006`
+(correlation-id) também segue elegível em paralelo.
