@@ -1445,3 +1445,24 @@ rotas em vez de deixar a lacuna. Test Suite Auditor: PASS.
 gate JaCoCo 80% real. `./init.sh` do serviço e da raiz verdes. `epic-008` (raiz) continua
 `in-progress` — só `feat-005` (fechamento formal do pipeline de CI) resta antes de fechar o epic
 inteiro.
+
+## `api-gateway feat-005` fechada — `epic-008` completo (2026-09-08)
+
+Última feature do backlog de `api-gateway`. Mesmo padrão já visto em `auth-service feat-007` e
+`stats-service feat-007`: feature de fechamento formal, sem código/workflow novo. A `description`
+original dizia "5 passos" com o atalho `mvn sonar:sonar` (que nunca resolve sem `pluginGroups`/
+`pom`, ver `docs/CI-CD.md` "Terceira armadilha") — o `ci.yml` real já tinha 6 passos hardened
+(changelog, i18n, build, testes+cobertura via `mvn -B verify`, SonarCloud com coordenadas
+completas do `sonar-maven-plugin`, gate de zero issue via `validate-sonar-issues.py`) desde
+`feat-001.1`, herdado já corrigido de `stats-service`, e já tinha passado verde — com SonarCloud —
+em todas as 8 PRs desta sessão (SV-148 até SV-178). Corrigida a description pra bater com a
+realidade; nenhum comportamento mudou.
+
+1 subtask (SV-180, story SV-179), 1 PR de subtask (#22) com CI verde, 1 PR de story (#23,
+`feature -> develop`) com CI + SonarCloud verdes. `./init.sh` do serviço e da raiz verdes.
+
+**`epic-008` (api-gateway) fechado** — todas as 6 features (`feat-001..006`) `done`.
+`feature_list.json` da raiz atualizado com a evidência completa. Libera `epic-005`
+(`telegram-integration`) e `epic-006` (`web`), os dois únicos epics ainda `not-started` com
+dependências agora satisfeitas — `epic-007` (resiliência) continua preso a `epic-005` ainda não
+começar.
