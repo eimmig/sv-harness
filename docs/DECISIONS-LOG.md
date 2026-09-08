@@ -1333,3 +1333,30 @@ abandonado preso pra sempre.
   a extração heurística pode errar com frequência em produção — o fallback conversacional existe
   justamente pra isso não ser catastrófico (nenhum campo obrigatório passa sem confirmação
   implícita ou explícita do usuário). Revisitar a precisão real assim que houver uso de verdade.
+
+**ADENDO (mesmo dia, `feat-002.5`/SV-190)**: usuário forneceu 5 capturas reais de bilhetes de
+casas de apostas brasileiras (não commitadas no repo — dados de aposta/financeiro, mantidas só na
+máquina local). Validação real (OCR de verdade + `extract_fields`, não só leitura visual) achou e
+corrigiu 2 problemas reais antes do "revisitar quando houver uso de verdade" acima virar
+necessário:
+
+1. **Odd podia capturar um valor de moeda em vez da odd real** — "Valor Total R$2.50" (stake)
+   vencia a odd real "5.50" por aparecer antes no texto. Corrigido excluindo valores prefixados
+   por R$/$ do escaneio de odd.
+2. **`bet_date` não deveria ser extraído de texto livre** — 2 das 5 amostras reais mostram a data
+   do **evento** (ex.: "Dortmund x Villarreal 08/09/26"), não a data em que a aposta foi feita, e
+   não há como distinguir isso semanticamente via regex. Dado errado silencioso é pior que campo
+   ausente. Removido por completo — `orchestration.py` agora sempre usa a data de hoje (servidor,
+   UTC) quando `bet_date` não é conhecido; o campo saiu de `REQUIRED_FIELDS`, nunca mais
+   perguntado ao usuário.
+
+Testado também `--psm 6` do Tesseract (resolveria o reordenamento de layout em coluna e a perda
+de ponto decimal em 2 das 5 amostras) — **rejeitado**: piora silenciosamente o stake de outra
+amostra (R$2,50 vira "R$250" sem separador, erro de 100x). Risco assimétrico — dado errado
+silencioso é pior que uma pergunta a mais — mantido o `psm` padrão do `pytesseract`.
+
+Resultado final contra as 5 amostras reais, ponta a ponta: **stake correto 5/5**, **odd correto
+2/5** com os outros 3/5 caindo com segurança no fallback conversacional (nunca um valor errado) —
+confirma que o design "heurística genérica + pergunta quando incerto" já combinado com o usuário
+funciona como esperado diante de bilhetes genuinamente difíceis (odd em texto colorido/riscado de
+boost, layout em coluna), sem precisar de template por casa de apostas.

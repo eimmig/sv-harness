@@ -39,6 +39,18 @@
 - [x] **Impedimento de ambiente resolvido**: Tesseract não estava instalado — `choco` falhou por
       falta de admin, resolvido via `winget` (já instalado, fora do PATH) + `tessdata`
       `por`/`eng` baixados pra `~/.local/tessdata` + `TESSDATA_PREFIX`/`TESSERACT_CMD`.
+- [x] **`feat-002.5` (reabertura no mesmo dia): usuário forneceu 5 bilhetes reais de casas de
+      apostas brasileiras** (não commitados — dados de aposta/financeiro). Validação real (OCR de
+      verdade, não só leitura visual) achou e corrigiu 2 achados reais: odd bare-scan podia
+      capturar um valor de moeda em vez da odd real (corrigido); `bet_date` era extraído de
+      qualquer data no texto, mas o bilhete normalmente mostra a data do evento, não da aposta —
+      dado errado silencioso, removido por completo, `orchestration.py` agora sempre usa a data
+      de hoje. Resultado final contra as 5 amostras: stake 5/5 correto, odd 2/5 correto com os
+      outros 3/5 caindo com segurança no fallback (nunca um valor errado). Ver
+      `services/telegram-integration/progress.md` para o detalhe completo.
+- [x] Sessão pediu pra checar se algum pipeline de CI estava quebrado — confirmado que não (só
+      `sv-infra-backend` teve 2 falhas, mas do bootstrap inicial em 2026-08-03, já corrigidas há
+      muito, nenhum PR aberto em nenhum dos 7 repositórios).
 - [x] (continuação, mesmo dia) `api-gateway feat-005` fechou `epic-008` — ver entrada anterior.
 
 ## Bloqueios / Riscos

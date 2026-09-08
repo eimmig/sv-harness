@@ -1547,3 +1547,23 @@ chama o endpoint novo, Telegram `sendMessage` responde ao usuário) — residual
 primeira. 45 testes, 0 falhas, cobertura 100%. `./init.sh` do serviço e da raiz verdes. `epic-005`
 (raiz) continua `in-progress` — libera `feat-003` (vínculo de conta Telegram) como próxima
 feature elegível.
+
+## `telegram-integration feat-002.5` — extração validada contra 5 bilhetes reais (2026-09-08)
+
+Usuário forneceu 5 capturas reais de bilhetes de casas de apostas brasileiras (não commitadas —
+dados de aposta/financeiro, mantidas só na máquina local), reabrindo `feat-002` no mesmo dia em
+que fechou. Validação real (OCR de verdade via `pytesseract`, não só leitura visual) achou 2
+problemas reais: odd bare-scan podia capturar um valor de moeda (R$) em vez da odd real quando
+aparecia antes no texto — corrigido excluindo valores de moeda do escaneio; `bet_date` era
+extraído de qualquer padrão dd/mm/aaaa, mas 2 das 5 amostras reais mostram a data do **evento**,
+não da aposta — dado errado silencioso, removido por completo, `orchestration.py` agora sempre
+usa a data de hoje quando ausente, campo saiu de `REQUIRED_FIELDS`. Testado `--psm 6` do
+Tesseract como alternativa — rejeitado por piorar silenciosamente o stake de outra amostra (erro
+de 100x) — risco assimétrico, mantido o padrão, documentado como limitação aceita.
+
+Resultado final contra as 5 amostras reais: stake correto 5/5, odd correto 2/5 com os outros 3/5
+caindo com segurança no fallback conversacional (nunca um valor errado) — confirma que o design
+já combinado com o usuário (heurística genérica + pergunta quando incerto) funciona como esperado
+diante de bilhetes genuinamente difíceis. Delivery Reviewer: PASS (1 residual menor — `bet_date`
+usa UTC, não horário de Brasília). 1 subtask (SV-190), 2 PRs (subtask + story), CI + SonarCloud
+verdes. 45 testes, 0 falhas, cobertura 100%.
