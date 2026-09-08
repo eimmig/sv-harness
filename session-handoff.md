@@ -3,41 +3,41 @@
 > Estado atual, não histórico. O diário cronológico é o `progress.md` — este arquivo é reescrito
 > a cada sessão para responder "o que a próxima sessão precisa saber agora".
 
-**Última atualização:** 2026-09-07
+**Última atualização:** 2026-09-08
 
 ## Objetivo atual
 
 - `epic-002` (auth-service), `epic-003` (bets-service) e `epic-004` (stats-service) — `done`.
-- `epic-008` (api-gateway) **em andamento** — `feat-001` (setup) e `feat-002` (validação PASETO)
-  entregues e mergeadas em `develop`. Resto do backlog (`feat-003`..`feat-006`) segue
-  `not-started`.
+- `epic-008` (api-gateway) **em andamento** — `feat-001`, `feat-002`, `feat-003`, `feat-004` e
+  `feat-006` entregues e mergeadas em `develop`. Só `feat-005` (fechamento formal do pipeline de
+  CI) resta.
 - Situação: 5 de 9 epics `done` (`epic-001` infra, `epic-009` bootstrap+SonarCloud, `epic-002`
   auth-service, `epic-003` bets-service, `epic-004` stats-service). `epic-008` é o único
-  `in-progress` no momento.
+  `in-progress` no momento, a uma feature de fechar.
 
-## Concluído nesta sessão (2026-09-07)
+## Concluído nesta sessão (2026-09-08)
 
-- [x] **`api-gateway feat-001` implementado e mergeado em `develop`** — bootstrap Spring Boot
-      4.1.1/Java 25/Maven, Spring Cloud Gateway Server WebMVC (decisão nova, ver
-      `docs/DECISIONS-LOG.md`), gate JaCoCo 80%, scaffold de i18n, health checks do Actuator,
-      logging estruturado ECS. 6 subtasks (SV-148..153, story SV-147).
-- [x] **`api-gateway feat-002` implementado e mergeado em `develop`** — `PasetoAuthenticationFilter`
-      valida `Authorization: Bearer <token>` (decisão de transporte nova, ver
-      `docs/API-CONTRACTS.md`), injeta `X-User-Id`/`X-Tenant-Id`, nunca repassa o token original
-      nem aceita identidade do cliente. 4 subtasks (SV-155..158, story SV-154). Achados reais
-      corrigidos: NPE em claim nula, claims ausentes não validadas, `Authorization` vazando pro
-      downstream, limite de expiração incorreto (`/code-review`); filtro bloqueando
-      `/actuator/health` do `feat-001.4` (só visto rodando a suíte completa); `java:S1075` do
-      SonarCloud (path/delimitador hardcoded, 2 rodadas de correção); cobertura assimétrica de
-      teste (Test Suite Auditor).
-- [x] **Lacuna de backlog fechada**: `api-gateway feat-006` (filtro `X-Correlation-Id`) criada —
-      o backlog original de `feat-001..005` nunca atribuiu essa responsabilidade a nenhuma
-      feature, apesar de `docs/OBSERVABILITY-AND-CONFIG.md` já documentá-la como responsabilidade
-      do Gateway e `bets-service` já depender dela (`BetEventEnvelope.correlationId`).
-- [x] **Dois achados reais corrigidos na documentação, antes/durante a codificação de
-      `feat-001`**: groupId antigo em `services/api-gateway/CLAUDE.md`; `docs/CI-CD.md` já
-      alertava sobre as 3 armadilhas de sequenciamento de subtask no `ci.yml` (o Plan Review
-      original buscou por palavra-chave em vez de ler a nota inteira e não pegou o aviso).
+- [x] **`api-gateway feat-006` implementado e mergeado em `develop`** — filtro global
+      `X-Correlation-Id` (`CorrelationIdFilter`, `@Order(Ordered.HIGHEST_PRECEDENCE)`, sem
+      `shouldNotFilter` — roda pra toda rota): gera UUID quando ausente/em branco, propaga quando
+      presente, injeta no MDC, ecoa na response (decisão além do contrato documentado), repassa
+      via `CorrelationIdRequestWrapper` pro roteamento. 2 subtasks (SV-177/178, story SV-176), 2
+      PRs de subtask + 1 PR de story, todos com CI verde (SonarCloud incluso no último). Fechava
+      uma lacuna real do backlog original (`feat-001..005` nunca cobriam isso, apesar de
+      `bets-service` já depender dele para popular `correlationId` no envelope de evento).
+- [x] **Achado real de escopo, corrigido pelo Plan Review antes de codificar**: o plano original
+      cogitava abrir uma feature nova em `services/bets-service/feature_list.json` sinalizando
+      que `BetEventEnvelope` ainda não lê o header real — corrigido para sinalizar só via nota do
+      vault (`docs/services/bets-service.md`, nova seção "Correlation id no envelope de evento
+      (gap conhecido)"), sem tocar em nenhum arquivo de `services/bets-service/` — `epic-003` já
+      está `done` e o gap não bloqueia `feat-006`.
+- [x] **Achado real do Delivery Reviewer, corrigido antes de fechar**: os 2 testes de integração
+      novos só cobriam a rota pública `/api/v1/auth/login`, sem provar que
+      `CorrelationIdRequestWrapper` compõe corretamente quando aninhado com
+      `ResolvedIdentityRequestWrapper` (rotas PASETO/`X-Service-Key`) — corrigido estendendo os 2
+      testes de integração já existentes dessas rotas.
+- [x] `docs/services/api-gateway.md` (item 5) e `docs/services/bets-service.md` (nova seção)
+      atualizados no mesmo commit lógico do fechamento da feature.
 
 ## Bloqueios / Riscos
 
@@ -45,24 +45,19 @@
 |---|---|
 | DLQ local usa `at-most-once` | Aberto **por desenho**. Só reavaliável quando `infra/feat-002` rodar, que depende de `epic-004`/`epic-005` (`epic-004` já `done`, falta `epic-005`). Ver `docs/DECISIONS-LOG.md` (2026-08-03). |
 | Topologia RabbitMQ é contrato | `bets-service` e `stats-service` publicam/consomem **sem redeclarar** exchange ou fila. Ver `docs/API-CONTRACTS.md`. |
-| 2 repositórios ainda sem código de aplicação | `telegram-integration`, `web` — só o commit de bootstrap do `epic-009`. `api-gateway` já tem `feat-001`/`feat-002`. |
+| `bets-service` não consome `X-Correlation-Id` real ainda | `BetEventEnvelope` não tem campo `correlationId` apesar do header agora existir de verdade (`api-gateway feat-006`). Sinalizado em `docs/services/bets-service.md`, não é blocker de nada — fica pra uma sessão futura de `bets-service` decidir se/quando fechar. |
+| 2 repositórios ainda sem código de aplicação | `telegram-integration`, `web` — só o commit de bootstrap do `epic-009`. `api-gateway` está com 5 de 6 features fechadas. |
 
 ## Próxima sessão — por onde começar
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. **`api-gateway feat-003`** (Roteamento para auth-service/bets-service/stats-service) é a
-   próxima feature natural de `epic-008` — primeira a dar propósito real ao serviço além de só
-   validar token isoladamente. Plan Reviewer antes de codificar — **ler `docs/CONVENTIONS.md` e
-   `docs/CI-CD.md` inteiros**, não só buscar por palavra-chave (lição de `feat-001`).
-3. Alternativa em paralelo (sessão/serviço diferente): **`api-gateway feat-006`** (filtro
-   `X-Correlation-Id`) — depende só de `feat-001`, já `done`, independente do filtro de PASETO.
-   Cuidado: WIP máximo 1 por serviço — não trabalhar em `feat-003` e `feat-006` ao mesmo tempo em
-   sessões paralelas, mesmo sendo independentes entre si.
-4. Qualquer filtro *bloqueante* novo em `api-gateway` (ex.: `feat-004`, `X-Service-Key`) precisa
-   excluir `/actuator/**` desde o início — ver `docs/CONVENTIONS.md`, não redescobrir a regressão
-   de `feat-002`.
-5. `epic-005` (`telegram-integration`) e `epic-006` (`web`) continuam **não elegíveis** — ambos
-   dependem de `epic-008` `done` (não apenas `in-progress`), que só fecha quando `api-gateway`
-   fechar `feat-003..006`.
-6. `epic-007` (resiliência DLQ/retry) continua **não elegível** — depende de `epic-004` (já
+2. **`api-gateway feat-005`** (fechamento formal do pipeline de CI) é a única feature restante de
+   `epic-008` — provavelmente uma feature de fechamento sem código novo (o pipeline já roda de
+   verdade desde `epic-009`/`feat-001`), mesmo padrão de `auth-service feat-007`. Confirmar que a
+   `description` da feature ainda bate com o `ci.yml` real antes de escrever qualquer plano.
+   Fechar essa feature fecha `epic-008` inteiro — atualizar `feature_list.json` da raiz na mesma
+   sessão.
+3. `epic-005` (`telegram-integration`) e `epic-006` (`web`) continuam **não elegíveis** — ambos
+   dependem de `epic-008` `done` (não apenas `in-progress`).
+4. `epic-007` (resiliência DLQ/retry) continua **não elegível** — depende de `epic-004` (já
    `done`) **e** `epic-005` (ainda `not-started`).

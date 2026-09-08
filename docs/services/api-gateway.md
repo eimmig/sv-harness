@@ -77,11 +77,19 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
    - Se houver vínculo, injeta `X-User-Id`/`X-Tenant-Id` resolvidos e roteia normalmente para
      `POST /api/v1/bets` em [[bets-service]] — o mesmo endpoint usado pelo formulário web.
 
-5. **Filtro global de `X-Correlation-Id`**: gera o header se a requisição chegar sem ele,
-   propaga se já existir, injeta no MDC/log estruturado e repassa no request roteado para
-   `auth-service`/`bets-service`/`stats-service` (ver [[OBSERVABILITY-AND-CONFIG]]). Roda para
-   toda rota, independente de validação PASETO (item 1) ou credencial de serviço (item 4) — sem
-   ele, o campo `correlationId` do envelope de evento de [[bets-service]] fica sem origem real.
+5. **Filtro global de `X-Correlation-Id`** (`feat-006`, implementado em 2026-09-08):
+   `CorrelationIdFilter` gera o header (`UUID.randomUUID()`) se a requisição chegar sem ele
+   (ausente ou em branco), propaga se já existir, injeta no MDC (`correlationId`, mesma
+   convenção camelCase de `TenantSchemaFilter` em `bets-service`) e repassa no request roteado
+   para `auth-service`/`bets-service`/`stats-service` via `CorrelationIdRequestWrapper` (ver
+   [[OBSERVABILITY-AND-CONFIG]]). Roda para **toda** rota — `@Order(Ordered.HIGHEST_PRECEDENCE)`,
+   sem `shouldNotFilter`, inclusive `/actuator/**` — independente de validação PASETO (item 1) ou
+   credencial de serviço (item 4); a composição dos dois wrappers (`ResolvedIdentityRequestWrapper`
+   + `CorrelationIdRequestWrapper`) foi provada ponta a ponta nos dois caminhos de autenticação.
+   Também ecoa o header na response (decisão além do contrato original, para o chamador
+   correlacionar do lado dele). **Ainda não fecha o ciclo**: `bets-service` não lê esse header
+   real no `BetEventEnvelope` — ver [[bets-service]] seção "Correlation id no envelope de evento
+   (gap conhecido)".
 
 ## O que este serviço não faz
 

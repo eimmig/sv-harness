@@ -181,6 +181,20 @@ justificar um mecanismo de outbox. Teste de contrato valida cada mensagem public
 cópia vendorizada do schema correspondente (`src/test/resources/contracts/*.schema.json` — ver
 `docs/API-CONTRACTS.md` seção "Cópias vendorizadas do schema").
 
+## Correlation id no envelope de evento (gap conhecido, 2026-09-08)
+
+`api-gateway feat-006` implementou o filtro global de `X-Correlation-Id` (gera/propaga, injeta no
+MDC, repassa no roteamento — ver [[api-gateway]] item 5 de "Responsabilidades") — o header agora
+chega de verdade em toda chamada `POST /api/v1/bets` roteada pelo Gateway. **Este serviço ainda
+não lê esse header**: `BetEventEnvelope.java` não tem campo `correlationId` (só
+`eventId`/`eventType`/`schemaVersion`/`occurredAt`/`tenantId`/`userId`/`payload`), apesar de
+`docs/contracts/bet-created.schema.json`/`bet-settled.schema.json` já declararem `correlationId`
+como propriedade opcional (não em `required`, então nada quebra sem ele). Fechar esse gap é
+trabalho deste serviço (ler `X-Correlation-Id` da requisição, popular o envelope, MDC próprio) —
+não implementado por `api-gateway feat-006` (fora de escopo daquele serviço, `epic-003` já
+`done`). Ver `services/bets-service/src/main/java/.../adapter/out/messaging/BetEventEnvelope.java`
+(comentário desatualizado — ainda cita "epic-008" como bloqueio, mas o filtro já existe).
+
 ## Ver também
 
 - [[auth-service]] — fornece `userId`/`tenantId` (schema) usados no isolamento por schema.

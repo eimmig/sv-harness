@@ -1413,3 +1413,35 @@ ambos com epic já `done`, reabertos só para essa correção mínima. Zero muda
 sobrou. `./init.sh` dos 2 serviços verde, CI/SonarCloud verde nos 2 PRs `feature -> develop`
 (`sv-bets-backend` PR #52, `sv-stats-backend` PR #35). `feature_list.json` da raiz ganhou o
 adendo correspondente na evidência de `epic-003`/`epic-004`.
+
+## `api-gateway feat-006` fechada — filtro global de X-Correlation-Id (2026-09-08)
+
+Última das 3 features restantes de `epic-008` além de `feat-005` (CI). `CorrelationIdFilter`
+(`@Order(Ordered.HIGHEST_PRECEDENCE)`, sem `shouldNotFilter` — roda pra toda rota, inclusive
+`/actuator/**`) gera `UUID.randomUUID()` quando o header chega ausente/em branco, propaga quando
+presente, injeta no MDC (`correlationId`), ecoa na response (decisão além do contrato
+documentado, que só falava em request/MDC/downstream) e repassa via `CorrelationIdRequestWrapper`
+(mesmo padrão de `ResolvedIdentityRequestWrapper`) pro roteamento. Roda antes de
+`PasetoAuthenticationFilter`/`ServiceKeyAuthenticationFilter` (nenhum dos dois tem `@Order`,
+default `LOWEST_PRECEDENCE`) para que os próprios logs de rejeição desses filtros já carreguem o
+correlation id.
+
+**Achado real do Plan Review, corrigido antes de codificar**: o plano original cogitava abrir uma
+feature nova em `services/bets-service/feature_list.json` sinalizando que `BetEventEnvelope`
+ainda não lê o header real — violaria "stay in scope" de `services/api-gateway/CLAUDE.md`
+(feature_list.json é artefato de harness de outro serviço, não vault). Corrigido: sinalizado só
+via `docs/services/bets-service.md` (nova seção "Correlation id no envelope de evento (gap
+conhecido)"), sem tocar em nada dentro de `services/bets-service/` — `epic-003` já está `done` e
+o gap não bloqueia `feat-006`.
+
+**Achado real do Delivery Reviewer, corrigido antes de fechar**: os 2 testes de integração novos
+só cobriam a rota pública `/api/v1/auth/login`, sem provar que `CorrelationIdRequestWrapper`
+compõe corretamente quando aninhado com `ResolvedIdentityRequestWrapper` (rotas
+PASETO/`X-Service-Key`) — corrigido estendendo os 2 testes de integração já existentes dessas
+rotas em vez de deixar a lacuna. Test Suite Auditor: PASS.
+
+2 subtasks (SV-177/178, story SV-176), 2 PRs de subtask (#19, #20) com CI verde, 1 PR de story
+(#21, `feature -> develop`) com CI + SonarCloud verdes. 47 testes totais no serviço, 0 falhas,
+gate JaCoCo 80% real. `./init.sh` do serviço e da raiz verdes. `epic-008` (raiz) continua
+`in-progress` — só `feat-005` (fechamento formal do pipeline de CI) resta antes de fechar o epic
+inteiro.
