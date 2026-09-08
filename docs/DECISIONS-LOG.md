@@ -1392,3 +1392,33 @@ brute-force impraticável mesmo sem limite de taxa.
 `docs/API-CONTRACTS.md` seção "Confiança entre serviços" (novo bullet, mesmo padrão do bullet de
 chamadas administrativas). Não afeta `auth-service` nem `api-gateway` — nenhum código desses dois
 repositórios muda; a chamada simplesmente não passa pela tabela de rotas do Gateway.
+
+## 2026-09-08 — Resolução de catálogo (sport/league/market/betting house) no fluxo Telegram
+
+**O que mudou**: `telegram-integration feat-004` (integração com `POST /api/v1/bets`) sempre
+pergunta ao usuário, por lista numerada, os 3 campos de catálogo que `feat-002` nunca extrai
+(`sport`/`league`/`market` — `extraction.py` os deixa `None` por design, "documentado como não
+tentado"); `betting_house` continua tentando fuzzy match contra o nome extraído primeiro, caindo
+pra lista se não achar. Se o catálogo daquele tenant estiver vazio para algum desses campos
+(nenhum `sport`/`league`/`market`/`betting-house` cadastrado ainda), o bot **não cria** a entrada
+sozinho — orienta o usuário a cadastrar em [[web]] primeiro (mensagem localizada) e não conclui a
+captura.
+
+**Por quê**: `bets-service` exige as 4 FKs (`bettingHouseId`/`sportId`/`leagueId`/`marketId`)
+como obrigatórias em `POST /api/v1/bets` (ver `docs/services/bets-service.md` "Registro e ciclo
+de vida da aposta") e cada tenant cadastra os próprios catálogos sem seed compartilhado (decisão
+já registrada nesta nota, item 8) — `feat-002` nunca resolveu nome→ID porque não tinha acesso ao
+catálogo do tenant (só produzia strings brutas, decisão explícita daquela feature). Decidido com
+o usuário via `AskUserQuestion`: perguntar sempre por lista (em vez de auto-escolher quando o
+catálogo tem 1 item só, ou de exigir cadastro prévio fora do bot) evita comportamento implícito
+que confundiria o usuário sobre qual `sport`/`league`/`market` foi de fato usado, e mantém o
+fluxo Telegram funcional mesmo sem OCR conseguir extrair esses campos — consistente com o
+fallback conversacional já existente desde `feat-002`. Não criar catálogo a partir do bot evita
+duplicar validação/regra de negócio de `bets-service` (nome duplicado, formato) num serviço que
+não é dono deste dado.
+
+**Impacto**: `docs/services/telegram-integration.md` seção "Fluxo de captura de aposta" (novo
+passo de resolução de catálogo antes da chamada a `POST /api/v1/bets`). Não afeta `bets-service`
+nem `api-gateway` — usa os endpoints de catálogo (`GET /api/v1/sports`, `/leagues`, `/markets`,
+`/betting-houses`) já existentes, roteados pelo `api-gateway` com o mesmo par
+`X-Service-Key`/`X-Telegram-User-Id` já usado para `POST /api/v1/bets`.

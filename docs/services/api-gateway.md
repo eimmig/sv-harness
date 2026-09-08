@@ -48,14 +48,20 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
    | Prefixo | Destino |
    |---|---|
    | `/api/v1/users/**`, `/api/v1/auth/**`, `/api/v1/telegram-links/**` | [[auth-service]] |
-   | `/api/v1/betting-houses/**`, `/api/v1/bets/**`, `/api/v1/transactions/**` | [[bets-service]] |
+   | `/api/v1/betting-houses/**`, `/api/v1/bets/**`, `/api/v1/transactions/**`, `/api/v1/sports/**`, `/api/v1/leagues/**`, `/api/v1/markets/**` | [[bets-service]] |
    | `/api/v1/statistics/**` | [[stats-service]] |
 
    `/api/v1/telegram-links/**` acrescentada em `feat-003` (achado real): endpoint já existia em
    `auth-service` (`feat-006`, gera código de vínculo para usuário logado) mas não estava coberto
-   por nenhum prefixo desta tabela. `/api/v1/telegram-accounts/**` (confirmação via bot, lookup
-   interno) fica de fora até `feat-004` introduzi-la com o caminho de credencial de serviço
-   (`X-Service-Key`), não PASETO.
+   por nenhum prefixo desta tabela. **`/api/v1/telegram-accounts/**` nunca ganhou rota aqui**
+   (correção 2026-09-08 — esta nota antes previa que `feat-004` a introduziria; achado real do
+   `telegram-integration feat-003`: essa chamada é estruturalmente circular para o Gateway, ver
+   [[DECISIONS-LOG]] "Confirmação de vínculo Telegram bypassa o api-gateway" — `telegram-integration`
+   chama `auth-service` direto). `/api/v1/sports/**`, `/api/v1/leagues/**`, `/api/v1/markets/**`
+   acrescentadas em `feat-007` (achado real do Plan Review de `telegram-integration feat-004`):
+   os 3 catálogos existiam em [[bets-service]] desde a `feat-002` daquele serviço mas nunca
+   tinham rota aqui. `/api/v1/tipsters/**` fica de fora de propósito — `tipsterId` é opcional em
+   `POST /api/v1/bets` e nenhum consumidor atual o preenche.
 
 4. **Credencial de serviço para [[telegram-integration]]**: o bot não tem um usuário logado com
    token PASETO — só sabe o `telegramUserId` de quem mandou a mensagem. Para esse caminho:

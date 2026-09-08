@@ -56,7 +56,16 @@ Telegram.
    extraído com confiança faz o bot perguntar ao usuário diretamente, um de cada vez — estado da
    conversa (quais campos já foram resolvidos, qual está pendente) guardado no Redis já
    provisionado em [[infra]], chave por `telegramUserId`, TTL curto.
-4. Chama `POST /api/v1/bets` através do [[api-gateway]], autenticando com um header `X-Service-Key`
+4. **Resolução de catálogo** (`feat-004`, decisão de 2026-09-08, ver [[DECISIONS-LOG]]):
+   `bettingHouseId`/`sportId`/`leagueId`/`marketId` são obrigatórias em `POST /api/v1/bets` (ver
+   [[bets-service]]), mas `feat-002` nunca extrai `sport`/`league`/`market` (sempre `None`) e só
+   tenta `betting_house` como nome best-effort. Bot busca o catálogo daquele tenant (`GET
+   /api/v1/sports`/`/leagues`/`/markets`/`/betting-houses`, mesmos headers do passo 5) e **sempre
+   pergunta por lista numerada** para `sport`/`league`/`market`; para `betting_house`, tenta fuzzy
+   match contra o nome extraído primeiro, caindo pra lista se não achar. Catálogo vazio para
+   algum campo: bot **não cria** a entrada — orienta o usuário a cadastrar em [[web]] primeiro e
+   não conclui a captura.
+5. Chama `POST /api/v1/bets` através do [[api-gateway]], autenticando com um header `X-Service-Key`
    (credencial de serviço, não token PASETO — não há usuário logado neste fluxo) e informando o
    autor da mensagem via `X-Telegram-User-Id` (decisão de 2026-09-07, ver [[DECISIONS-LOG]] —
    header dedicado, corpo da requisição idêntico ao do formulário web) em vez de chamar
@@ -67,7 +76,7 @@ Telegram.
    > diretório `TELEGRAM_LINK` no schema `public` (fora de qualquer schema de tenant) que
    > resolve `telegramUserId -> tenantId`/`userId` diretamente — o Gateway não precisa mais
    > varrer schemas nem o bot informar o slug do tenant.
-5. Resto do fluxo (evento `BetCreated`, consumo assíncrono por [[stats-service]]) é idêntico
+6. Resto do fluxo (evento `BetCreated`, consumo assíncrono por [[stats-service]]) é idêntico
    ao registro manual.
 
 ## Internacionalização (i18n)
