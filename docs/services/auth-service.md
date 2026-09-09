@@ -89,6 +89,17 @@ de banco" para o racional completo. Resumo:
   > em branco, `email` com formato inválido). `403` se o chamador não existir no tenant resolvido
   > ou não for `admin` (os dois casos retornam o mesmo erro, para não vazar enumeração de
   > usuário). `409` se o e-mail já estiver cadastrado nesse tenant.
+  > **Contrato implementado em `feat-009`** (`GET /api/v1/users`, motivado por um gap real
+  > encontrado ao planejar `apps/web feat-002` — a tela de gestão de usuários do tenant precisa
+  > de listagem, que não existia até aqui): mesmos headers `X-User-Id`/`X-Tenant-Id` e mesma
+  > checagem de `role = admin` de `feat-004` (401/400/403 idênticos), sem payload de entrada.
+  > `200` com array `[{"id": "...", "name": "...", "email": "...", "role": "ADMIN"|"MEMBER",
+  > "mustChangePassword": true|false, "createdAt": "..."}]` ordenado por `name` ascendente
+  > (nenhum requisito fixava ordenação; escolhido por usabilidade de tela de admin), incluindo o
+  > próprio chamador. Sem paginação (lista de tenant provisionado manualmente é pequena por
+  > natureza) e sem filtro/busca no backlog atual. DTO de resposta é `UserSummaryResponse`, novo e
+  > distinto de `CreateUserResponse` (mesmos 5 campos, nunca `passwordHash`) — mantém a convenção
+  > de 1 DTO por operação já usada pelos demais endpoints deste serviço.
 - **Login (RF02)**: e-mail é único apenas dentro do schema do tenant, não globalmente — a tela
   de login precisa de um terceiro campo (slug/identificador da organização) para que este
   serviço saiba em qual schema procurar antes de validar a senha.

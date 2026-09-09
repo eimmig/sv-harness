@@ -72,6 +72,14 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   construtor nos testes `@SpringBootTest`, sem precisar de `@TestConstructor` em cada classe.
 - **DTOs e value objects imutáveis**: `record` do Java (25 tem suporte pleno), não classes com
   getters/setters manuais.
+- **1 DTO de resposta por operação** (achado do `Plan Reviewer` em `auth-service feat-009`,
+  confirmado contra o próprio código do serviço: `CreateUserResponse`/`CreateTenantResponse`/
+  `GenerateTelegramLinkResponse`/`LoginResponse`/`TelegramAccountLookupResponse`, nenhum reusado
+  entre 2 operações): mesmo quando dois endpoints devolvem exatamente os mesmos campos (ex.:
+  `POST` que cria um recurso e `GET` que lista o mesmo tipo de recurso), cada operação ganha seu
+  próprio `record` de resposta em vez de reaproveitar o DTO da outra — evita que o nome do tipo
+  (`CreateXResponse` aparecendo no corpo de um `GET`) fique semanticamente errado só para
+  economizar um `record` de poucas linhas.
 - **Entidades JPA**: usar Lombok (`@Getter`, `@Setter`, `@NoArgsConstructor`,
   `@AllArgsConstructor`) apenas em `adapter/out/persistence/` — JPA exige construtor sem
   argumentos e mutabilidade, incompatível com `record`. Fora de `adapter/out/persistence/`,
