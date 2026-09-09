@@ -82,8 +82,12 @@ Ver [[infra]] para detalhes de configuração. Resumo:
   (schema-per-tenant, ver [[DECISIONS-LOG]] "Modelo de tenant multiusuário" — decisão de
   2026-08-02 que estendeu esse isolamento também a `auth-service`, não só bets/stats).
 - **Redis**: cache distribuído, só usado pelo `stats-service`.
-- **Docker**: todos os serviços conteinerizados; `docker-compose.yml` local, Kubernetes é a
-  meta de orquestração citada no TCC mas fora do escopo do ambiente de desenvolvimento.
+- **Docker**: todos os serviços conteinerizados. `docker-compose.yml` (`infra/`) é o ambiente de
+  desenvolvimento local; **Kubernetes é o alvo real de implantação especificado no TCC 1**
+  (Figura 5, "Diagrama de Implantação da Infraestrutura baseada em Microsserviços") — não uma
+  meta descartada. Manifests/Helm charts ainda não existem (corrigido em 2026-09-08, ver
+  [[DECISIONS-LOG]] — nota anterior aqui dizia o oposto, sem decisão do usuário por trás).
+  Backlog da migração: `epic-010` em `feature_list.json` da raiz (harness `infra/`, `not-started`).
 - **API Gateway**: ponto único de entrada HTTP/REST para o front-end web e para
   [[telegram-integration]]; valida token PASETO (ou credencial de serviço) e roteia para o
   serviço correto. É um serviço de aplicação com harness próprio (`epic-008`,
@@ -94,9 +98,9 @@ Ver [[infra]] para detalhes de configuração. Resumo:
 Preservados em `docs/diagrams/architecture/` (movidos de `D:\UTFPR\TCC\Graficos` em 2026-08-02).
 Úteis para a visão de containers/deployment que a tabela de serviços acima não cobre (ex.: onde
 entra o Load Balancer/Ingress, quais bancos ficam em qual camada) — não repetidos aqui como
-Mermaid porque a tabela de serviços já cobre o mesmo conteúdo em texto, e o diagrama de
-implantação é o único lugar que modela infraestrutura fora do `docker-compose.yml` (Kubernetes
-Ingress), fora do escopo de qualquer nota de serviço.
+Mermaid porque a tabela de serviços já cobre o mesmo conteúdo em texto. O diagrama de implantação
+é a fonte autoritativa da topologia de produção (Kubernetes Ingress + Service por microsserviço),
+que o `docker-compose.yml` de dev não modela (rede bridge única, sem Ingress).
 
 - `docs/diagrams/architecture/structural-diagram.png` — visão de componentes (frontend, serviços,
   filas, bancos). Nomenclatura menos precisa que o diagrama de implantação (rotula só "Load

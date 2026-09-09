@@ -95,6 +95,17 @@
       "harness": "apps/web/"
     },
     {
+      "id": "epic-010",
+      "name": "Migracao para Kubernetes (alvo real de implantacao do TCC 1)",
+      "description": "docs/ARCHITECTURE.md dizia que Kubernetes era 'meta citada no TCC mas fora do escopo do ambiente de desenvolvimento' - corrigido em 2026-09-08 (ver docs/DECISIONS-LOG.md), a pedido do usuario: o TCC 1 especifica Kubernetes como orquestracao de producao (Figura 5, secao 4.3.1 do TCC), nao uma alternativa descartavel. docker-compose.yml (epic-001/infra feat-001) continua sendo o ambiente de desenvolvimento local, nao e substituido. Escopo: manifests Kubernetes (ou Helm charts) convertendo os componentes do compose atual (3x PostgreSQL, RabbitMQ com a topologia ja versionada em infra/rabbitmq/definitions.json, Redis, n8n) e adicionando Deployment/Service/Ingress para os 4 servicos Java (auth-service, bets-service, stats-service, api-gateway), que ainda nao tem Dockerfile proprio. Backlog granular em infra/feature_list.json (feat-004). Nao pertence a nenhum servico de aplicacao - vive no harness infra/, mesmo precedente de epic-001/epic-007 (ver docs/DECISIONS-LOG.md 'Topologia').",
+      "dependencies": [
+        "epic-001"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "infra/"
+    },
+    {
       "id": "epic-007",
       "name": "Resiliencia ponta a ponta (DLQ e retries)",
       "description": "Confirmar que falhas consecutivas no consumo de BetCreated/BetSettled vao para a Dead Letter Queue em vez de travar o stats-service ou perder a mensagem. Teste cross-service: derrubar stats-service, publicar eventos via bets-service, subir de novo, confirmar reprocessamento. Nao cita RNF06: verificado no PDF do TCC1 em 2026-08-17 que a tabela original tem exatamente 6 RNFs e nenhum e sobre tolerancia a falha - RNF06 e Escalabilidade (volume), criterio diferente do testado aqui. A base deste epic no TCC1 e a prosa da abertura da secao 4.1 (p.30, 'reentrega automatica de mensagens (retries) e isolamento de falhas por meio de uma fila de mensagens mortas (DLQ) [...] impedindo que erros isolados travem o fluxo do sistema') e o capitulo de arquitetura ('nenhuma mensagem de aposta seja descartada sem ser processada') - requisito de infraestrutura sem ID proprio. Nenhum RNF novo foi criado, por decisao do usuario. Ver docs/REQUIREMENTS.md (nota apos a tabela de RNF) e docs/DECISIONS-LOG.md (2026-08-17). Nao pertence a um unico servico de aplicacao - vive no mesmo repositorio 'infra' de epic-001 (ver docs/DECISIONS-LOG.md 'Topologia'). Backlog granular em infra/feature_list.json (feat-002). Definicao de pronto: teste cross-service documentado acima executado com sucesso, evidencia registrada no campo evidence deste epic e em infra/feature_list.json.",

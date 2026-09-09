@@ -49,6 +49,7 @@ que não devem ser reinterpretadas" para as decisões já consolidadas como defi
 - [2026-09-07 — Header X-Telegram-User-Id para o caminho de credencial de serviço do Gateway](#2026-09-07-header-x-telegram-user-id-para-o-caminho-de-credencial-de-servico-do-gateway)
 - [2026-09-08 — Captura de aposta via foto do bilhete (OCR) + fallback conversacional](#2026-09-08-captura-de-aposta-via-foto-do-bilhete-ocr--fallback-conversacional)
 - [2026-09-08 — Confirmação de vínculo Telegram bypassa o api-gateway](#2026-09-08-confirmacao-de-vinculo-telegram-bypassa-o-api-gateway)
+- [2026-09-08 — Correção: Kubernetes não é "fora de escopo", é o alvo real de implantação do TCC 1](#2026-09-08-correcao-kubernetes-nao-e-fora-de-escopo-e-o-alvo-real-de-implantacao-do-tcc-1)
 
 ---
 
@@ -1422,3 +1423,40 @@ passo de resolução de catálogo antes da chamada a `POST /api/v1/bets`). Não 
 nem `api-gateway` — usa os endpoints de catálogo (`GET /api/v1/sports`, `/leagues`, `/markets`,
 `/betting-houses`) já existentes, roteados pelo `api-gateway` com o mesmo par
 `X-Service-Key`/`X-Telegram-User-Id` já usado para `POST /api/v1/bets`.
+
+## 2026-09-08 — Correção: Kubernetes não é "fora de escopo", é o alvo real de implantação do TCC 1
+
+**O que mudou**: [[ARCHITECTURE]] (seção "Infraestrutura") e a nota de diagramas afirmavam que
+"Kubernetes é a meta de orquestração citada no TCC mas fora do escopo do ambiente de
+desenvolvimento" — lida por uma sessão como permissão para nunca migrar. Corrigido: o TCC 1
+(Figura 5, "Diagrama de Implantação da Infraestrutura baseada em Microsserviços", seção 4.3.1) é
+explícito — a topologia física roda em "contêineres Docker, cuja orquestração é projetada por
+meio do ecossistema Kubernetes". `docker-compose.yml` (`infra/feat-001`, entregue em 2026-08-03)
+continua válido como ambiente de **desenvolvimento local**, mas não substitui a especificação de
+implantação — as duas coisas não são a mesma decisão.
+
+**Por quê**: achado do usuário revisando esta sessão — a frase antiga não tinha entrada
+correspondente neste log (toda divergência do TCC 1 deveria ter uma, ver cabeçalho deste
+arquivo). Não há registro de que "adiar Kubernetes" tenha sido uma decisão consciente do usuário;
+o texto foi provavelmente escrito por inferência de uma sessão anterior ao entregar `feat-001` só
+com Compose, sem isso ter sido de fato decidido como desvio permanente. Como a banca avalia a
+arquitetura de microsserviços especificada no TCC 1 (mesmo racional já usado para justificar 3
+containers Postgres separados em vez de instâncias lógicas, ver entrada "2026-08-03 — Postgres
+por instância" acima), manter uma lacuna não registrada entre o que o TCC 1 pede e o que o
+harness assume como "fora de escopo" é o tipo de divergência que este log existe pra pegar antes
+da entrega final.
+
+**Impacto**:
+- [[ARCHITECTURE]] seção "Infraestrutura" e "Diagramas estrutural e de implantação" corrigidas
+  no mesmo commit desta entrada.
+- Backlog novo necessário: `infra/` precisa de uma feature de migração (manifests Kubernetes ou
+  Helm charts a partir do `docker-compose.yml` atual — Postgres×3, RabbitMQ com topologia de
+  `rabbitmq/definitions.json`, Redis, n8n — mais Ingress/Service para os 4 serviços Java e
+  `api-gateway`). Registrada como epic novo (`epic-010`) em `feature_list.json` da raiz e feature
+  nova (`feat-004`) em `infra/feature_list.json`, ambos `not-started` — nenhuma sessão deve
+  começar a codificar isso sem antes rodar o `Plan Reviewer`, como qualquer outra feature.
+- `infra/CLAUDE.md` atualizado para não descrever mais o escopo do harness como só "orquestração
+  local (Docker Compose)".
+- Não afeta epics/features já `done` — `docker-compose.yml` continua sendo o ambiente de
+  desenvolvimento válido enquanto a migração não acontece; esta entrada não invalida
+  `infra/feat-001` nem pede rollback de nada já entregue.
