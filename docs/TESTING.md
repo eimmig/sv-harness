@@ -105,6 +105,13 @@ código" em `docs/CONVENTIONS.md`).
   o seletor de idioma, confirmando que o texto renderizado muda — não é suficiente testar só
   `pt-BR` (ver [[CONVENTIONS]] seção "Internacionalização"). Não é necessário duplicar todos os
   fluxos em todos os idiomas, só confirmar que a troca funciona de ponta a ponta.
+- **Glob de `page.route` não cruza `/`** (achado real de `feat-009.2`): um único `*` no padrão de
+  `page.route('**/api/v1/bets*', ...)` casa só até a próxima `/` — não intercepta
+  `/api/v1/bets/{id}/status` (sub-rota de PATCH), só o endpoint de lista (`/api/v1/bets` ou
+  `/api/v1/bets?...`). Uma rota de lista e uma rota de sub-recurso (ex.: `PATCH .../status`) já
+  saem isoladas uma da outra por padrão — não precisa de checagem de método/`route.fallback()`
+  pra evitar uma interceptar a outra (código morto descoberto em revisão, nunca disparava). Só
+  usar `**` (duplo) quando precisar mesmo casar um `/` no meio do padrão.
 
 ## Python (telegram-integration)
 
