@@ -91,7 +91,9 @@ Aplicam-se aos 6 repositórios de serviço (`api-gateway`, `auth-service`, `bets
    repositório). Caminhos por tipo de serviço, relativos à raiz do repositório:
    - Java (`api-gateway`, `auth-service`, `bets-service`, `stats-service`):
      `src/main/resources/messages_{pt_BR,en_US,es}.properties` (`--format properties`).
-   - `web` (Transloco): `src/assets/i18n/{pt-BR,en-US,es}.json` (`--format json`).
+   - `web` (Transloco): `public/i18n/{pt-BR,en-US,es}.json` (`--format json`) — não `src/assets/`
+     (convenção pré-Angular 22; o `ng new` real deste app usa `public/` pra assets servidos como
+     estão, achado real de `feat-001.3`, mesma classe de correção de `feat-001.1`/`.2`).
    - `telegram-integration`: `locales/{pt-BR,en-US,es}.json` (`--format json`) — formato
      fechado como JSON nesta mesma decisão (ver [[DECISIONS-LOG]]; [[CONVENTIONS]] deixava
      JSON/gettext em aberto).
@@ -359,6 +361,12 @@ Angular CLI 22.x — trocado por `--coverage`). `sv-telegram-integration-backend
 `pom.xml`) segue sem esta pendência, corrigida quando aquele repositório bootstrapou. O princípio
 geral (reservar atenção pra isso já no Plan Review de `feat-001`, lendo esta nota inteira, não só
 uma busca por palavra-chave) vale pra qualquer repositório novo que ainda vier a existir.
+
+**Segunda camada do mesmo achado, `feat-001.3` (2026-09-09)**: o marcador escolhido em
+`feat-001.1` (`src/assets/i18n/pt-BR.json`) presumia a estrutura de assets pré-Angular 22 sem
+confirmar contra o `ng new` real deste app, que usa `public/` (não `src/assets/`) pra arquivos
+servidos como estão — o guard nunca teria ativado. Corrigido pra `public/i18n/pt-BR.json` na
+subtask que de fato criou os arquivos de locale.
 
 **Segunda armadilha do mesmo dia**: o passo 4 chamava `mvn test jacoco:report` — um goal solto
 que exige o plugin JaCoCo já declarado no `pom.xml`. Como o plugin só entra numa subtask
