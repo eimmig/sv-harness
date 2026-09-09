@@ -80,6 +80,15 @@ futura dos quatro serviços sem mudar o mecanismo (só o default deixa de ser `l
   (via `spring-dotenv` ou variáveis de ambiente do `docker-compose.yml`), `test` usa valores
   fixos consumidos pelos containers do Testcontainers (ver [[TESTING]]), nunca aponta para
   infraestrutura real.
+  > **Gotcha confirmado em `infra/feat-002` (2026-09-09)**: nenhum dos 4 serviços Java tem a
+  > dependência `spring-dotenv` no `pom.xml` — `cp .env.example .env` sozinho **não** alimenta
+  > nada quando rodando via `./mvnw spring-boot:run` fora do Docker (só funciona hoje dentro de
+  > `docker-compose`/CI, onde a plataforma injeta as env vars diretamente). Para rodar um serviço
+  > local fora de container: `export` as mesmas variáveis do `.env.example` no shell **e**
+  > `export SPRING_PROFILES_ACTIVE=dev` antes do `mvnw spring-boot:run` (o profile `default`, sem
+  > sufixo, não declara `datasource`/`admin.api-key`/`paseto.local-key` — sobe o Tomcat mas
+  > qualquer bean que dependa desses placeholders falha no boot). Isso vale para os 4 serviços;
+  > `api-gateway` é exceção parcial (não tem blocos de profile, só precisa das env vars).
 - **Nunca** commitar segredo real (chave PASETO, token do bot, senha de banco) em nenhum
   arquivo versionado — inclusive em exemplos de request/response na documentação.
 - Chave PASETO: gerada uma vez por ambiente (dev/test/prod), armazenada como variável de
