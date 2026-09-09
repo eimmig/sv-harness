@@ -1646,3 +1646,38 @@ workflow. Decisão do usuário via `AskUserQuestion`: `bet_date` passou a usar `
 como default em vez de UTC — primeira convenção de timezone do projeto, registrada em
 `docs/CONVENTIONS.md`. 3 subtasks (SV-206..208, story SV-205), CI real e verde. `epic-005` (raiz)
 **fechado** — backlog atual de `telegram-integration` completo.
+
+## `apps/web feat-001` fechada (9/9 subtasks) — primeiro merge em `develop` do serviço (2026-09-09)
+
+`epic-006` (raiz) continua `in-progress` — `feat-001` era só o setup do projeto, restam
+`feat-002`..`feat-007` do backlog de `apps/web`. Bootstrap completo: Angular 22.1.7, tema
+Material M3 claro/escuro, `transloco` i18n (`pt-BR`/`en-US`/`es`), `app-panel-layout`/`app-panel`,
+assets de logo + splash animado, `ngx-echarts`, Playwright + gate de cobertura 80% real,
+Impeccable/taste-skill/huashu-design + `DESIGN.md`/`PRODUCT.md`. 9 subtasks (SV-210..219, story
+SV-209), cada uma com Delivery Reviewer próprio, mais um Delivery Reviewer/Test Suite Auditor
+finais sobre a feature inteira antes do merge.
+
+**Achado real de arquitetura, corrigido durante a feature**: `app-panel`/`app-panel-layout`
+(`feat-001.4`) nunca setavam `:host { display: block }` — a cadeia de dimensionamento do CSS
+Grid nunca se aplicava de verdade, e nenhum teste unitário pegou isso (`jsdom` não roda layout
+real). Só descoberto quando o Playwright de `feat-001.7` deu o primeiro browser real da sessão
+pra tirar screenshot — corrigido e coberto por teste de regressão E2E, verificado revertendo o
+fix e confirmando que o teste falha contra o código antigo. Documentado em `docs/CONVENTIONS.md`
+como gotcha reaproveitável pra qualquer componente Angular novo.
+
+**Achado real de CI, no próprio gate final** (primeira vez que o PR story→develop deste serviço
+rodou o SonarCloud de verdade — PRs de subtask pulam de propósito): `angular.json` nunca gerava
+relatório `lcov.info` (faltava `coverageReporters`), e o caminho em `sonar-project.properties`
+apontava pra `coverage/lcov.info` em vez do real `coverage/web/lcov.info` — SonarCloud via
+cobertura zerada e reprovava o quality gate mesmo com 97.87% real no `vitest`. Corrigido nos dois
+lados (`apps/web` e `docs/CI-CD.md`, que tinha a mesma referência stale).
+
+**Lacuna real, não corrigida nesta sessão (fora de escopo de `feat-001`)**: `apps/web` continua
+**sem** o retrofit de qualidade do SonarCloud que os outros 4 repositórios de aplicação já têm
+(`-Dsonar.qualitygate.wait=true` fazendo o job de CI falhar de verdade, mais
+`validate-sonar-issues.py` exigindo zero issues, não só o quality gate padrão) — gap já
+identificado por uma sessão anterior (`telegram-integration feat-005`, ver entrada acima) e
+deixado explicitamente como pendência deste serviço. `apps/web/.github/workflows/ci.yml` ainda
+só roda `SonarSource/sonarqube-scan-action@v4` sem esses dois reforços. Candidata a uma subtask
+dedicada de CI hardening (mesmo padrão dos outros 4 repositórios), não decidida como prioridade
+nesta sessão.
