@@ -470,7 +470,13 @@ desenvolvimento Windows sem o pacote, como aconteceu ao implementar esta decisã
 com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só o cálculo de qual
 *dia civil* é "hoje" precisa do fuso correto).
 
-## Frontend (apps/web — Angular 21.x + TypeScript ES2025)
+## Frontend (apps/web — Angular 22.x + TypeScript ES2025)
+
+> Corrigido de "21.x" pra "22.x" em `feat-001` (2026-09-09) — mesmo padrão já usado em outros
+> serviços (Spring Boot/Java, uv/PyPI): a versão real resolvida pela ferramenta no momento do
+> bootstrap é a fonte de verdade, não o número anotado quando esta nota foi escrita. Angular CLI
+> 22.1.7 exige Node `^22.22.3 || ^24.15.0 || >=26.0.0` — a máquina de desenvolvimento tinha
+> Node 24.9.0 (não satisfaz), corrigido via `nvm install 24.21.0` (LTS).
 
 - **Componentes standalone** (padrão do Angular moderno), sem `NgModule` desnecessário.
 - **Gerenciamento de estado: Signals nativos** do Angular, não NgRx. `signal()`/`computed()`

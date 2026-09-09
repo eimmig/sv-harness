@@ -96,11 +96,16 @@ futura dos quatro serviços sem mudar o mecanismo (só o default deixa de ser `l
 
 `apps/web` é uma SPA estática (sem processo Node em produção lendo `.env`) — o mecanismo acima
 não se aplica diretamente. Decisão de 2026-08-02: **`environment.ts` (build-time)**, padrão do
-Angular CLI — `src/environments/environment.ts` (dev) e `environment.prod.ts` (prod), cada um
-com a URL base do `api-gateway` daquele ambiente, trocado no build via `fileReplacements` do
-`angular.json`. Um bundle por ambiente (não "build once, deploy many") — trade-off aceito pela
-simplicidade; se isso mudar para config runtime (`config.json` buscado no boot), esta nota e
-`apps/web/CLAUDE.md` precisam ser atualizados juntos. Nenhum segredo real vive em
-`environment.ts` (só a URL do Gateway, que é pública) — segue a mesma regra de nunca commitar
-segredo, mas por um motivo diferente: não há segredo de frontend, o token PASETO do usuário
-fica em runtime (storage do navegador), nunca em arquivo versionado.
+Angular CLI — `src/environments/environment.ts` (prod/default) e `environment.development.ts`
+(dev), cada um com a URL base do `api-gateway` daquele ambiente, trocado no build via
+`fileReplacements` do `angular.json` (**corrigido em `feat-001`, 2026-09-09**: o `ng generate
+environments` real do Angular 22.x nomeia o par `environment.ts`/`environment.development.ts` —
+`environment.ts` é o arquivo de produção/default, substituído por `environment.development.ts`
+só na configuration `development`; esta nota dizia `environment.prod.ts`, convenção de versões
+antigas do Angular CLI, nunca gerada de fato aqui). Um bundle por ambiente (não "build once,
+deploy many") — trade-off aceito pela simplicidade; se isso mudar para config runtime
+(`config.json` buscado no boot), esta nota e `apps/web/CLAUDE.md` precisam ser atualizados
+juntos. Nenhum segredo real vive em `environment.ts` (só a URL do Gateway, que é pública) —
+segue a mesma regra de nunca commitar segredo, mas por um motivo diferente: não há segredo de
+frontend, o token PASETO do usuário fica em runtime (storage do navegador), nunca em arquivo
+versionado.

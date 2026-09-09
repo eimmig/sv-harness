@@ -60,7 +60,7 @@ o que está aqui sem que este vault seja atualizado primeiro.
 | bets-service | Java 25 + Spring Boot 4.x | Casas de apostas, apostas, bankroll, movimentações | [[bets-service]] |
 | stats-service | Java 25 + Spring Boot 4.x | Consumidor de eventos, OLAP, cache Redis | [[stats-service]] |
 | telegram-integration | Python 3.12+ | Parsing de mensagens do bot Telegram | [[telegram-integration]] |
-| apps/web | Angular 21.x + TypeScript ES2025 | SPA (dashboards, formulários) | [[web]] |
+| apps/web | Angular 22.x + TypeScript ES2025 | SPA (dashboards, formulários) | [[web]] |
 
 Cada serviço Java é `stateless` e expõe API REST própria. `auth-service`, `bets-service` e
 `stats-service` têm cada um seu próprio banco PostgreSQL (padrão **Database per Service** —

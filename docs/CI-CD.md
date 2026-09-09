@@ -347,11 +347,18 @@ Reviewer` de `feat-001` não leu esta nota até o fim e não reservou uma subtas
 o `pom.xml` nasceu primeiro (`feat-001.1` original), a PR de subtask quebrou exatamente pela
 armadilha já descrita aqui, e a correção (porte do `ci.yml` endurecido de `stats-service` +
 `validate-sonar-issues.py`) entrou como commit adicional dentro da mesma subtask, que foi
-renomeada para cobrir as duas coisas. Nenhum dos 6 repositórios de aplicação tem mais esta
-pendência — `sv-frontend`/`sv-telegram-integration-backend` continuam com stacks diferentes
-(Node/Python, sem `pom.xml`), mas o mesmo princípio (reservar uma subtask própria para portar/
-adaptar a pipeline endurecida antes do bootstrap, lendo esta nota inteira no Plan Review, não só
-uma busca por palavra-chave) vale para eles quando chegar a vez de cada um.
+renomeada para cobrir as duas coisas. **Também aconteceu em `sv-frontend`** (`feat-001.1`,
+2026-09-09, mesma armadilha geral, guarda errada em vez de goal solto): o passo 2 (i18n) era
+guardado só por `package-lock.json` (nasce em `feat-001.1`, bootstrap do `ng new`), mas os
+arquivos de locale (`src/assets/i18n/*.json`) só nascem em `feat-001.3` (transloco) — a PR da
+primeira subtask quebrou exatamente como previsto por esta nota. Corrigido trocando o marcador
+pra `src/assets/i18n/pt-BR.json` (mesmo princípio do `messages_pt_BR.properties` de
+`auth-service`); aproveitado o mesmo commit pra corrigir o passo 4 (`--code-coverage`, flag do
+Karma, stale desde que o `ng test` deste repositório passou a rodar em `vitest` por padrão do
+Angular CLI 22.x — trocado por `--coverage`). `sv-telegram-integration-backend` (Python, sem
+`pom.xml`) segue sem esta pendência, corrigida quando aquele repositório bootstrapou. O princípio
+geral (reservar atenção pra isso já no Plan Review de `feat-001`, lendo esta nota inteira, não só
+uma busca por palavra-chave) vale pra qualquer repositório novo que ainda vier a existir.
 
 **Segunda armadilha do mesmo dia**: o passo 4 chamava `mvn test jacoco:report` — um goal solto
 que exige o plugin JaCoCo já declarado no `pom.xml`. Como o plugin só entra numa subtask

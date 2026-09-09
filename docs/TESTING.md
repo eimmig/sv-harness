@@ -88,7 +88,7 @@ código" em `docs/CONVENTIONS.md`).
 ## Frontend (apps/web)
 
 - **Unitários/componente**: o test runner padrão do Angular CLI no momento em que `feat-001`
-  daquele app rodar `ng test` (Angular 21 pode já ter migrado de Karma para outro runner — a
+  daquele app rodar `ng test` (Angular 22 pode já ter migrado de Karma para outro runner — a
   primeira sessão que rodar `ng new`/`ng test` registra em
   `apps/web/progress.md` qual runner foi de fato usado).
 - **E2E**: Playwright, cobrindo todos os fluxos cadastro de aposta manual,

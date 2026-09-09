@@ -57,7 +57,7 @@ Uphold (não fornecido pelo mockup StakeVault, que é só a composição interna
 O app suporta **os dois modos com toggle** (decisão do usuário) — não é dark-mode-only nem
 light-mode-only. As capturas mostram os dois modos completos, com o mesmo verde de destaque
 funcionando em ambos (só o fundo/superfície/texto invertem). Implementação: Angular Material
-21.x tema M3 (ver seção "Integração com Angular Material" abaixo) com os tokens de cor
+22.x tema M3 (ver seção "Integração com Angular Material" abaixo) com os tokens de cor
 definidos como CSS custom properties, alternados por `[data-theme="dark"]`/`[data-theme="light"]`
 no elemento raiz (mesmo padrão usado pelos Artifacts desta ferramenta, não coincidência — é o
 jeito correto de fazer isso sem duplicar folhas de estilo). Padrão inicial: seguir
@@ -327,7 +327,7 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
 
 ## Integração com Angular Material (M3)
 
-`apps/web` já decidiu Angular Material em [[CONVENTIONS]]. Angular Material 21.x usa o sistema
+`apps/web` já decidiu Angular Material em [[CONVENTIONS]]. Angular Material 22.x usa o sistema
 de tema M3 (`mat.theme()`, Sass), que gera um conjunto completo de tokens (`--mat-sys-*`) a
 partir de uma cor semente. Não duplicar um sistema de cor paralelo do zero:
 
