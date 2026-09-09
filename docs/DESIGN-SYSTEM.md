@@ -349,6 +349,22 @@ partir de uma cor semente. Não duplicar um sistema de cor paralelo do zero:
   raiz — primeira sessão de `feat-001` de `apps/web` implementa e registra em
   `apps/web/progress.md` a abordagem exata usada (media query vs. classe manual vs. as duas).
 
+**Implementação real (`feat-001.2`, 2026-09-09)**: `mat.theme()` só aceita mapas de paleta M3
+completos (tons 0–100 + `neutral`/`neutral-variant`/`secondary`/`error`) em `primary`/`tertiary`,
+não uma cor hex solta — não existe função Sass pública pra gerar isso a partir de uma cor
+qualquer. Gerado via o schematic real do CLI:
+`ng generate @angular/material:m3-theme --primary-color "#3E8CC4" --tertiary-color "#3EC46D"`
+(grava `src/theme-colors.scss`, tons reais derivados do algoritmo M3 a partir das duas cores
+StakeVault — não uma das paletas nomeadas embutidas do Material, que divergiriam da marca).
+Overrides de `surface`/`background`/`on-surface`/`on-surface-variant` (`src/styles/_tokens.scss`)
+apontam pros custom properties `--color-*`, não valores fixos — os dois blocos de tokens (claro
+em `:root`, escuro em `:root[data-theme='dark']`) cobrem tanto o app quanto o Material ao mesmo
+tempo. Troca de tema: **media query + classe manual, as duas** — `@media
+(prefers-color-scheme: dark)` decide o default enquanto o usuário não escolher explicitamente;
+uma escolha explícita (serviço `Theme`, `signal` + `localStorage`) grava `data-theme="dark"`/
+`"light"` em `<html>`, que tem prioridade sobre a media query (`:root:not([data-theme='light'])`
+na regra da media query evita que ela vença depois de uma escolha explícita pra "light").
+
 ## Identidade visual — StakeVault
 
 Nome e marca **definidos** (2026-08-01) — não é mais placeholder, substitui a seção anterior
