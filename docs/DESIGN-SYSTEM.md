@@ -90,6 +90,17 @@ menos certificada desta tabela, revisitar se um mockup claro real aparecer depoi
 | `--color-disabled-bg` | `#1D2A36` | Fundo de botão/elemento desabilitado |
 | `--color-disabled-text` | `#4C5A64` | Texto de botão/elemento desabilitado |
 
+> **Achado de QA visual (`apps/web feat-002`, 2026-09-09)**: `npx impeccable detect` contra a nav
+> real (`--color-text-secondary` sobre `--color-surface` no modo escuro, usado nos links inativos
+> da nav) mede **4.47:1**, `0.03` abaixo do mínimo WCAG AA de `4.5:1` pra texto de corpo — a nota
+> "revisitar se um mockup claro real aparecer depois" já sinalizava incerteza nesta paleta, mas
+> este é o primeiro achado concreto de contraste contra o valor `#7A8A93` (verbatim do mockup
+> escuro do usuário) desde que a tabela foi escrita. Não corrigido nesta feature: é um valor exato
+> citado do mockup original, não algo que uma feature de UI isolada deva ajustar por conta própria
+> (mesmo racional do bullet de `--color-action-neutral` acima — só o usuário decide desviar de um
+> valor de mockup). Sinalizado aqui para decisão explícita quando outra feature tocar este token
+> de novo ou quando o usuário quiser revisitar a paleta.
+
 ### Modo claro (derivado, sem mockup StakeVault correspondente)
 
 | Token | Valor | Uso |
