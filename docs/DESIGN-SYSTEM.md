@@ -292,7 +292,9 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
     linha de perfil com avatar circular de iniciais + nome/e-mail, rodapé com links legais e
     versão em texto muted.
 14. **Avatar/badge de iniciais** — círculo, fundo muted, iniciais em negrito (ex.: "RM" no
-    mockup StakeVault, canto superior direito).
+    mockup StakeVault, canto superior direito). Primeira implementação real: `feat-011.4`,
+    coluna Nome da tela de usuários do tenant (`users.ts`/`.html`, método `initials()` — primeiro
+    + último nome, maiúsculo, no máximo 2 letras).
 15. **Grade de KPIs/estatísticas** — grid responsivo (`auto-fit`, `minmax(120px, 1fr)`) de
     tiles pequenos dentro de um painel, cada um com rótulo muted (12px) em cima e valor grande
     (20–24px, peso 500) embaixo; valores que são inerentemente positivos/negativos (lucro, ROI)
