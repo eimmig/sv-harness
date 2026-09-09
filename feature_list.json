@@ -75,8 +75,8 @@
         "epic-003",
         "epic-008"
       ],
-      "status": "in-progress",
-      "evidence": "",
+      "status": "done",
+      "evidence": "Fechado em 2026-09-08 por services/telegram-integration/feat-001..006 (ver evidencia detalhada em services/telegram-integration/feature_list.json). Bot Telegram captura apostas por foto (OCR)/texto livre, resolve catalogo do tenant contra bets-service via api-gateway, registra a aposta de verdade (POST /api/v1/bets), e suporta vinculacao de conta Telegram->web (POST /telegram/link, bypass do api-gateway por decisao de arquitetura). Pipeline de CI com o mesmo gate de qualidade (SonarCloud + zero issue) dos servicos Java. Ultima feature (feat-006) validou o workflow n8n contra uma instancia real pela primeira vez (import via CLI + inspecao do codigo-fonte dos nodes instalados, sem bot Telegram real) - os 5 pontos de risco residual documentados desde feat-001 foram confirmados corretos, nenhuma mudanca de codigo necessaria. Decisao do usuario: bet_date passou a usar America/Sao_Paulo (primeira convencao de timezone do projeto, docs/CONVENTIONS.md). Residuais aceitos que sobrevivem (documentados em services/telegram-integration/n8n/README.md): auth/rate-limit dos endpoints internos (revisitar quando containerizado), credencial telegramApi nunca testada contra a API real do Telegram.",
       "harness": "services/telegram-integration/"
     },
     {

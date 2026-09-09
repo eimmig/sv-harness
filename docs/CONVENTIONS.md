@@ -455,6 +455,21 @@ princípios que não se misturam (ver também [[API-CONTRACTS]] seção "Interna
   idioma em nenhum serviço para isso. Formato validado automaticamente pelo passo de i18n da
   pipeline de CI — ver [[CI-CD]].
 
+## Timezone padrão
+
+Primeira convenção de timezone do projeto (decisão de `telegram-integration feat-006`,
+2026-09-08 — nenhuma nota fixava isso antes). Todo usuário do sistema é brasileiro (apostas
+esportivas no Brasil); onde uma data "de hoje" é inferida sem o usuário informar explicitamente
+(ex.: `bet_date` default quando não extraído do texto/foto da aposta, ver
+[[telegram-integration]]), usar **`America/Sao_Paulo`**, não UTC — UTC produzia off-by-one perto
+da meia-noite local (uma aposta feita às 23h de Brasília virava o dia seguinte). Em Python,
+`zoneinfo.ZoneInfo("America/Sao_Paulo")` (stdlib desde 3.9, precisa do pacote `tzdata` como
+dependência explícita em runtime Windows — a imagem base do CI/Docker em Linux normalmente já
+tem a IANA tzdb do sistema, mas depender disso silenciosamente quebraria em qualquer máquina de
+desenvolvimento Windows sem o pacote, como aconteceu ao implementar esta decisão). Não confundir
+com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só o cálculo de qual
+*dia civil* é "hoje" precisa do fuso correto).
+
 ## Frontend (apps/web — Angular 21.x + TypeScript ES2025)
 
 - **Componentes standalone** (padrão do Angular moderno), sem `NgModule` desnecessário.

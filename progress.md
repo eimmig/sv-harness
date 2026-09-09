@@ -1631,3 +1631,18 @@ corrigido nesta sessão (`apps/web` continua sem o retrofit, fora de escopo dest
 Provado em produção via log real de PR (`-Dsonar.qualitygate.wait=true` aplicado, gate de zero
 issue rodando e passando), não só por raciocínio estático. 2 subtasks (SV-203/204, story SV-202),
 CI real e verde. `epic-005` (raiz) continua `in-progress` — só `feat-006` resta.
+
+## `telegram-integration feat-006` fechada — `epic-005` completo (2026-09-08)
+
+Última feature do backlog atual de `telegram-integration`, fecha `epic-005` na raiz. Achado real
+do Plan Review: uma sessão anterior registrou "nenhuma instância n8n existe em `infra/` hoje"
+como decisão pendente com o usuário — falso, `infra/docker-compose.yml` já provisiona um `n8n`
+real desde `epic-001`, só nunca tinha sido subido localmente. Subido localmente (efêmero,
+derrubado ao final), o workflow `telegram-bot.json` foi importado via CLI do n8n e cada um dos 5
+pontos de risco residual documentados desde `feat-001` foi confirmado correto contra evidência
+direta (schema real via API do próprio n8n, comportamento de runtime lendo o código-fonte real
+dos nodes `Telegram`/`TelegramTrigger` instalados) — nenhuma mudança de código foi necessária no
+workflow. Decisão do usuário via `AskUserQuestion`: `bet_date` passou a usar `America/Sao_Paulo`
+como default em vez de UTC — primeira convenção de timezone do projeto, registrada em
+`docs/CONVENTIONS.md`. 3 subtasks (SV-206..208, story SV-205), CI real e verde. `epic-005` (raiz)
+**fechado** — backlog atual de `telegram-integration` completo.
