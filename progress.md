@@ -1693,3 +1693,62 @@ Verificado de verdade via PR real (`feature/SV-220` → `develop`, não só leit
 YAML) — log do job confirma o flag presente nos args do scanner e o passo novo retornando OK
 contra a API real. 1 subtask (SV-221, story SV-220). `apps/web` agora nivelado com os outros 4
 repositórios de aplicação.
+
+## `auth-service feat-010` fechada — login devolve `userId`/`role` (2026-09-09)
+
+Gap real encontrado planejando `apps/web feat-002`: token PASETO v4.local é criptografado
+simetricamente, frontend sem como decodificar claims no cliente — `tenantId` já era conhecido
+(slug digitado no login), mas `userId`/`role` não tinham outra fonte, necessários pra esconder a
+tela de gestão de usuários de `role=member`. Mesmo precedente do gap de `feat-009` (mesmo
+serviço, mesma motivação — planejar `apps/web feat-002`). `LoginResult`/`LoginResponse` (2 records
+existentes) ganharam os 2 campos, sem DTO/endpoint/migration novos. Confirmado sem consumidor
+quebrado (`api-gateway` roteia `/api/v1/auth/login` como passthrough puro de corpo;
+`telegram-integration` não usa PASETO). 1 subtask, PR #47 (subtask→story) + PR #48
+(story→develop), CI/SonarCloud verdes. `docs/services/auth-service.md` atualizado no mesmo
+commit lógico (repositório raiz).
+
+## `apps/web feat-002` fechada — RF01/RF02 UI, autenticação e gestão de usuários do tenant (2026-09-09)
+
+Primeira feature de `apps/web` com integração real contra um backend Java. `AuthService`
+(Signals, sessão PASETO em `localStorage` `stakevault.auth`, mesmo padrão de `Theme`/`Language`)
++ `authInterceptor` (`Authorization: Bearer`, gateway injeta `X-User-Id`/`X-Tenant-Id` do token —
+frontend nunca envia os dois manualmente) + helper de parse RFC 7807. Login real (3 campos slug/
+email/senha). `authGuard`/`adminGuard` + nav mínima do app shell (app.html não tinha nenhuma nav
+até então) + banner não-bloqueante `mustChangePassword` (sem link de ação — não há endpoint de
+troca de senha no backlog de `auth-service`). Tela de gestão de usuários do tenant (lista+criar,
+admin-only). 4 subtasks (SV-229..232), PRs #13-#17 (subtask→story + story→develop), CI verde em
+cada PR de subtask; o PR final story→develop pegou 4 achados reais do SonarCloud não detectáveis
+em PR de subtask (que não roda Sonar) — `Web:InputWithoutLabelCheck` (inputs de Material sem
+`id`/`aria-label` explícitos, o scanner estático não vê a associação que o Angular Material faz em
+runtime), `Web:S6819` (`role="status"` → `<output>`), `typescript:S7059` (operação assíncrona no
+constructor do `Login` → movida pra `ngOnInit`), `S5906` (assertion genérica → `toHaveLength`) —
+corrigidos num commit de fix antes do merge final. 59 testes unitários + 10 Playwright, cobertura
+95%+. Ver `apps/web/progress.md` pro detalhe por subtask.
+
+## `apps/web feat-003` fechada — RF03 UI, casas de apostas + renomeação PT-BR→inglês (2026-09-09)
+
+`BettingHousesApi`/`BettingHouses` (lista+criar), `PagedResponse<T>` genérico (reaproveitável por
+`feat-004`/`005`/`006`), `formatBrl` fixo em `pt-BR`/BRL independente do idioma ativo da UI
+(bankroll é sempre Real brasileiro, sem multi-moeda no backlog).
+
+**Achado real levantado pelo usuário durante a sessão, não pelo Plan Reviewer**: perguntou por
+que `apps/web` tinha arquivos/rotas em português (`historico`, `registro-de-aposta`, `usuarios`)
+se `docs/CONVENTIONS.md` já normatiza "nomes de rota, evento e código, todos já em inglês" —
+3 features já mergeadas (`feat-001`/`feat-002`) carregavam essa dívida sem nenhuma sessão
+anterior ter cruzado a convenção contra o nome real dos arquivos. Perguntado ao usuário como
+proceder (renomear agora / documentar a exceção / só daqui pra frente) via `AskUserQuestion` —
+decisão: renomear tudo agora. `historico`→`history`, `registro-de-aposta`→`register-bet`,
+`usuarios`→`users`; `casas-de-apostas`→`betting-houses` nasceu direto em inglês (nunca teve
+conteúdo real sob o nome antigo). Achado real corrigido durante a própria correção:
+`app.routes.ts` esperava `m.BettingHouses` mas o stub renomeado ainda exportava `CasasDeApostas`
+— quebrou o build no PR real (testes unitários locais não pegaram), corrigido num commit de fix
+separado. Achado real do gate de SonarCloud no PR final (não pego em PR de subtask):
+`BettingHouses`/`Users` duplicavam ~16 linhas cada (mesmo padrão `reload()`/`submit()` com
+tratamento RFC 7807 já sinalizado como aceitável em `feat-002.4`, mas a 3ª ocorrência estourou o
+gate de 3% de duplicação nova) — corrigido extraindo `core/api-request.ts`
+(`loadInto`/`submitForm`, genérico) e reaproveitado também em `Login`, não só nos 2 arquivos
+flagados, pra não reincidir quando `feat-004`/`005`/`006` adicionarem mais telas de lista+criar.
+
+3 subtasks (SV-234, SV-236, SV-235), PRs #18-#21, CI/SonarCloud verdes (após o fix de duplicação).
+63 testes unitários + 12 Playwright, cobertura 93.89%/89.51%/89.41%/94.73%. Ver
+`apps/web/progress.md` pro detalhe completo por subtask.
