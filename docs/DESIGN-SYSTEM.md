@@ -80,7 +80,7 @@ menos certificada desta tabela, revisitar se um mockup claro real aparecer depoi
 | `--color-surface-elevated` | `#1D2A36` | Estados hover/ativo sobre superfície (badge "Em aberto") |
 | `--color-border` | `#24323F` | Divisores e bordas sutis (linhas do gráfico, separadores de lista) |
 | `--color-text-primary` | `#F2F7F5` | Texto principal (off-white) |
-| `--color-text-secondary` | `#7A8A93` | Texto secundário/muted (legendas, rótulos de KPI) |
+| `--color-text-secondary` | `#8B99A2` | Texto secundário/muted (legendas, rótulos de KPI) — ver nota de contraste abaixo |
 | `--color-brand` | `#3EC46D` | Verde de marca — **só** logo, ícone ativo da nav, link ativo, e valores positivos (ver regra semântica abaixo) |
 | `--color-brand-strong` | `#26A65B` | Estado hover/pressed de elementos com `--color-brand` |
 | `--color-positive` | `--color-brand` (mesmo verde) | Lucro, variação percentual positiva, badge de aposta "won" |
@@ -90,16 +90,19 @@ menos certificada desta tabela, revisitar se um mockup claro real aparecer depoi
 | `--color-disabled-bg` | `#1D2A36` | Fundo de botão/elemento desabilitado |
 | `--color-disabled-text` | `#4C5A64` | Texto de botão/elemento desabilitado |
 
-> **Achado de QA visual (`apps/web feat-002`, 2026-09-09)**: `npx impeccable detect` contra a nav
-> real (`--color-text-secondary` sobre `--color-surface` no modo escuro, usado nos links inativos
-> da nav) mede **4.47:1**, `0.03` abaixo do mínimo WCAG AA de `4.5:1` pra texto de corpo — a nota
-> "revisitar se um mockup claro real aparecer depois" já sinalizava incerteza nesta paleta, mas
-> este é o primeiro achado concreto de contraste contra o valor `#7A8A93` (verbatim do mockup
-> escuro do usuário) desde que a tabela foi escrita. Não corrigido nesta feature: é um valor exato
-> citado do mockup original, não algo que uma feature de UI isolada deva ajustar por conta própria
-> (mesmo racional do bullet de `--color-action-neutral` acima — só o usuário decide desviar de um
-> valor de mockup). Sinalizado aqui para decisão explícita quando outra feature tocar este token
-> de novo ou quando o usuário quiser revisitar a paleta.
+> **Achado de QA visual, corrigido (`apps/web feat-002` → `feat-011.5`, 2026-09-09)**: `npx
+> impeccable detect` contra a nav real (`--color-text-secondary` sobre `--color-surface` no modo
+> escuro, usado nos links inativos da nav) mediu **4.47:1**, `0.03` abaixo do mínimo WCAG AA de
+> `4.5:1` pra texto de corpo — primeiro achado concreto de contraste contra o valor `#7A8A93`
+> (verbatim do mockup escuro do usuário). Não corrigido no `feat-002` (valor exato citado do
+> mockup, não algo que uma feature de UI isolada devesse ajustar por conta própria — mesmo
+> racional do bullet de `--color-action-neutral` acima), sinalizado pra "decisão explícita quando
+> outra feature tocar este token de novo". `feat-011` tocou o token amplamente (login, badges,
+> cards) e o Impeccable achou o mesmo problema de novo (login) — pergunta feita ao usuário nesse
+> momento, decisão: **corrigir**. Novo valor `#8B99A2` (mesmo tom cinza-azulado, só um pouco mais
+> claro) mede ~5:1 contra `--color-surface` e `--color-surface-elevated`, resolvendo AA nos dois
+> fundos escuros usados pelo token. `--color-text-secondary` do modo claro (`#5C6B72`) já passava
+> (5.5:1/4.69:1), não precisou de ajuste.
 
 ### Modo claro (derivado, sem mockup StakeVault correspondente)
 
