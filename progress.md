@@ -1752,3 +1752,27 @@ flagados, pra não reincidir quando `feat-004`/`005`/`006` adicionarem mais tela
 3 subtasks (SV-234, SV-236, SV-235), PRs #18-#21, CI/SonarCloud verdes (após o fix de duplicação).
 63 testes unitários + 12 Playwright, cobertura 93.89%/89.51%/89.41%/94.73%. Ver
 `apps/web/progress.md` pro detalhe completo por subtask.
+
+## `apps/web feat-008` fechada — catálogos base (esportes, ligas, mercados, tipsters) (2026-09-09)
+
+Gap real levantado pelo usuário durante a sessão, ao planejar `feat-004` (RF04 UI — registro de
+aposta): o formulário precisa de dropdowns de `sport`/`league`/`market`/`tipster`, e o bot
+Telegram (`telegram-integration feat-004`, `docs/DECISIONS-LOG.md` 2026-09-08) já orienta o
+usuário a "cadastrar em `apps/web`" quando o catálogo do tenant está vazio — mas nenhuma feature
+do backlog cobria essa tela (só `betting-houses`, RF03). Perguntado ao usuário como fechar a
+lacuna via `AskUserQuestion` — decisão: tela dedicada, inserida como `feat-008` antes de `feat-004`
+(que passou a depender dela em vez de `feat-003` diretamente).
+
+Confirmado no código real de `bets-service`: `SportsController`/`LeaguesController`/
+`MarketsController`/`TipstersController` são estruturalmente idênticos. Decisão de design
+explícita para não repetir o achado de duplicação do SonarCloud de `feat-003`: 1 componente
+reaproveitável (`shared/catalog-manager`, usa `loadInto`/`submitForm` já extraídos em `feat-003`)
+instanciado 4x com `mat-tab-group`, em vez de 4 páginas quase idênticas. Achado real de timing do
+Angular: `catalogApi()` recebe `HttpClient` como parâmetro (não chama `inject()` internamente) e é
+construído em `ngOnInit`, não no `constructor` — um signal input `required` não está
+garantidamente disponível ainda nesse ponto.
+
+2 subtasks (SV-238, SV-239), PRs #22-#24, CI/SonarCloud verdes — sem achado de duplicação desta
+vez, confirmando que o desenho de componente único funcionou. 69 testes unitários + 13 Playwright,
+cobertura 93.17%/89.24%/87.75%/94.57%. Ver `apps/web/progress.md` pro detalhe completo por
+subtask.

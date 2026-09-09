@@ -8,9 +8,9 @@
 ## Objetivo atual
 
 - `epic-001`/`epic-002`/`epic-003`/`epic-004`/`epic-005`/`epic-008`/`epic-009` — todos `done`.
-- `epic-006` (`apps/web`) **em andamento** — `feat-001`/`feat-002`/`feat-003`/`feat-007` entregues
-  e mergeados em `develop`. Restam `feat-004` (RF04 UI, registro manual de apostas), `feat-005`
-  (RF08 UI, histórico) e `feat-006` (RF10/RF11 UI, dashboards).
+- `epic-006` (`apps/web`) **em andamento** — `feat-001`/`feat-002`/`feat-003`/`feat-007`/`feat-008`
+  entregues e mergeados em `develop`. Restam `feat-004` (RF04 UI, registro manual de apostas),
+  `feat-005` (RF08 UI, histórico) e `feat-006` (RF10/RF11 UI, dashboards).
 - `epic-007` (resiliência DLQ) segue elegível (dependências `epic-004`+`epic-005` satisfeitas)
   mas não iniciado — nenhuma sessão trabalhou nele ainda.
 
@@ -43,6 +43,15 @@
       de duplicação nova. Corrigido extraindo `core/api-request.ts`
       (`loadInto`/`submitForm`, genérico) e reaproveitado também em `Login` — elimina a duplicação
       na raiz, não só nos 2 arquivos que o Sonar apontou.
+- [x] **`apps/web feat-008` fechada** (catálogos base — esportes/ligas/mercados/tipsters): gap
+      real encontrado planejando `feat-004` (formulário de aposta precisa dos dropdowns, bot
+      Telegram já orienta "cadastrar em `apps/web`" quando o catálogo está vazio, mas nenhuma
+      feature cobria essa tela). Decisão do usuário via `AskUserQuestion`: tela dedicada, inserida
+      antes de `feat-004` (que passou a depender dela). 1 componente reaproveitável
+      (`shared/catalog-manager`) instanciado 4x com `mat-tab-group`, em vez de 4 páginas quase
+      idênticas — decisão de design explícita para não repetir o achado de duplicação do
+      SonarCloud de `feat-003`. 2 subtasks, PRs #22-#24, CI/Sonar verdes (sem achado de
+      duplicação desta vez).
 
 ## Bloqueios / Riscos
 
@@ -56,9 +65,9 @@
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
 2. **`apps/web feat-004`** (RF04 UI — registro manual de apostas, oito regras de ouro de
-   Shneiderman, ver `docs/services/web.md`) é a próxima feature elegível — depende só de
-   `feat-003`, já `done`. Consome `bets-service` (`POST /api/v1/bets`, catálogos
-   `sports`/`leagues`/`markets`/`tipsters` já existentes desde `bets-service feat-002`) e
+   Shneiderman, ver `docs/services/web.md`) é a próxima feature elegível — depende de `feat-008`
+   (catálogos), já `done`. Consome `bets-service` (`POST /api/v1/bets`, catálogos
+   `sports`/`leagues`/`markets`/`tipsters` já com tela própria desde `feat-008`) e
    `betting-houses` (já existe, `feat-003`) via `api-gateway`.
 3. Alternativa em paralelo (sessão/serviço diferente): **`epic-007`** (resiliência DLQ/retry,
    `infra/feat-002`) — elegível, ainda não iniciado. WIP máximo 1 por lane continua valendo — não
