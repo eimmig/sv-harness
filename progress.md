@@ -1776,3 +1776,27 @@ garantidamente disponível ainda nesse ponto.
 vez, confirmando que o desenho de componente único funcionou. 69 testes unitários + 13 Playwright,
 cobertura 93.17%/89.24%/87.75%/94.57%. Ver `apps/web/progress.md` pro detalhe completo por
 subtask.
+
+## `apps/web feat-004` fechada — RF04 UI, registro manual de apostas (2026-09-09)
+
+Primeiro formulário do app com regras de UX explícitas do TCC1 (oito regras de ouro de
+Shneiderman, `docs/services/web.md`) — mapeamento regra-a-regra registrado no `plan_review`.
+`core/bets-api.ts`: `POST /api/v1/bets` com header `Idempotency-Key` gerado client-side
+(`crypto.randomUUID()`, regenerado a cada reset/sucesso), protege contra duplo-envio em retry de
+rede ou duplo-clique. Formulário (3 painéis: Evento/Detalhes/Valores) carrega `betting-houses`
+(`feat-003`) + os 4 catálogos (`feat-008`) via `forkJoin` num único `loadInto` — dropdowns em vez
+de UUIDs digitados.
+
+Achado real pego pelo próprio teste unitário antes do commit: o banner de sucesso aparecia e
+sumia na mesma tick — `submit()` chamava `successMessage.set(...)` e depois `reset()`, que por
+sua vez zera `successMessage` no fim (limpeza de estado ao limpar o formulário); corrigido
+invertendo a ordem. Achado real do gate de SonarCloud no PR final (2ª vez na sessão, mesmo padrão
+de `feat-002`): 9 inputs sem `id`/`aria-label` (`Web:InputWithoutLabelCheck`), banner de sucesso
+com `role="status"` em vez de `<output>` (`Web:S6819`), e um teste sem assertion real
+(`typescript:S2699`, `httpMock.expectNone()` sozinho não conta) — todos corrigidos num commit de
+fix; padrão de `id`+`aria-label`/`<output>` documentado em `docs/CONVENTIONS.md` pra aplicar de
+saída nas próximas features (`feat-005`/`006`) em vez de redescobrir no PR final de novo.
+
+2 subtasks (SV-241, SV-242), PRs #25-#27, CI/SonarCloud verdes (após o fix de acessibilidade). 73
+testes unitários + 15 Playwright, cobertura 90.66%/89.04%/85.45%/94.04%. Ver
+`apps/web/progress.md` pro detalhe completo por subtask.

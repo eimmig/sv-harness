@@ -8,9 +8,9 @@
 ## Objetivo atual
 
 - `epic-001`/`epic-002`/`epic-003`/`epic-004`/`epic-005`/`epic-008`/`epic-009` — todos `done`.
-- `epic-006` (`apps/web`) **em andamento** — `feat-001`/`feat-002`/`feat-003`/`feat-007`/`feat-008`
-  entregues e mergeados em `develop`. Restam `feat-004` (RF04 UI, registro manual de apostas),
-  `feat-005` (RF08 UI, histórico) e `feat-006` (RF10/RF11 UI, dashboards).
+- `epic-006` (`apps/web`) **em andamento** — `feat-001`/`feat-002`/`feat-003`/`feat-004`/
+  `feat-007`/`feat-008` entregues e mergeados em `develop`. Restam `feat-005` (RF08 UI,
+  histórico) e `feat-006` (RF10/RF11 UI, dashboards).
 - `epic-007` (resiliência DLQ) segue elegível (dependências `epic-004`+`epic-005` satisfeitas)
   mas não iniciado — nenhuma sessão trabalhou nele ainda.
 
@@ -52,6 +52,15 @@
       idênticas — decisão de design explícita para não repetir o achado de duplicação do
       SonarCloud de `feat-003`. 2 subtasks, PRs #22-#24, CI/Sonar verdes (sem achado de
       duplicação desta vez).
+- [x] **`apps/web feat-004` fechada** (RF04 UI — registro manual de apostas): primeiro
+      formulário do app com regras de UX explícitas do TCC1 (8 regras de ouro de Shneiderman,
+      mapeamento regra-a-regra no `plan_review`). `Idempotency-Key` client-side contra duplo-
+      submit; dropdowns alimentados por `betting-houses`/catálogos em vez de UUIDs digitados.
+      Achado real pego pelo próprio teste unitário antes do commit: banner de sucesso era zerado
+      pela própria chamada de `reset()` logo em seguida — corrigido invertendo a ordem. 2
+      subtasks, PRs #25-#27, CI/Sonar verdes (1 retrofit de achados reais do SonarCloud no PR
+      final — mesmos `Web:InputWithoutLabelCheck`/`S6819` de `feat-002`, mais `typescript:S2699`,
+      teste sem assertion real).
 
 ## Bloqueios / Riscos
 
@@ -64,14 +73,17 @@
 ## Próxima sessão — por onde começar
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. **`apps/web feat-004`** (RF04 UI — registro manual de apostas, oito regras de ouro de
-   Shneiderman, ver `docs/services/web.md`) é a próxima feature elegível — depende de `feat-008`
-   (catálogos), já `done`. Consome `bets-service` (`POST /api/v1/bets`, catálogos
-   `sports`/`leagues`/`markets`/`tipsters` já com tela própria desde `feat-008`) e
-   `betting-houses` (já existe, `feat-003`) via `api-gateway`.
+2. **`apps/web feat-005`** (RF08 UI — histórico de operações) é a próxima feature elegível —
+   depende de `feat-004`, já `done`. Consome `GET /api/v1/bets` e `GET /api/v1/transactions`
+   (`bets-service feat-007`, listagem paginada com filtros — ver docs/API-CONTRACTS.md seção
+   "Convenções REST" pro vocabulário de query params) via `api-gateway`.
 3. Alternativa em paralelo (sessão/serviço diferente): **`epic-007`** (resiliência DLQ/retry,
    `infra/feat-002`) — elegível, ainda não iniciado. WIP máximo 1 por lane continua valendo — não
    trabalhar em `apps/web` e `infra` na mesma sessão.
-4. Antes de começar `feat-004`, revisar `apps/web/CLAUDE.md` seção sobre o formulário de aposta
-   (regras de Shneiderman) — mais complexo que `feat-002`/`feat-003` (validação de 4 FKs
-   obrigatórias + 1 opcional, `Idempotency-Key`, mensagens RN07).
+4. **Padrão recorrente a repetir em `feat-005`/`feat-006`**: todo PR `feature->develop` desta
+   sessão (feat-002, feat-004) pegou achados reais do SonarCloud (`Web:InputWithoutLabelCheck`
+   em inputs de Material, `Web:S6819` em `role="status"`) que PRs de subtask não pegam (SonarCloud
+   só roda no gate completo). Ao criar formulário/input novo, já aplicar de saída: `id` +
+   `[attr.aria-label]` em todo `<input matInput>`/`<textarea matInput>`, e `<output>` em vez de
+   `role="status"` pra qualquer banner de confirmação — evita o ciclo de descobrir isso de novo
+   no PR final.

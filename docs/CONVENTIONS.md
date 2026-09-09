@@ -494,6 +494,17 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
 - **Formulários**: Reactive Forms (`FormGroup`/`FormControl`) no formulário de registro de
   apostas, não Template-Driven Forms — necessário para validação estruturada e feedback claro
   (regras de Shneiderman, ver [[web]]).
+  - **Gotcha real recorrente (SonarCloud, `apps/web feat-002`/`feat-004`, 2026-09-09)**: todo
+    `<input matInput>`/`<textarea matInput>` sem `id`/`aria-label` explícitos dispara
+    `Web:InputWithoutLabelCheck` no gate de qualidade — o Angular Material associa o `<mat-label>`
+    ao input via `id` gerado em runtime, mas o scanner estático do SonarCloud lê o HTML da
+    template antes da compilação e não enxerga essa associação. Só aparece no PR
+    `feature->develop` (gate completo), nunca num PR de subtask (que não roda SonarCloud) —
+    reincidiu 2 vezes na mesma sessão por isso. Padrão a aplicar de saída em todo input novo:
+    `id="<contexto>-<campo>-input"` + `[attr.aria-label]="'chave.i18n' | transloco"` (mesma string
+    do `<mat-label>` correspondente). Banner de confirmação/erro com `role="status"`/`role="alert"`
+    também é sinalizado (`Web:S6819`) — usar `<output>` no lugar de `role="status"` (mantém
+    `role="alert"` pra erro, que não tem substituto semântico equivalente).
 - **Estilo**: SCSS por componente (`:host`), utilizando Angular Material. Tema (claro/escuro),
   paleta de cores e inventário de componentes visuais já decididos em [[DESIGN-SYSTEM]] — não
   escolher uma paleta alternativa por conta própria.
