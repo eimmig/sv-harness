@@ -26,10 +26,18 @@ antes de rotear para os demais serviços. O token carrega claims de `userId` **e
 > `io.github.nbaars:paseto4j-version4:2024.3` — v4.**local** simétrico, não v4.public/assinado,
 > chave `PASETO_LOCAL_KEY` compartilhada com `api-gateway` quando `epic-008` existir, ver
 > [[OBSERVABILITY-AND-CONFIG]]): body `{"slug": "acme", "email": "admin@acme", "password":
-> "..."}` → `200` `{"token": "v4.local...", "mustChangePassword": true|false}`. `slug` vem do
-> **corpo**, não do header `X-Tenant-Id` — o chamador ainda não está autenticado, não há tenant
-> resolvido antes do login. Token carrega `userId`/`tenantId`/`iat`/`exp` (TTL 8h, sem token de
-> refresh no backlog atual — sessão de duração única, revisitável se/quando refresh for pedido).
+> "..."}` → `200` `{"token": "v4.local...", "mustChangePassword": true|false, "userId": "uuid",
+> "role": "ADMIN"|"MEMBER"}`. `slug` vem do **corpo**, não do header `X-Tenant-Id` — o chamador
+> ainda não está autenticado, não há tenant resolvido antes do login. Token carrega
+> `userId`/`tenantId`/`iat`/`exp` (TTL 8h, sem token de refresh no backlog atual — sessão de
+> duração única, revisitável se/quando refresh for pedido).
+> **`userId`/`role` no corpo, contrato implementado em `feat-010`** (2026-09-09, gap encontrado
+> ao planejar `apps/web feat-002` — mesmo precedente do gap de `feat-009`): o token é v4.**local**
+> (criptografado simetricamente, chave só no backend), então o frontend não tem como decodificar
+> claims no cliente. `tenantId` já é conhecido pelo cliente (o próprio slug digitado no login),
+> mas `userId`/`role` não têm outra fonte — sem eles a UI não sabe se deve mostrar a tela de
+> gestão de usuários do tenant (exclusiva de `role = admin`, ver [[web]] seção "Modelo de tenant
+> (UI)") nem tem um id estável do usuário logado.
 > `401` **genérico** (`invalid-credentials`, mesma mensagem sempre) para slug malformado, tenant
 > inexistente, e-mail inexistente ou senha errada — nunca diferencia o motivo, evita enumeração
 > de tenant/usuário; os dois primeiros casos ainda executam um hash BCrypt descartado antes de
