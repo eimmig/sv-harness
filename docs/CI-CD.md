@@ -190,8 +190,12 @@ da branch nascer — ver seção anterior.
 
 **Achado real** (`auth-service` SV-30, 2026-09-04): a PR `feature/SV-22` → `develop` mergeou com
 27 issues abertas no SonarCloud (1 CRITICAL, 8 MAJOR, 18 MINOR) nunca revisadas — o check
-"SonarCloud Code Analysis" do GitHub mostrava verde mesmo assim. Duas causas, as duas corrigidas
-nos 6 repositórios de aplicação:
+"SonarCloud Code Analysis" do GitHub mostrava verde mesmo assim. Duas causas — retrofit aplicado
+nos 3 repositórios Java (`api-gateway`/`bets-service`/`stats-service`) e em `telegram-integration`
+(`feat-005`, 2026-09-08); **`apps/web` continua pendente** (achado do Plan Review daquela feature
+de `telegram-integration` — a afirmação anterior aqui de "corrigido nos 6 repositórios" estava
+errada, `web` nunca recebeu o retrofit; correção fica a cargo da própria feature de CI daquele
+serviço):
 
 1. **O goal Maven não esperava/falhava pelo resultado do gate**: sem
    `-Dsonar.qualitygate.wait=true`, `mvn sonar:sonar` sempre sai `0` (o scanner só envia os dados,

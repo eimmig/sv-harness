@@ -1619,3 +1619,15 @@ nenhum teste provava que a resposta usa o snapshot da pergunta, não uma busca a
 criada como backlog (checklist de validação pré-deploy — n8n nunca importado numa instância real,
 endpoints internos sem auth/limite enquanto não containerizados). `epic-005` (raiz) continua
 `in-progress` — restam `feat-005` (CI, fechamento formal) e `feat-006`.
+
+## `telegram-integration feat-005` fechada — retrofit do gate de qualidade do SonarCloud (2026-09-08)
+
+Não foi o fechamento formal vazio que a description original sugeria: auditoria real via API do
+SonarCloud (não só CI verde) achou que este repositório nunca recebeu o retrofit descoberto em
+`auth-service SV-30` (`sonar.qualitygate.wait` + gate de zero issue), já aplicado nos 3
+repositórios Java — sem isso o passo SonarCloud sempre passava mesmo com o gate reprovado.
+`docs/CI-CD.md` afirmava (errado) que a correção já cobria "os 6 repositórios de aplicação" —
+corrigido nesta sessão (`apps/web` continua sem o retrofit, fora de escopo deste serviço).
+Provado em produção via log real de PR (`-Dsonar.qualitygate.wait=true` aplicado, gate de zero
+issue rodando e passando), não só por raciocínio estático. 2 subtasks (SV-203/204, story SV-202),
+CI real e verde. `epic-005` (raiz) continua `in-progress` — só `feat-006` resta.
