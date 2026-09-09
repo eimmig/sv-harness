@@ -1681,3 +1681,15 @@ deixado explicitamente como pendência deste serviço. `apps/web/.github/workflo
 só roda `SonarSource/sonarqube-scan-action@v4` sem esses dois reforços. Candidata a uma subtask
 dedicada de CI hardening (mesmo padrão dos outros 4 repositórios), não decidida como prioridade
 nesta sessão.
+
+## `apps/web feat-007` fechada — retrofit do gate de qualidade do SonarCloud (2026-09-09, mesma sessão)
+
+Fecha a lacuna registrada na entrada acima, na mesma sessão. Reaproveitou o slot `feat-007` já
+existente no backlog (description obsoleta, corrigida) em vez de criar feature nova. Porte
+verbatim de `services/telegram-integration` (`sonar.qualitygate.wait=true` +
+`validate-sonar-issues.py`) — confirmado antes de codificar via API pública do SonarCloud que
+`eimmig_sv-frontend` tinha 0 issues/0 hotspots, seguro habilitar sem backlog retroativo.
+Verificado de verdade via PR real (`feature/SV-220` → `develop`, não só leitura estática de
+YAML) — log do job confirma o flag presente nos args do scanner e o passo novo retornando OK
+contra a API real. 1 subtask (SV-221, story SV-220). `apps/web` agora nivelado com os outros 4
+repositórios de aplicação.
