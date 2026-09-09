@@ -112,6 +112,17 @@ código" em `docs/CONVENTIONS.md`).
   saem isoladas uma da outra por padrão — não precisa de checagem de método/`route.fallback()`
   pra evitar uma interceptar a outra (código morto descoberto em revisão, nunca disparava). Só
   usar `**` (duplo) quando precisar mesmo casar um `/` no meio do padrão.
+- **Conteúdo de aba inativa de `mat-tab-group` não é confiável em teste unitário** (achado real
+  de `feat-011.3`): trocar a aba programaticamente (`MatTabGroup.selectedIndex = 1` +
+  `detectChanges()`, mesmo com `await fixture.whenStable()` depois) não garante que o corpo da
+  aba recém-ativada esteja no DOM no jsdom — a troca de `mat-tab-body` é *gated* por animação
+  (`transitionend`), que não dispara de verdade no jsdom, então o portal do conteúdo pode nunca
+  attachar durante o teste. Não gastar tempo tentando forçar isso (`fakeAsync`/`tick` não
+  resolveu na tentativa real) — testar o método/lógica isolado por chamada direta no unit test
+  (ex.: `component['algumMetodo'](valor)`) e deixar a prova de que o conteúdo realmente renderiza
+  dentro da aba pra um teste Playwright (navegador real, sem esse problema) — é o mesmo racional
+  de "unit test só quando isola lógica, E2E pra comportamento observável pelo usuário" já usado
+  no resto da suíte.
 
 ## Python (telegram-integration)
 
