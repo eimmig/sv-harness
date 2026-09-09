@@ -541,6 +541,25 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
   chunks pós-build, não só na teoria). `ngx-echarts` é usado por todos os gráficos de RF10/RF11
   (ver [[DESIGN-SYSTEM]] item 6) — qualquer novo gráfico de `feat-006` (dashboard real) deve
   seguir o mesmo padrão de escopo por componente, não reintroduzir o registro global.
+- **Teste unitário de componente com `ngx-echarts` real precisa de um stub de contexto 2D de
+  canvas** (achado real, `apps/web` `feat-006`, 2026-09-09): `jsdom` não implementa
+  `HTMLCanvasElement.getContext('2d')` de verdade sem o pacote nativo `canvas` (não instalado
+  neste projeto - build nativo, sem necessidade fora de teste) - `getContext` devolve `null`, e
+  o `zrender` (renderer do Apache ECharts) desreferencia esse contexto sem checar null tanto na
+  inicialização (`Layer.initContext`, ex.: `ctx.dpr = ...`) quanto no `dispose()`
+  (`Layer.clear` → `ctx.clearRect`), lançando `TypeError` real (não só warning) - o erro
+  geralmente aparece no `afterEach`/cleanup do `TestBed`, não na asserção do teste em si, o que
+  o torna fácil de confundir com um problema de outra causa. Corrigido com um stub local por
+  arquivo de teste (mesmo padrão de duplicação já usado pro `ResizeObserverStub` de
+  `feat-001.6`, não um helper compartilhado novo): `HTMLCanvasElement.prototype.getContext`
+  substituído por uma função que devolve um `Proxy` permissivo (todo método é no-op, toda
+  propriedade é gravável, `createLinearGradient`/`createRadialGradient` devolvem um objeto com
+  `addColorStop` no-op) - não valida pixel nenhum, só permite que o ciclo de vida completo do
+  ECharts (init → setOption → dispose) rode sem lançar. Ver
+  `apps/web/src/app/shared/monthly-profit-chart/monthly-profit-chart.spec.ts` (`stubCanvasContext`)
+  para a implementação de referência - qualquer novo teste que renderize um componente com
+  `NgxEchartsDirective` real (não só os gráficos de `feat-006`, qualquer futuro RF10/RF11) precisa
+  do mesmo stub.
 - **QA visual (Impeccable/taste-skill)**: ferramentas de design guidance para agentes de IA,
   usadas só como auditoria/polish de componentes já implementados contra [[DESIGN-SYSTEM]] —
   nunca como fonte de novas decisões de design (esse documento já é a fonte de verdade). Ver

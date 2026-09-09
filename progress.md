@@ -1824,3 +1824,37 @@ wrapper de scroll horizontal.
 2 subtasks (SV-244, SV-245), PRs #28-#30, CI/SonarCloud verdes. 83 testes unitários + 17
 Playwright, cobertura 86.89%/89.08%/81.75%/92.08%. Ver `apps/web/progress.md` pro detalhe
 completo por subtask.
+
+## `apps/web feat-006` fechada — RF10/RF11 UI, dashboards e filtros dinâmicos (2026-09-09)
+
+Última feature de `epic-006` (raiz) — fecha o epic inteiro. Contrato confirmado no código real de
+`stats-service` (não só no vault, que já tinha sido corrigido preventivamente): `GET
+/api/v1/statistics` aceita `bettingHouseId/sportId/leagueId/marketId/tipsterId` (UUID) +
+`from/to` (data), devolve `StatisticsDashboard{overall, bySport, byMarket, byBettingHouse,
+monthly}` num bundle único (RF11). `roi`/`winRate` são frações 0..1, não percentual pronto — novo
+`core/percent.ts` (locale-aware, diferente de `formatBrl` que é sempre BRL fixo). Dashboard real
+substitui o placeholder de `feat-001.4`/`1.6`: painel de filtros (submit explícito "Aplicar" —
+RN08 satisfeita por nova consulta real ao backend, não filtragem client-side) + painel de
+métricas (cards, gráfico real de lucro mensal via `shared/monthly-profit-chart` — substitui
+`shared/line-chart-sample`, removido —, breakdown por esporte/mercado/casa de apostas em abas).
+
+**3 achados reais desta feature** (detalhe completo em `apps/web/progress.md`): (1) `jsdom` não
+implementa canvas 2D real — teste unitário com `ngx-echarts` precisa de um stub de contexto
+(documentado em `docs/CONVENTIONS.md`); (2) bug de layout pré-existente (não introduzido por esta
+feature, só finalmente exposto por ela) — todas as 6 páginas chutavam `height: calc(100vh -
+64px)` pra altura da nav, mas os toggles de idioma/tema nunca tiveram CSS de posicionamento e a
+nav quebra linha — corrigido com layout flex real na casca compartilhada (`app.html`/`app.scss`,
+detalhe em `docs/DESIGN-SYSTEM.md`); (3) achado de QA visual manual — pontos do gráfico
+renderizavam azul padrão do ECharts em vez do verde da marca (faltava `itemStyle.color`),
+corrigido.
+
+2 subtasks (SV-247, SV-248), PRs #31-#34 (#33 foi um follow-up de correção visual sobre a mesma
+subtask), CI verde em todos, gate completo (`init.sh`, Delivery/Test Suite Auditor, SonarCloud)
+no PR final `feature/SV-246 -> develop`. 93 testes unitários (37 arquivos) + 20 Playwright,
+cobertura 86.62%/89.49%/81.2%/91.71%. Ver `apps/web/progress.md`/`apps/web/session-handoff.md`
+pro detalhe completo por subtask.
+
+**`epic-006` (raiz) marcado `done`** — todas as features de `apps/web` (`feat-001..005`,
+`feat-007`, `feat-008`, `feat-006`) estão `done`. `feat-009` (RF12)/`feat-010` (RF13) permanecem
+no backlog daquele app, `not-started`, gap real encontrado planejando `feat-005` — decisão do
+usuário de não bloquear o fechamento deste epic.

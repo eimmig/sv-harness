@@ -90,8 +90,8 @@
         "epic-004",
         "epic-008"
       ],
-      "status": "in-progress",
-      "evidence": "",
+      "status": "done",
+      "evidence": "Todas as features de apps/web (feat-001..005, feat-007, feat-008, feat-006) done em 2026-09-09 - detalhe completo em apps/web/feature_list.json e apps/web/progress.md. feat-006 (RF10/RF11 UI, dashboards) era a ultima pendente, fechada nesta sessao. feat-009 (RF12)/feat-010 (RF13) permanecem no backlog daquele app, not-started, gap real encontrado planejando feat-005 - decisao do usuario de nao bloquear o fechamento deste epic.",
       "harness": "apps/web/"
     },
     {

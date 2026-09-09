@@ -194,6 +194,24 @@ do produto — replicar isto é tão importante quanto a paleta de cores.
   - **Regra: cada painel tem no máximo a altura da viewport visível (menos cabeçalho) e nunca
     dita a altura de outro painel adjacente** — trate cada `app-panel` como uma região de rolagem
     própria (`overflow-y: auto`), não como um bloco de altura variável que empurra o layout.
+  - **"Menos cabeçalho" é um valor derivado de layout flex, nunca um pixel fixo chutado por
+    página** (achado real, `apps/web` `feat-006`, 2026-09-09, já sinalizado como risco em
+    `session-handoff.md` desde `feat-002.2`): toda página (`dashboard`/`history`/
+    `betting-houses`/`users`/`catalogs`/`register-bet`) fixava `height: calc(100vh - 64px)` no
+    próprio `:host`, chutando a altura da nav. `app-language-selector`/`app-theme-toggle` nunca
+    tiveram CSS de posicionamento (nenhum arquivo `.scss` deles existia) e ficavam empilhados em
+    fluxo normal *acima* da nav, e a própria nav quebra linha (`flex-wrap: wrap`) conforme mais
+    links são adicionados — o "cabeçalho" real sempre foi maior que 64px, só nunca grande o
+    suficiente pra estourar visivelmente até o dashboard real (`feat-006`) ter conteúdo alto o
+    bastante pra expor via Playwright (`e2e/panel-layout.spec.ts`, que já falhava silenciosamente
+    em `develop` antes desta feature - confirmado rodando a suíte contra o HEAD anterior num
+    worktree separado). Corrigido na casca compartilhada (`app.html`/`app.scss`, não por página):
+    `.app-shell` vira `display:flex;flex-direction:column;height:100%`, o cabeçalho (toolbar de
+    idioma/tema + nav + banner) ocupa altura natural (`auto`), e `.app-shell__content` recebe
+    `flex:1 1 auto;min-height:0;overflow:hidden` — cada página troca `calc(100vh - 64px)` por
+    `height: 100%` e herda o espaço restante, sem precisar saber o pixel exato de nada acima
+    dela. Qualquer página nova segue esse padrão (`height: 100%` no `:host`, nunca `calc(100vh -
+    Npx)`).
 - **Painel = unidade de composição de página**, não só decoração dentro de uma página — todo
   fluxo de tela (dashboard, histórico, formulário de aposta, gestão de casas de apostas) é
   montado como um ou mais painéis lado a lado, nunca como formulário solto em página cheia ou

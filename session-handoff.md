@@ -7,15 +7,14 @@
 
 ## Objetivo atual
 
-- `epic-001`/`epic-002`/`epic-003`/`epic-004`/`epic-005`/`epic-008`/`epic-009` — todos `done`.
-- `epic-006` (`apps/web`) **em andamento** — `feat-001`/`feat-002`/`feat-003`/`feat-004`/
-  `feat-005`/`feat-007`/`feat-008` entregues e mergeados em `develop`. Resta só `feat-006`
-  (RF10/RF11 UI, dashboards) pra fechar o epic inteiro. `feat-009` (RF12, status da aposta) e
-  `feat-010` (RF13, movimentações financeiras) registradas no backlog daquele mesmo app,
-  `not-started` — gap real encontrado planejando `feat-005`, decisão do usuário: ficam pra depois
-  de `feat-006`, não bloqueiam o epic.
+- `epic-001`/`epic-002`/`epic-003`/`epic-004`/`epic-005`/`epic-006`/`epic-008`/`epic-009` —
+  todos `done`. `epic-006` (`apps/web`) fechou nesta sessão com `feat-006` (RF10/RF11 UI,
+  dashboards) — última feature pendente daquele app. `feat-009` (RF12, status da aposta) e
+  `feat-010` (RF13, movimentações financeiras) permanecem no backlog daquele mesmo app,
+  `not-started` — gap real encontrado planejando `feat-005`, decisão do usuário de não bloquear
+  o fechamento do epic.
 - `epic-007` (resiliência DLQ) segue elegível (dependências `epic-004`+`epic-005` satisfeitas)
-  mas não iniciado — nenhuma sessão trabalhou nele ainda.
+  mas não iniciado — nenhuma sessão trabalhou nele ainda. É o único epic `not-started` restante.
 
 ## Concluído nesta sessão (2026-09-09)
 
@@ -72,32 +71,32 @@
       `<output>` (documentado em `docs/CONVENTIONS.md` após os achados de `feat-002`/`feat-004`)
       aplicado de saída — 1ª feature da sessão sem retrofit de SonarCloud no PR final. 2
       subtasks, PRs #28-#30, CI/Sonar verdes.
+- [x] **`apps/web feat-006` fechada** (RF10/RF11 UI — dashboards e filtros dinâmicos) — última
+      feature de `epic-006` (raiz), que fecha nesta sessão. `core/statistics-api.ts`+
+      `core/percent.ts` novos (`roi`/`winRate` são frações 0..1 no contrato real, não percentual
+      pronto). Dashboard real substitui o placeholder de `feat-001` (painel de filtros com submit
+      explícito — RN08 satisfeita por nova consulta real, não filtragem client-side — + painel de
+      métricas com cards/gráfico/breakdown por aba). 3 achados reais: stub de canvas 2D pra teste
+      unitário com `ngx-echarts` (jsdom não implementa, `docs/CONVENTIONS.md`); bug de layout
+      pré-existente (não introduzido por esta feature) — `calc(100vh - 64px)` chutado em todas as
+      6 páginas, corrigido com layout flex real na casca compartilhada (`app.html`/`app.scss`,
+      `docs/DESIGN-SYSTEM.md`); pontos do gráfico renderizando azul padrão do ECharts em vez do
+      verde da marca (achado de QA visual manual, `itemStyle.color` faltando). 2 subtasks, PRs
+      #31-#34, CI/Sonar verdes.
 
 ## Bloqueios / Riscos
 
 | Item | Estado |
 |---|---|
-| Bundle inicial de `apps/web` acima do budget (601KB vs 500KB, warning não-bloqueante) | Pré-existente desde `feat-001` (confirmado via `git stash` comparando baseline em 570KB antes de `feat-002`) — não é regressão desta sessão. Revisitar lazy-loading do Angular Material quando `feat-006` (dashboard real) ou outra feature grande justificar. |
-| `dashboard.scss` usa `height: calc(100vh - 64px)` fixo pra descontar a altura da nav | Funciona hoje (nav real de `feat-002.2` cabe nos 64px por coincidência), mas é frágil — sinalizado em `apps/web/progress.md` (`feat-002.2`) pra trocar por layout flex quando `feat-006` mexer no dashboard real. |
+| Bundle inicial de `apps/web` acima do budget (~ainda acima de 500KB, warning não-bloqueante) | Pré-existente desde `feat-001` — não é regressão desta sessão. `shared/line-chart-sample` removido em `feat-006` ajuda ligeiramente; revisitar lazy-loading do Angular Material se crescer mais. |
 | DLQ local usa `at-most-once` | Aberto **por desenho**. Só reavaliável quando `infra/feat-002` rodar (`epic-007`). Ver `docs/DECISIONS-LOG.md` (2026-08-03). |
 
 ## Próxima sessão — por onde começar
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. **`apps/web feat-006`** (RF10/RF11 UI — dashboards e filtros dinâmicos) é a última feature
-   elegível de `epic-006` — depende de `feat-005`, já `done`. Consome `GET /api/v1/statistics`
-   (`stats-service feat-006`) via `api-gateway`; fechar esta feature fecha `epic-006` por
-   completo (raiz). `ngx-echarts` já instalado desde `feat-001.6`.
-3. **`apps/web feat-009`/`feat-010`** (RF12 status da aposta / RF13 depósitos-saques) — elegíveis
-   depois de `feat-006` (dependência registrada), ainda sem `plan_review`. Gap real encontrado
-   nesta sessão planejando `feat-005`, decisão do usuário de deixar pra depois.
-4. Alternativa em paralelo (sessão/serviço diferente): **`epic-007`** (resiliência DLQ/retry,
-   `infra/feat-002`) — elegível, ainda não iniciado. WIP máximo 1 por lane continua valendo — não
-   trabalhar em `apps/web` e `infra` na mesma sessão.
-5. **Padrão recorrente desta sessão, já resolvido em `feat-005` (aplicado de saída, sem retrofit
-   necessário)**: todo PR `feature->develop` de `apps/web` pode pegar achados reais do
-   SonarCloud (`Web:InputWithoutLabelCheck`, `Web:S6819`) que PRs de subtask não pegam (SonarCloud
-   só roda no gate completo) — documentado em `docs/CONVENTIONS.md` seção Frontend. Ao criar
-   formulário/input novo em `feat-006`, já aplicar de saída: `id` + `[attr.aria-label]` em todo
-   `<input matInput>`/`<textarea matInput>`, e `<output>` em vez de `role="status"` pra qualquer
-   banner de confirmação.
+2. `epic-006` está `done` — não resta nenhuma feature elegível em `apps/web` até `feat-009`/
+   `feat-010` serem planejadas (RF12 status da aposta / RF13 depósitos-saques, backlog daquele
+   app, sem `plan_review` ainda, decisão do usuário de deixar pra depois de `feat-006`).
+3. **`epic-007`** (resiliência DLQ/retry, `infra/feat-002`) é o único epic `not-started`
+   restante — elegível (dependências `epic-004`+`epic-005` satisfeitas), nenhuma sessão
+   trabalhou nele ainda. WIP máximo 1 por lane continua valendo.
