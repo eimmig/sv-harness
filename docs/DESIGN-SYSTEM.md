@@ -394,6 +394,26 @@ uma escolha explícita (serviço `Theme`, `signal` + `localStorage`) grava `data
 `"light"` em `<html>`, que tem prioridade sobre a media query (`:root:not([data-theme='light'])`
 na regra da media query evita que ela vença depois de uma escolha explícita pra "light").
 
+**Correção real (`feat-011.1`, 2026-09-09)**: o paragrafo acima ("os dois blocos de tokens cobrem
+tanto o app quanto o Material ao mesmo tempo") estava **errado** — só os 4 aliases genéricos
+`--mat-sys-surface`/`background`/`on-surface`/`on-surface-variant` são de fato sobrescritos por
+`tokens.scss`. `mat.theme()` gera centenas de outros tokens `--mat-*`/`--mdc-*` **específicos por
+componente** (ex.: o painel de overlay de um `mat-select`, `--mat-select-panel-background-color`
+e equivalentes) a partir da paleta M3 real, calculados **uma única vez**, na chamada de
+`mat.theme()` em `html { ... }` com `theme-type: light` — nunca existiu uma segunda chamada pro
+modo escuro, então qualquer token que o Material lê diretamente (não via os 4 aliases) ficava
+preso no valor claro mesmo com `data-theme="dark"` ativo. Sintoma real reportado pelo usuário:
+seletor de idioma (`mat-select`) com painel de opções branco e texto quase branco no tema escuro
+- ilegível. Corrigido chamando `mat.theme()` **de novo**, com `theme-type: dark`, sob os mesmos
+dois seletores que `tokens.dark-tokens` já usa (`:root[data-theme='dark']` e `@media
+(prefers-color-scheme: dark) { :root:not([data-theme='light']) }`) — é o padrão oficial do
+Angular Material pra múltiplos temas (escopar `mat.theme()` a um seletor re-gera todos os tokens
+M3 pra esse escopo). Resultado: cada `mat-select`/`mat-menu`/`mat-dialog`/etc. do app inteiro
+passou a ter overlay corretamente escuro no tema escuro, não só o componente que expôs o bug -
+`src/styles.scss` tem o código real, comentado com o racional. Ao adicionar qualquer override de
+tema novo no futuro, não assumir que os 4 aliases de `tokens.scss` bastam - overlays/paineis do
+Material especificamente merecem teste visual real no tema escuro, não só leitura do código.
+
 ## Identidade visual — StakeVault
 
 Nome e marca **definidos** (2026-08-01) — não é mais placeholder, substitui a seção anterior
@@ -418,6 +438,21 @@ exata e as três variantes de cor em `docs/design-references/`:
   explícito recomendado pelo usuário: favicon em tamanho pequeno, loaders, estados vazios — o
   anel completo não lê bem abaixo de ~32px, as barras sozinhas continuam reconhecíveis e servem
   como padrão gráfico reutilizável (ex.: marca d'água sutil num painel sem dados ainda).
+
+**Achado real (`feat-011.1`, 2026-09-09)**: os 4 SVGs tinham um comentário XML/HTML
+(`<!-- ... -->`) antes do elemento raiz `<svg>` (documentação de proveniência). Isso nunca deu
+problema até agora porque os únicos dois consumidores existentes eram `<link rel="icon">`
+(favicon, não depende de tamanho intrínseco) e o SVG inline reconstruído à mão em `Splash`
+(não é um `<img>`, não passa pelo decoder de imagem do navegador). A primeira vez que um SVG
+desses foi usado via `<img src="...">` (logo na tela de login) o Chromium reportou
+`naturalWidth`/`naturalHeight` `0` mesmo com a requisição retornando 200 e `Content-Type:
+image/svg+xml` corretos — o `<img>` renderizava como ícone de imagem quebrada. Causa raiz
+confirmada isoladamente (arquivo de teste com/sem o comentário antes de `<svg>`): um comentário
+antes do elemento raiz impede o Chromium de calcular o tamanho intrínseco de um SVG carregado via
+`<img>`, mesmo o `<svg>` tendo `width`/`height` explícitos. Corrigido removendo o comentário
+inicial dos 4 arquivos (a proveniência já está documentada aqui no vault, não se perde
+informação) - geometria/cores dos SVGs não mudaram. Ao adicionar um SVG novo neste projeto para
+uso via `<img>` (não só `<link>`/inline), não colocar comentário antes do elemento `<svg>` raiz.
 
 ### Wordmark
 
