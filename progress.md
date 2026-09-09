@@ -1800,3 +1800,27 @@ saída nas próximas features (`feat-005`/`006`) em vez de redescobrir no PR fin
 2 subtasks (SV-241, SV-242), PRs #25-#27, CI/SonarCloud verdes (após o fix de acessibilidade). 73
 testes unitários + 15 Playwright, cobertura 90.66%/89.04%/85.45%/94.04%. Ver
 `apps/web/progress.md` pro detalhe completo por subtask.
+
+## `apps/web feat-005` fechada — RF08 UI, histórico de operações (2026-09-09)
+
+Tela somente leitura (2 abas: Apostas/Movimentações), primeira com paginação de verdade
+(Anterior/Próxima + "Página X de Y" — as features anteriores buscavam 1 página grande por serem
+listas pequenas por natureza). `BetResponse`/`TransactionResponse` só trazem IDs, não nomes —
+resolvidos client-side contra `betting-houses`+catálogos já carregados (mesmo `forkJoin` de
+`feat-004`). `core/date-format.ts` novo: diferente de `formatBrl` (sempre BRL, independente do
+idioma), datas respeitam o locale ativo de verdade.
+
+**Gap real encontrado planejando esta feature, levado ao usuário via `AskUserQuestion`**: RF12
+(atualizar status da aposta) e RF13 (depósitos/saques) também não tinham nenhuma UI no backlog —
+decisão do usuário: ficam fora de `feat-005`, viram `feat-009`/`feat-010` (registradas no
+backlog de `apps/web`, `not-started`, não bloqueiam o fechamento de `epic-006`).
+
+Padrão de `id`+`aria-label`/`<output>` (documentado em `docs/CONVENTIONS.md` após os achados de
+`feat-002`/`feat-004`) aplicado de saída — primeira feature da sessão cujo PR `feature->develop`
+passou o SonarCloud sem precisar de commit de fix de acessibilidade. Achado real de QA visual
+(não SonarCloud): tabelas sem `overflow-x:auto` cortavam colunas em mobile — corrigido com
+wrapper de scroll horizontal.
+
+2 subtasks (SV-244, SV-245), PRs #28-#30, CI/SonarCloud verdes. 83 testes unitários + 17
+Playwright, cobertura 86.89%/89.08%/81.75%/92.08%. Ver `apps/web/progress.md` pro detalhe
+completo por subtask.

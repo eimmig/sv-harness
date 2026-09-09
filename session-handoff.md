@@ -9,8 +9,11 @@
 
 - `epic-001`/`epic-002`/`epic-003`/`epic-004`/`epic-005`/`epic-008`/`epic-009` — todos `done`.
 - `epic-006` (`apps/web`) **em andamento** — `feat-001`/`feat-002`/`feat-003`/`feat-004`/
-  `feat-007`/`feat-008` entregues e mergeados em `develop`. Restam `feat-005` (RF08 UI,
-  histórico) e `feat-006` (RF10/RF11 UI, dashboards).
+  `feat-005`/`feat-007`/`feat-008` entregues e mergeados em `develop`. Resta só `feat-006`
+  (RF10/RF11 UI, dashboards) pra fechar o epic inteiro. `feat-009` (RF12, status da aposta) e
+  `feat-010` (RF13, movimentações financeiras) registradas no backlog daquele mesmo app,
+  `not-started` — gap real encontrado planejando `feat-005`, decisão do usuário: ficam pra depois
+  de `feat-006`, não bloqueiam o epic.
 - `epic-007` (resiliência DLQ) segue elegível (dependências `epic-004`+`epic-005` satisfeitas)
   mas não iniciado — nenhuma sessão trabalhou nele ainda.
 
@@ -61,6 +64,14 @@
       subtasks, PRs #25-#27, CI/Sonar verdes (1 retrofit de achados reais do SonarCloud no PR
       final — mesmos `Web:InputWithoutLabelCheck`/`S6819` de `feat-002`, mais `typescript:S2699`,
       teste sem assertion real).
+- [x] **`apps/web feat-005` fechada** (RF08 UI — histórico de operações): tela somente leitura
+      (2 abas: Apostas/Movimentações), primeira com paginação de verdade. Gap real encontrado
+      planejando esta feature: RF12 (status da aposta) e RF13 (depósitos/saques) também não
+      tinham UI — decisão do usuário via `AskUserQuestion`: ficam fora, viram `feat-009`/
+      `feat-010` (backlog, `not-started`, não bloqueiam nada). Padrão de `id`+`aria-label`/
+      `<output>` (documentado em `docs/CONVENTIONS.md` após os achados de `feat-002`/`feat-004`)
+      aplicado de saída — 1ª feature da sessão sem retrofit de SonarCloud no PR final. 2
+      subtasks, PRs #28-#30, CI/Sonar verdes.
 
 ## Bloqueios / Riscos
 
@@ -73,17 +84,20 @@
 ## Próxima sessão — por onde começar
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. **`apps/web feat-005`** (RF08 UI — histórico de operações) é a próxima feature elegível —
-   depende de `feat-004`, já `done`. Consome `GET /api/v1/bets` e `GET /api/v1/transactions`
-   (`bets-service feat-007`, listagem paginada com filtros — ver docs/API-CONTRACTS.md seção
-   "Convenções REST" pro vocabulário de query params) via `api-gateway`.
-3. Alternativa em paralelo (sessão/serviço diferente): **`epic-007`** (resiliência DLQ/retry,
+2. **`apps/web feat-006`** (RF10/RF11 UI — dashboards e filtros dinâmicos) é a última feature
+   elegível de `epic-006` — depende de `feat-005`, já `done`. Consome `GET /api/v1/statistics`
+   (`stats-service feat-006`) via `api-gateway`; fechar esta feature fecha `epic-006` por
+   completo (raiz). `ngx-echarts` já instalado desde `feat-001.6`.
+3. **`apps/web feat-009`/`feat-010`** (RF12 status da aposta / RF13 depósitos-saques) — elegíveis
+   depois de `feat-006` (dependência registrada), ainda sem `plan_review`. Gap real encontrado
+   nesta sessão planejando `feat-005`, decisão do usuário de deixar pra depois.
+4. Alternativa em paralelo (sessão/serviço diferente): **`epic-007`** (resiliência DLQ/retry,
    `infra/feat-002`) — elegível, ainda não iniciado. WIP máximo 1 por lane continua valendo — não
    trabalhar em `apps/web` e `infra` na mesma sessão.
-4. **Padrão recorrente a repetir em `feat-005`/`feat-006`**: todo PR `feature->develop` desta
-   sessão (feat-002, feat-004) pegou achados reais do SonarCloud (`Web:InputWithoutLabelCheck`
-   em inputs de Material, `Web:S6819` em `role="status"`) que PRs de subtask não pegam (SonarCloud
-   só roda no gate completo). Ao criar formulário/input novo, já aplicar de saída: `id` +
-   `[attr.aria-label]` em todo `<input matInput>`/`<textarea matInput>`, e `<output>` em vez de
-   `role="status"` pra qualquer banner de confirmação — evita o ciclo de descobrir isso de novo
-   no PR final.
+5. **Padrão recorrente desta sessão, já resolvido em `feat-005` (aplicado de saída, sem retrofit
+   necessário)**: todo PR `feature->develop` de `apps/web` pode pegar achados reais do
+   SonarCloud (`Web:InputWithoutLabelCheck`, `Web:S6819`) que PRs de subtask não pegam (SonarCloud
+   só roda no gate completo) — documentado em `docs/CONVENTIONS.md` seção Frontend. Ao criar
+   formulário/input novo em `feat-006`, já aplicar de saída: `id` + `[attr.aria-label]` em todo
+   `<input matInput>`/`<textarea matInput>`, e `<output>` em vez de `role="status"` pra qualquer
+   banner de confirmação.
