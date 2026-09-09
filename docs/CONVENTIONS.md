@@ -489,6 +489,19 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
 - **Estilo**: SCSS por componente (`:host`), utilizando Angular Material. Tema (claro/escuro),
   paleta de cores e inventário de componentes visuais já decididos em [[DESIGN-SYSTEM]] — não
   escolher uma paleta alternativa por conta própria.
+  - **Gotcha real (`apps/web` `feat-001.7`, 2026-09-09)**: um elemento customizado Angular
+    (`<app-x>`) é `display: inline` por padrão, igual qualquer tag desconhecida do browser —
+    componente algum recebe `block`/`flex`/`grid` de graça. Se o componente participa de um
+    layout que depende de altura definida (item de CSS Grid, `height: 100%` encadeado, etc.),
+    `:host` **precisa** declarar `display` explicitamente (`block`, na maioria dos casos) e a
+    própria altura (`height: 100%`/`max-height: 100%`) — sem isso a cadeia de dimensionamento
+    nunca se aplica de verdade, e o problema não aparece em teste unitário (`jsdom` não roda
+    layout real, só o Playwright/browser real pega). Achado real:
+    `app-panel`/`app-panel-layout` (`feat-001.4`) sem esse `:host` fez um painel com conteúdo
+    maior que a viewport crescer a página inteira em vez de rolar internamente — só descoberto
+    quando o Playwright de `feat-001.7` deu o primeiro browser real da sessão pra tirar
+    screenshot. Verificar todo componente novo que participa de layout (não decorativo/inline)
+    contra isso antes de assumir que `height: 100%`/`overflow: auto` no CSS "deveriam" funcionar.
 - **i18n**: `@jsverse/transloco`, três locales sempre em sincronia (`pt-BR`/`en-US`/`es`) — ver
   seção "Internacionalização (i18n)" acima, não hardcodar strings de UI.
 - **Cliente HTTP**: serviços Angular tipados por domínio (`AuthService`, `BetsService`,
@@ -499,6 +512,16 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
 - **Nunca usar `any`** (decisão de 2026-09-04): todo tipo é explícito — `unknown` + type guard
   quando o tipo de fato não é conhecido em tempo de compilação, nunca `any` como atalho. Vale
   para parâmetro, retorno, variável e genérico.
+- **Bibliotecas pesadas usadas só numa rota — escopar no componente, não em `app.config.ts`**
+  (achado real, `apps/web` `feat-001.6`, 2026-09-09): registrar `echarts.use([...])` +
+  `provideEchartsCore({echarts})` (~500KB) globalmente estourou o budget de erro do
+  `angular.json` (1MB). Corrigido movendo o registro pros `providers` do próprio componente que
+  usa o gráfico — como Angular só resolve esses providers quando o componente é de fato
+  instanciado, e o componente só existe numa rota lazy (`loadComponent`), a biblioteca inteira
+  fica dentro do chunk daquela rota em vez do bundle principal (confirmado no tamanho real dos
+  chunks pós-build, não só na teoria). `ngx-echarts` é usado por todos os gráficos de RF10/RF11
+  (ver [[DESIGN-SYSTEM]] item 6) — qualquer novo gráfico de `feat-006` (dashboard real) deve
+  seguir o mesmo padrão de escopo por componente, não reintroduzir o registro global.
 - **QA visual (Impeccable/taste-skill)**: ferramentas de design guidance para agentes de IA,
   usadas só como auditoria/polish de componentes já implementados contra [[DESIGN-SYSTEM]] —
   nunca como fonte de novas decisões de design (esse documento já é a fonte de verdade). Ver

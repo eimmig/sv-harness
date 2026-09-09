@@ -87,13 +87,20 @@ código" em `docs/CONVENTIONS.md`).
 
 ## Frontend (apps/web)
 
-- **Unitários/componente**: o test runner padrão do Angular CLI no momento em que `feat-001`
-  daquele app rodar `ng test` (Angular 22 pode já ter migrado de Karma para outro runner — a
-  primeira sessão que rodar `ng new`/`ng test` registra em
-  `apps/web/progress.md` qual runner foi de fato usado).
+- **Unitários/componente**: `vitest` via `@angular/build:unit-test` — confirmado no bootstrap real
+  do `ng new` em `feat-001.1` (Angular 22.x já migrou de Karma por padrão), não mais em aberto.
 - **E2E**: Playwright, cobrindo todos os fluxos cadastro de aposta manual,
   atualização de status de aposta, e filtro de dashboard recalculando métricas (RN08).
-- **Cobertura**: `ng test --code-coverage`, mesma meta de 80% do restante do projeto.
+  **Locators**: `data-testid` (ou `getByRole` sem depender do nome/texto), nunca cópia
+  traduzida nem classe de estilo como seletor — achado real de `feat-001.7`, a primeira versão
+  de `e2e/smoke.spec.ts` usava `getByRole('button', {name: /modo (claro|escuro)/i})`, ou seja,
+  o próprio texto sob teste de i18n também localizava o elemento; se a redação mudasse, o teste
+  quebraria pelo motivo errado. Texto/cópia só entra como asserção (`toHaveText`), nunca como
+  localizador.
+- **Cobertura**: gate de 80% (statements/branches/functions/lines) via `coverageThresholds` em
+  `apps/web/angular.json`, aplicado automaticamente em todo `ng test` — não precisa mais da flag
+  `--code-coverage`/`--coverage` na linha de comando (era a sintaxe do Karma, stale desde que o
+  gate foi configurado de verdade em `feat-001.7`).
 - **i18n**: pelo menos um fluxo Playwright roda com o idioma trocado para `en-US` (ou `es`) via
   o seletor de idioma, confirmando que o texto renderizado muda — não é suficiente testar só
   `pt-BR` (ver [[CONVENTIONS]] seção "Internacionalização"). Não é necessário duplicar todos os
