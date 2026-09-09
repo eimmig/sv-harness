@@ -105,8 +105,15 @@ Aplicam-se aos 6 repositórios de serviço (`api-gateway`, `auth-service`, `bets
 4. **Testes unitários + cobertura**: Java: `mvn -B test jacoco:report` (gera
    `target/site/jacoco/jacoco.xml`, ver [[TESTING]] — o gate de 80% em si já é aplicado pelo
    `mvn verify` do `init.sh` local; aqui o objetivo é gerar o relatório que o Sonar consome, não
-   duplicar o gate). `web`: `npm run test -- --code-coverage` (gera `coverage/lcov.info`).
-   `telegram-integration`: `uv run pytest --cov=. --cov-report=xml` (gera `coverage.xml`).
+   duplicar o gate). `web`: `npm run test -- --watch=false` (gera `coverage/web/lcov.info`) — **não**
+   `coverage/lcov.info` (achado real, `feat-001` PR story→develop, 2026-09-09: builder
+   `@angular/build:unit-test` grava sob `coverage/<nome-do-projeto>/`, não na raiz de `coverage/`;
+   `sonar-project.properties` também precisa de `coverageReporters` incluindo `lcovonly` no
+   `angular.json`, sem isso o builder nem gera `lcov.info`, só `html`/console — sem esses dois
+   ajustes o SonarCloud reporta "No LCOV files were found" e o quality gate falha por cobertura
+   zerada mesmo com o `vitest` local passando de sobra do gate de 80%. `--code-coverage` também
+   já estava stale, sintaxe do Karma). `telegram-integration`: `uv run pytest --cov=. --cov-report=xml`
+   (gera `coverage.xml`).
 5. **Qualidade de código e cobertura (SonarCloud)**: lê o relatório de cobertura gerado no passo
    anterior.
    - Java: `mvn -B sonar:sonar` com o goal totalmente qualificado do
