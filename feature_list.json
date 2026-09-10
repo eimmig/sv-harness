@@ -146,8 +146,8 @@
       "dependencies": [
         "epic-003"
       ],
-      "status": "not-started",
-      "evidence": "",
+      "status": "done",
+      "evidence": "feat-014 (services/bets-service/feature_list.json) done - 4 subtasks, PRs #56-59 (subtask->feature) + #59 (feature->develop, CI+SonarCloud). GET/PATCH /api/v1/settings, BET.betType enum PRE/LIVE, GET /api/v1/bankroll/balance?at= (corte America/Sao_Paulo). Delivery Reviewer + Test Suite Auditor + Persistence Auditor rodados contra o diff inteiro (feature/SV-317 vs develop), achados reais corrigidos (transaction boundary, indices, testes de isolamento/HTTP faltando). Ver evidence de feat-014 em services/bets-service/feature_list.json para o detalhe completo.",
       "harness": "services/bets-service/"
     },
     {

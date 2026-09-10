@@ -126,19 +126,33 @@ numa única query agregada por página (join implícito `BET_RESULT`/`BET`, `bet
 próprio — nenhuma nota do vault documenta um; o total é a soma dos `balance` já retornados,
 responsabilidade do consumidor (ex.: `apps/web`).
 
-## Saldo consolidado por data, enum PRE/LIVE, configuração de unidade (`epic-013` da raiz, planejado)
+## Saldo consolidado por data, enum PRE/LIVE, configuração de unidade (`epic-013` da raiz)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10, especificação do
 dashboard consolidado em [[web]]) — 3 mudanças independentes:
 
-- **`GET /api/v1/bankroll/balance?at=<yyyy-MM-dd>`** (default hoje): fecha o gap já citado acima
-  ("RF07 não ganhou endpoint de saldo consolidado próprio") — soma o `balance` de **todas as
-  casas do tenant** (mesma fórmula de `GET /api/v1/betting-houses` por casa — `initialBalance` +
-  depósitos - saques + profit líquido) num único número, parametrizável no tempo via `at`
-  (`TRANSACTION.createdAt <= at`, `BET_RESULT.settledAt <= at`). Corte por **liquidação**, não
-  por `betDate` — o saldo só muda quando o resultado é realizado. Ver [[API-CONTRACTS]] e
-  [[STATISTICS]] "Saldo inicial/final do período" para a fórmula completa e o porquê de não
-  replicar isso para `stats-service` via evento.
+- **`GET /api/v1/bankroll/balance?at=<yyyy-MM-dd>`** (`feat-014.3`, default hoje): fecha o gap já
+  citado acima ("RF07 não ganhou endpoint de saldo consolidado próprio") — soma o `balance` de
+  **todas as casas do tenant** (mesma fórmula de `GET /api/v1/betting-houses` por casa —
+  `initialBalance` + depósitos - saques + profit líquido) num único número, parametrizável no
+  tempo via `at`. 3 métodos de repositório agregados novos, não agrupados por casa
+  (`BettingHouseRepository.sumInitialBalance()`, `TransactionRepository.sumNetAmountUpTo(Instant)`,
+  `BetResultRepository.sumProfitUpTo(Instant)` — diferentes dos métodos `Map<UUID, ...>` por casa
+  já usados por `feat-005`). Corte por **liquidação**, não por `betDate` — o saldo só muda quando o
+  resultado é realizado. `at` (`yyyy-MM-dd`) é convertido pro **fim do dia civil brasileiro**
+  (`America/Sao_Paulo`, ver `docs/CONVENTIONS.md` "Timezone padrão") como limite superior
+  exclusivo antes de comparar com `createdAt`/`settledAt` (`Instant`/UTC) — não UTC ingênuo:
+  `2026-09-11T01:00:00Z` ainda é dia civil `2026-09-10` no Brasil (UTC-3) e entra no corte de
+  `at=2026-09-10`, mesmo já sendo `2026-09-11` em UTC. Ver [[API-CONTRACTS]] e [[STATISTICS]]
+  "Saldo inicial/final do período" para a fórmula completa e o porquê de não replicar isso para
+  `stats-service` via evento. `BankrollService.getBalance` é `@Transactional(readOnly = true)`
+  (achado real do `Persistence Auditor`, 2026-09-10: sem isso as 3 queries agregadas rodavam em
+  3 transações implícitas separadas, podendo misturar dados de instantes diferentes sob escrita
+  concorrente) — mesmo padrão de `@Transactional` já usado por `BetService.updateStatus`, sem
+  override de isolation level (Postgres `READ COMMITTED`, o padrão deste banco, aceito como
+  suficiente na escala deste projeto). `transaction.created_at` e `bet_result.settled_at`
+  ganharam índice (`V20260910193000`) já que essas colunas passaram a sustentar um predicado de
+  range varrendo a tabela inteira (sem filtro por `betting_house_id`) a cada chamada do endpoint.
 - **`BET.betType` vira enum `PRE`/`LIVE`** (`feat-014.2`, `BetType` + `BetTypeAttributeConverter`,
   mesmo padrão de `BetStatus`/`BetStatusAttributeConverter`) — antes era `varchar` livre, sem
   valores fixos (usuário digitava qualquer coisa). Migração normaliza pra lowercase e zera

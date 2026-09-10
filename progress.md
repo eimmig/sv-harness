@@ -2,14 +2,14 @@
 
 ## Estado Atual (Current State)
 
-**Última atualização:** 2026-09-08
-**Epic ativo:** `epic-005` (telegram-integration), `in-progress` — `feat-001`..`feat-004` `done`,
-restam `feat-005` (CI, fechamento formal) e `feat-006` (checklist de validação pré-deploy).
-**Demais epics**: `epic-001`/`epic-002`/`epic-003`/`epic-004`/`epic-008`/`epic-009` `done`.
-`epic-006` (web) e `epic-007` (resiliência DLQ) `not-started` — ver seções datadas abaixo (o
-bloco "Estado Atual" acima não foi mantido em sincronia sessão a sessão; o histórico
-cronológico completo, esse sim atualizado, começa em "Atualização — convenções cross-service"
-logo adiante).
+**Última atualização:** 2026-09-10
+**Epic ativo:** nenhum — `epic-013` (`bets-service`) fechado nesta sessão. `epic-001`..`epic-013`
+todos `done`. Próximos elegíveis: `epic-014` (`stats-service`, depende de `epic-004`+`epic-013`,
+ambos done) e os epics de `apps/web` que dependiam de `epic-013`/`epic-014` — ver
+`session-handoff.md` da raiz para a lista completa e o racional de escolha. Este bloco "Estado
+Atual" não é mantido em sincronia sessão a sessão de forma confiável; o histórico cronológico
+completo, esse sim atualizado, começa em "Atualização — convenções cross-service" logo adiante
+e termina na seção datada mais recente no fim do arquivo.
 
 ## Status
 
@@ -2076,3 +2076,41 @@ mesma sessão; locator por classe CSS em `kpi-card.spec.ts` — aceito). Test Su
 claro/escuro, desktop/mobile) — sem achado (uma "quebra" aparente do gráfico numa captura era só
 timing do screenshot, confirmado lendo o estado real do componente via `window.ng.getComponent`
 no browser, não um bug de produção). `./init.sh` do app e da raiz verdes.
+
+## `epic-013` fechado — `bets-service`: saldo consolidado, `betType` enum, config de unidade (2026-09-10, mesmo dia)
+
+`bets-service feat-014`, 4 subtasks (story SV-317, PRs #56-59 subtask→feature + #59 feature→develop).
+3 mudanças independentes: (1) `TENANT_SETTINGS` nova + `GET`/`PATCH /api/v1/settings`
+(`unitPercent`, `PATCH` restrito a `X-User-Role: admin`); (2) `BET.betType` migra de texto livre
+pra enum `PRE`/`LIVE` (migração normaliza e zera valores fora do domínio antes do `CHECK`,
+propagado ao evento `BetCreated`); (3) `GET /api/v1/bankroll/balance?at=<yyyy-MM-dd>` — saldo
+consolidado de **todas** as casas do tenant, corte de tempo usando fim do dia civil brasileiro
+(`America/Sao_Paulo`) como limite superior exclusivo, não UTC ingênuo — provado por teste de
+integração dedicado (transação às `2026-09-11T01:00:00Z`, já dia UTC seguinte mas ainda dia civil
+brasileiro `09-10`, entra no corte; às `04:00:00Z`, já dia civil seguinte, fica de fora).
+
+`bets-service` não tem tabela `USER` — decisão via `AskUserQuestion` ao usuário (única pergunta
+genuína desta sessão): claim `role` no token PASETO (`auth-service`) + header `X-User-Role`
+injetado pelo `api-gateway`, mesmo modelo de confiança já usado por `X-User-Id`/`X-Tenant-Id`.
+Achado real do Plan Reviewer, corrigido **antes** de qualquer consumidor real depender do valor
+errado: `auth-service` emitia a claim em uppercase (`ADMIN`/`MEMBER`), divergindo da convenção
+lowercase já documentada (`docs/API-CONTRACTS.md`/`docs/DECISIONS-LOG.md`) e já assumida pelos
+testes de `api-gateway feat-010` — corrigido em `auth-service feat-013` (ver
+`services/auth-service/progress.md`).
+
+Definição de Pronto: `./init.sh` do serviço e da raiz verdes, `Delivery Reviewer` +
+`Test Suite Auditor` + `Persistence Auditor` rodados em paralelo (3 subagentes, contexto
+isolado) contra o diff inteiro (`feature/SV-317` vs `develop`) — todos CONCERNS, achados reais
+corrigidos antes do merge pra `develop`: `BankrollService.getBalance` sem `@Transactional`
+(3 queries agregadas cada uma em transação implícita própria, risco de misturar dados de
+instantes diferentes sob escrita concorrente); índices faltando em `transaction.created_at`/
+`bet_result.settled_at` (novo predicado de range sem filtro por casa); `tenant_settings` sem
+teste de isolamento entre tenants; `CreateBetRequest.betType` sem teste HTTP de valor
+válido/inválido; desvio do teste de migração de dado sujo (`feat-014.2`) não estava registrado
+em lugar nenhum do harness — corrigido. 1 achado (CHANGELOG ausente) verificado e rejeitado como
+falso positivo (`git diff` mostrava as entradas presentes na branch). Ver
+`services/bets-service/progress.md` e `services/bets-service/feature_list.json` (campo
+`evidence` de `feat-014`) para o detalhe completo.
+
+Libera `epic-014` (`stats-service`, `byBetType`) e os epics de `apps/web` que dependiam de
+`epic-013`/`epic-014`.
