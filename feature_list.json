@@ -158,7 +158,7 @@
         "epic-004",
         "epic-013"
       ],
-      "status": "not-started",
+      "status": "in-progress",
       "evidence": "",
       "harness": "services/stats-service/"
     },
