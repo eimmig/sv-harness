@@ -82,12 +82,14 @@ Ver [[infra]] para detalhes de configuração. Resumo:
   (schema-per-tenant, ver [[DECISIONS-LOG]] "Modelo de tenant multiusuário" — decisão de
   2026-08-02 que estendeu esse isolamento também a `auth-service`, não só bets/stats).
 - **Redis**: cache distribuído, só usado pelo `stats-service`.
-- **Docker**: todos os serviços conteinerizados. `docker-compose.yml` (`infra/`) é o ambiente de
+- **Docker**: todos os serviços conteinerizados (Dockerfile próprio em cada um dos 6 repositórios
+  de aplicação desde 2026-09-10). `docker-compose.yml` (`infra/`) continua sendo o ambiente de
   desenvolvimento local; **Kubernetes é o alvo real de implantação especificado no TCC 1**
-  (Figura 5, "Diagrama de Implantação da Infraestrutura baseada em Microsserviços") — não uma
-  meta descartada. Manifests/Helm charts ainda não existem (corrigido em 2026-09-08, ver
-  [[DECISIONS-LOG]] — nota anterior aqui dizia o oposto, sem decisão do usuário por trás).
-  Backlog da migração: `epic-010` em `feature_list.json` da raiz (harness `infra/`, `not-started`).
+  (Figura 5, "Diagrama de Implantação da Infraestrutura baseada em Microsserviços") e já está
+  implementado — manifests YAML puros em `infra/k8s/` (`epic-010`, `infra/feat-004`, `done` em
+  2026-09-10), validados de ponta a ponta contra um cluster `kind` local (registro/login/aposta
+  via `Ingress`, evento consumido por `stats-service` dentro do cluster). Ver [[infra]] seção
+  "Kubernetes" para o desenho completo.
 - **API Gateway**: ponto único de entrada HTTP/REST para o front-end web e para
   [[telegram-integration]]; valida token PASETO (ou credencial de serviço) e roteia para o
   serviço correto. É um serviço de aplicação com harness próprio (`epic-008`,

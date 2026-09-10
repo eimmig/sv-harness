@@ -101,8 +101,8 @@
       "dependencies": [
         "epic-001"
       ],
-      "status": "not-started",
-      "evidence": "",
+      "status": "done",
+      "evidence": "Fechado em 2026-09-10 por infra/feat-004 (ver evidencia detalhada em infra/feature_list.json). Escopo final maior que o originalmente descrito acima (decisoes do usuario via AskUserQuestion): manifests YAML puros (nao Helm) em infra/k8s/, e telegram-integration entrou no escopo tambem (Python, nunca tinha passado por docker-compose antes). Dockerfile de cada um dos 5 servicos de aplicacao feito como feature propria em cada repositorio de servico (auth-service feat-011, bets-service feat-013, stats-service feat-011, api-gateway feat-009, telegram-integration feat-007), nao em infra/. Verificado de ponta a ponta contra um cluster kind local: os 10 workloads healthy, fluxo completo de registro de aposta via Ingress real (tenant provisionado via kubectl port-forward - rotas admin continuam fora do Gateway por design), FACT_BET/PROCESSED_EVENT confirmados dentro do pod postgres-stats. docker-compose.yml (epic-001) nao foi alterado - continua sendo o ambiente de dev local, agora complementado pelo Kubernetes, nao substituido. Ultimo epic do backlog raiz - todos os 9 epics estao done.",
       "harness": "infra/"
     },
     {

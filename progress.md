@@ -1915,3 +1915,67 @@ harnesses tocados verdes.
 
 **Com isso, `epic-010` (migração para Kubernetes) fica como o único epic `not-started` restante**
 na raiz — todos os outros 8 estão `done`.
+
+## `epic-010` fechado — migração para Kubernetes, último epic do backlog raiz (2026-09-10, mesmo dia)
+
+Retomada imediata após `epic-007` fechar na mesma sessão. Único epic `not-started` restante.
+Antes de qualquer código, 3 decisões de escopo genuinamente em aberto foram levadas ao usuário
+via `AskUserQuestion` (todas com recomendação explícita): **Dockerfile de cada serviço como
+feature própria naquele repositório** (não centralizado em `infra/`, mesmo precedente de "porta
+HTTP fixa") — recomendado e escolhido; **manifests YAML puros, não Helm** — recomendado e
+escolhido (~10 componentes fixos de um único ambiente não justificam templating);
+**`telegram-integration` (Python, nunca tinha passado por `docker-compose.yml`) entra no
+escopo agora** — usuário escolheu incluir.
+
+**Ambiente**: Docker Desktop estava desligado no início da sessão (subido); seu Kubernetes
+embutido não estava habilitado (exige toggle na GUI, não scriptável) — `kind`/`helm` instalados
+via `winget` como alternativa 100% CLI (`helm` acabou não sendo necessário). Cluster `kind`
+criado com `extraPortMappings`/node label `ingress-ready=true` (guia oficial do `ingress-nginx`
+para `kind`) — recriado uma vez porque a config inicial não tinha isso, nada implantado ainda
+nesse ponto.
+
+**Dockerfiles** (5, um por serviço de aplicação — 4 Java + `telegram-integration`), cada um como
+feature própria: `auth-service feat-011`, `bets-service feat-013`, `stats-service feat-011`,
+`api-gateway feat-009`, `telegram-integration feat-007`. Todos multi-stage, testados de verdade
+(build real + container real contra a infra rodando, não só "parece certo").
+`telegram-integration` teve uma investigação mais longa: um achado do SonarCloud
+(`docker:S8541`, `uv sync` sem `--no-build`) resistiu a 2 tentativas reais de correção — cada
+uma trocou o achado por outro igualmente sem correção viável (`docker:S8544`, instalação por
+caminho de arquivo local nunca é reconhecida como "versão resolvida" pela regra). Resolvido
+marcando o achado como **Won't Fix** direto no SonarCloud via API, com a investigação completa
+registrada como justificativa — não escondido, não forçado com um workaround frágil.
+
+**Manifests Kubernetes** (`infra/k8s/`, `infra/feat-004`): 3x Postgres, RabbitMQ + `Job` de
+topologia (Kubernetes não tem `depends_on`/`condition: service_healthy` do compose — resolvido
+com `initContainer` esperando a porta AMQP), Redis, n8n, um arquivo por serviço de aplicação,
+`Ingress` expondo só `api-gateway` (mesmo desenho do diagrama de implantação do TCC1 — Load
+Balancer/Ingress na frente só do Gateway). Segredos: um único `Secret` compartilhado
+(`stakevault-secrets`), não um por serviço — evita divergência em chaves já compartilhadas entre
+serviços (`ADMIN_API_KEY`/`PASETO_LOCAL_KEY`/`SERVICE_KEY`). Topologia RabbitMQ: `ConfigMap`
+gerado a partir dos mesmos `rabbitmq/definitions.json`/`apply-definitions.sh` que o compose já
+usa (`kubectl create configmap --from-file`), não uma cópia YAML que divergiria.
+
+**Verificado de ponta a ponta contra o cluster `kind` real, não só `kubectl get pods` verde**:
+tenant provisionado via `kubectl port-forward` (rotas admin continuam fora do Gateway por
+design, mesmo em Kubernetes), login e registro de aposta via o `Ingress` real
+(`http://localhost:8888`), `FACT_BET`/`PROCESSED_EVENT` conferidos dentro do pod
+`postgres-stats` via `kubectl exec` — confirma `bets-service` publicando e `stats-service`
+consumindo o evento dentro do cluster. `telegram-integration` confirmado alcançável
+internamente mas sem `Ingress` (`ClusterIP`-only — só `n8n`, mesmo cluster, fala com ele).
+
+**Achado de auto-revisão, corrigido antes de commitar**: a evidência de `telegram-integration
+feat-007` alegava que `infra/docker-compose.yml` ganharia o serviço "pra paridade de dev" —
+falso, nenhum dos 4 serviços Java também está no compose (só peças de infra rodam ali, todo
+serviço de aplicação sobe via seu próprio `mvnw`/`uv` no host, nunca misturado com containers).
+
+`docker-compose.yml` (`epic-001`) não foi alterado — continua sendo o ambiente de dev local,
+agora complementado pelo Kubernetes, não substituído. `docs/ARCHITECTURE.md` e
+`docs/services/infra.md` atualizados no mesmo commit lógico. Cluster `kind` deixado no ar ao
+final da sessão para inspeção, removível a qualquer momento (`kind delete cluster --name
+stakevault`) — não faz parte do estado do repositório. `./init.sh` da raiz e de todos os 6
+repositórios tocados nesta sessão (`infra`, `api-gateway`, `auth-service`, `bets-service`,
+`stats-service`, `telegram-integration`) verdes.
+
+**Todos os 9 epics do backlog raiz estão `done`.** Próximo trabalho do projeto, se houver, vem
+de fora do backlog original — gaps já conhecidos (`apps/web feat-009`/`feat-010`, RF12/RF13) ou
+nova decisão do usuário.

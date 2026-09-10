@@ -160,6 +160,83 @@ flowchart LR
 `epic-007`: derrubar `stats-service`, publicar eventos via `bets-service`, subir `stats-service`
 de novo, confirmar reprocessamento (mensagens acumuladas na fila, não perdidas).*
 
+## Kubernetes (`epic-010`, `infra/feat-004`, 2026-09-10)
+
+Alvo real de implantação especificado no TCC 1 (Figura 5, "Diagrama de Implantação da
+Infraestrutura baseada em Microsserviços") — `docker-compose.yml` continua sendo o ambiente de
+desenvolvimento local, não é substituído. Manifests YAML puros (decisão do usuário — sem Helm,
+~10 componentes fixos de um único ambiente não justificam templating) em `infra/k8s/`.
+
+```mermaid
+flowchart LR
+    subgraph Externo
+        U[Usuário / Browser]
+    end
+    subgraph Cluster["Cluster Kubernetes (kind local)"]
+        ING[Ingress nginx]
+        GW["api-gateway<br/>(único com Ingress)"]
+        AUTH[auth-service]
+        BETS[bets-service]
+        STATS[stats-service]
+        TG["telegram-integration<br/>(ClusterIP-only)"]
+        N8N[n8n]
+        PGA[(postgres-auth)]
+        PGB[(postgres-bets)]
+        PGS[(postgres-stats)]
+        MQ[RabbitMQ]
+        R[(Redis)]
+    end
+    U -->|HTTP :8888| ING --> GW
+    GW --> AUTH --> PGA
+    GW --> BETS --> PGB
+    GW --> STATS --> PGS
+    BETS -->|publica BetCreated/BetSettled| MQ -->|consome| STATS
+    STATS --> R
+    N8N --> TG
+    TG --> AUTH
+    TG --> GW
+```
+
+Decisões de desenho, todas com precedente ou motivo documentado:
+
+- **Imagens**: `Dockerfile` de cada um dos 5 serviços de aplicação (4 Java + Python) foi feito
+  como feature própria em cada repositório de serviço (mesmo precedente de "porta HTTP fixa"),
+  não neste harness — ver `auth-service feat-011`, `bets-service feat-013`,
+  `stats-service feat-011`, `api-gateway feat-009`, `telegram-integration feat-007`. Imagens
+  locais (`stakevault/<serviço>:local`), carregadas no cluster via `kind load docker-image` —
+  `imagePullPolicy: Never`, sem registry configurado (fora de escopo de um cluster de
+  demonstração local de TCC).
+- **`telegram-integration` entrou no escopo** desta migração (decisão do usuário) mesmo nunca
+  tendo passado por `docker-compose.yml` antes — só `n8n` estava provisionado ali. Fica
+  `ClusterIP`-only, sem `Ingress`: o residual de auth/rate-limit em `POST /bets/capture`/
+  `/telegram/link` (aceito em `services/telegram-integration/n8n/README.md` enquanto o serviço
+  não era exposto) continua válido, a internet nunca alcança esse pod diretamente.
+- **Segredos**: um único `Secret` (`stakevault-secrets`) referenciado por todos os Deployments,
+  não um por serviço — chaves compartilhadas entre serviços (`ADMIN_API_KEY`/
+  `PASETO_LOCAL_KEY`/`SERVICE_KEY`) ficariam fáceis de divergir em Secrets separados.
+  `k8s/secret.example.yaml` versionado com placeholders, `k8s/secret.yaml` (valores reais)
+  nunca versionado — mesmo padrão do `.env`.
+- **Topologia do RabbitMQ não é duplicada em YAML**: o `ConfigMap` `rabbitmq-definitions` é
+  gerado a partir dos mesmos `rabbitmq/definitions.json`/`apply-definitions.sh` que o
+  `docker-compose.yml` já usa (`kubectl create configmap ... --from-file=... --dry-run=client -o
+  yaml | kubectl apply -f -`), evitando uma segunda cópia que divergiria se um mudasse sem o
+  outro.
+- **Sem `depends_on`/`condition: service_healthy`** (mecanismo do compose, não existe no
+  Kubernetes): o `Job` `rabbitmq-init` usa um `initContainer` (`busybox`, `nc -z rabbitmq 5672`
+  em loop) esperando a porta AMQP responder antes de rodar o mesmo script de sempre.
+- **Rotas administrativas continuam fora do Gateway** (mesmo desenho de sempre, ver
+  [[API-CONTRACTS]]): só `api-gateway` tem `Ingress`; `auth-service`/`bets-service`/
+  `stats-service` são `Service` `ClusterIP`-only — o operador roda `POST
+  /api/v1/admin/tenants` via `kubectl port-forward svc/<nome> <porta>:<porta>`, não um
+  workaround temporário, é assim que se opera um cluster real também.
+
+**Verificado de ponta a ponta contra um cluster `kind` local** (não só `kubectl get pods`
+verde): tenant provisionado via `port-forward`, login e registro de aposta via `Ingress`
+(`http://localhost:8888`, porta mapeada em `k8s/kind-config.yaml`), `FACT_BET`/
+`PROCESSED_EVENT` conferidos dentro do pod `postgres-stats` — o mesmo fluxo do
+`docker-compose`, agora rodando no cluster. Passo a passo completo em `infra/CLAUDE.md` seção
+"Verificação — Kubernetes".
+
 ## Onde fica
 
 `infra/docker-compose.yml` (criado em `feat-001`, 2026-08-03), mais:
