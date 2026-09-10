@@ -1858,3 +1858,60 @@ pro detalhe completo por subtask.
 `feat-007`, `feat-008`, `feat-006`) estão `done`. `feat-009` (RF12)/`feat-010` (RF13) permanecem
 no backlog daquele app, `not-started`, gap real encontrado planejando `feat-005` — decisão do
 usuário de não bloquear o fechamento deste epic.
+
+## `epic-007` fechado — resiliência DLQ/retry, único epic restante além de Kubernetes (2026-09-10)
+
+Sessão retomou `epic-007` (já `in-progress` desde a sessão anterior). Estado ao começar: `infra`
+com `feat-002.1..3` prontas mas nunca empurradas pro GitHub, `feat-002.4` marcada `in-progress`
+sem nenhum trabalho real feito ainda, stats-service (8083) fora do ar.
+
+**Trabalho técnico**: `feat-002.4` (cenário DLQ) executado contra a stack real — infra + 4
+serviços Java subidos localmente (gotcha documentado em `docs/OBSERVABILITY-AND-CONFIG.md`:
+`mvnw spring-boot:run` não lê `.env` sozinho, precisa de `export` manual + `SPRING_PROFILES_
+ACTIVE=dev`). Tenant de teste novo criado (`feat002dlq`, por não ter a senha do tenant anterior
+registrada em nenhum artefato). `postgres-stats` parado, 1 evento publicado, poll na Management
+API do RabbitMQ até a mensagem cair em `stats.bet-events.dlq` (~105s — 3 tentativas de retry de
+aplicação, cada uma limitada pelo `connection-timeout` de 30s do HikariCP contra o Postgres
+caído). Registro síncrono da aposta via `api-gateway` não bloqueou.
+
+**2 achados reais corrigidos ao longo do caminho, ambos em outros repositórios** (ver
+`infra/progress.md` para o detalhe completo):
+1. RabbitMQ 4.3+ deixou de contar `nack(requeue=true)` para `x-delivery-limit` (achado de uma
+   tentativa anterior desta mesma feature, sessão passada) — corrigido em
+   `services/stats-service feat-010` (retry de aplicação via `spring.rabbitmq.listener.simple.
+   retry`), fechado nesta sessão. O cenário de DLQ desta sessão já rodou contra a versão
+   corrigida.
+2. `api-gateway` nunca roteava `/api/v1/tipsters/**` — decisão deliberada de `feat-007` daquele
+   serviço que ficou obsoleta quando `apps/web feat-008` (catálogos) ganhou a aba de tipsters,
+   sem que ninguém revisitasse o roteamento. Encontrado montando o catálogo de teste. Corrigido
+   em `services/api-gateway feat-008`.
+
+**Achado de processo, corrigido nesta sessão**: `infra feat-002.1..3` e `stats-service
+feat-010.1..4` tinham sido mescladas localmente (git merge direto entre branches locais) sem
+nunca passar por PR/CI real do GitHub — desvio do fluxo de 2 gates que este `CLAUDE.md` exige.
+Corrigido retroativamente: todas as branches empurradas pro GitHub, e o PR `feature -> develop`
+(o gate mais pesado — `init.sh` + Delivery Reviewer já tinham rodado antes) passou pela CI real,
+incluindo SonarCloud nos 2 repositórios de aplicação, antes do merge em cada um dos 3
+repositórios afetados. Desvio documentado nas descrições dos PRs e nas evidências das features,
+não escondido.
+
+**Delivery Reviewer (passe próprio) sobre a evidência de `infra/feat-002`**: encontrou e corrigiu
+2 imprecisões antes do commit final — uma alegação de "health 200 o tempo todo" que na verdade só
+foi verificada em 2 pontos discretos (não monitoramento contínuo durante os ~105s), e uma
+atribuição errada de qual subtask provisionou o tenant de teste original (`feat002test` foi
+provisionado do zero por `feat-002.2`, não reaproveitado de nada anterior).
+
+**Limpeza de branches** (a pedido do usuário, escopo maior que só esta sessão): todas as
+`feature/*`/`subtask/*` já mescladas em `develop` foram deletadas, local e remotamente, nos 6
+repositórios de serviço tocados historicamente (`infra`, `services/api-gateway`,
+`services/auth-service`, `services/bets-service`, `services/stats-service`,
+`services/telegram-integration`) — dezenas de branches antigas, não só as desta sessão.
+`apps/web` já estava limpo.
+
+Estratégia `at-most-once` da DLQ (`docs/DECISIONS-LOG.md` 2026-08-03) reconfirmada válida —
+nenhum dos 2 cenários (retry, DLQ) mostrou perda de mensagem. Ambiente encerrado ao final: 4
+processos Java parados, `docker compose down -v` em `infra/`, `./init.sh` da raiz e de todos os
+harnesses tocados verdes.
+
+**Com isso, `epic-010` (migração para Kubernetes) fica como o único epic `not-started` restante**
+na raiz — todos os outros 8 estão `done`.

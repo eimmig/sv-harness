@@ -113,8 +113,8 @@
         "epic-004",
         "epic-005"
       ],
-      "status": "in-progress",
-      "evidence": "",
+      "status": "done",
+      "evidence": "Fechado em 2026-09-10 por infra/feat-002 (ver evidencia detalhada em infra/feature_list.json). Teste cross-service executado contra a stack real (infra + auth-service/bets-service/stats-service/api-gateway): cenario retry (stats-service morto, 4 mensagens acumuladas sem perda, drenadas corretamente ao religar) e cenario DLQ (postgres-stats parado, mensagem morta-letrada em ~105s, demais servicos permaneceram responsivos). Duas correcoes cross-service feitas durante o teste: RabbitMQ 4.3+ nao conta mais nack(requeue=true) para x-delivery-limit, corrigido via retry de aplicacao em services/stats-service/feat-010; api-gateway nao roteava /api/v1/tipsters (decisao obsoleta de feat-007 daquele servico), corrigido em services/api-gateway/feat-008. Estrategia at-most-once da DLQ (docs/DECISIONS-LOG.md 2026-08-03) reconfirmada valida - nenhuma perda observada.",
       "harness": "infra/"
     }
   ]
