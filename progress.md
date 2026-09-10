@@ -2036,3 +2036,43 @@ bloquear o merge. Ver `services/stats-service/progress.md` para o detalhe comple
 
 `docs/DATA-MODEL.md`, `docs/API-CONTRACTS.md`, `docs/services/stats-service.md` atualizados no
 mesmo commit lógico. `./init.sh` da raiz e do serviço verdes. Libera `epic-012` (`apps/web`).
+
+## `epic-012` fechado — tela "Buscar Estatísticas" em `apps/web` (2026-09-10, mesmo dia)
+
+`apps/web feat-012`, 7 subtasks (story SV-303, PRs #48-55). Tela nova, distinta do dashboard
+consolidado: form com sportId/leagueId obrigatórios (submit desabilitado até ambos
+preenchidos), time/casa/mercado/tipster/período opcionais, autocomplete de time escopado por
+esporte via `switchMap` (cancela chamada obsoleta na troca rápida de esporte, provado por teste
+unitário e e2e). Sinal `hasSearched` distingue "nunca buscou" de "buscou e zerou" (achado do
+Plan Reviewer: card de `betCount` faltava no plano original, virou o gatilho do segundo estado).
+8 cards de resumo (incluindo `betCount`) + gráfico de equity curve; `sharpeRatio` nulo renderiza
+texto localizado, nunca "null"/NaN.
+
+Reuso planejado desde o Plan Reviewer conjunto com `stats-service feat-013`: `shared/kpi-card`
+extraído (dashboard refatorado pra usá-lo, `data-testid` preservados) e `core/chart-theme.ts`
+extraído de `monthly-profit-chart.ts` (compartilhado com o gráfico novo).
+
+**Achado real de teste, corrigido em `feat-012.6`**: o mock do e2e pra `GET
+/api/v1/statistics/teams` reusava por engano o envelope paginado (`{content:[...]}`) dos outros
+catálogos, quando o endpoint real devolve array puro — causava `TypeError:
+newCollection[Symbol.iterator] is not a function` dentro do `@for`, só reproduzível em browser
+real (Chromium via Playwright), nunca nos testes unitários (fixtures do `HttpTestingController`
+já tinham a forma certa). Documentado em `docs/TESTING.md`.
+
+**Gate story→develop falhou 3 vezes antes de passar**, todos achados reais do SonarCloud
+corrigidos na raiz do problema, não contornados: (1) 2 inputs de data sem `id`/`aria-label`
+(a11y); (2) 5.4% de duplicação em código novo (gate ≤3%) — a extração de `chart-theme.ts` do
+`feat-012.3` não tinha pego a duplicação real (`equity-curve-chart.ts` ainda copiava ~50 linhas
+do `buildChartOption` de `monthly-profit-chart.ts`, e `search-statistics.ts` duplicava o
+`sign()` de `dashboard.ts`) — corrigido extraindo `chart-theme.ts#buildLineChartOption`
+(parametrizado por categorias/valores, usado pelos 2 gráficos) e `kpi-card.ts#kpiSign` (usado
+pelas 2 telas), além do achado mais superficial (3 selects opcionais quase idênticos, também
+deduplicado num `@for`).
+
+Delivery Reviewer (1 revisor independente em contexto isolado, rodou `npm test`/`playwright
+test` de verdade): PASS, 2 achados P3 (fluxo de idioma trocado ausente no e2e — corrigido na
+mesma sessão; locator por classe CSS em `kpi-card.spec.ts` — aceito). Test Suite Auditor: PASS.
+`npm test` 41/41 (127/127) + Playwright 28/28 verdes. QA visual real via Playwright (screenshots
+claro/escuro, desktop/mobile) — sem achado (uma "quebra" aparente do gráfico numa captura era só
+timing do screenshot, confirmado lendo o estado real do componente via `window.ng.getComponent`
+no browser, não um bug de produção). `./init.sh` do app e da raiz verdes.

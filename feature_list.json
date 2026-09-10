@@ -135,8 +135,8 @@
       "dependencies": [
         "epic-011"
       ],
-      "status": "not-started",
-      "evidence": "",
+      "status": "done",
+      "evidence": "Fechado em 2026-09-10 por apps/web feat-012 (ver evidencia detalhada em apps/web/feature_list.json). Tela search-statistics: form sportId/leagueId obrigatorios, autocomplete de time escopado por esporte, 8 cards de resumo (incluindo betCount) + equity-curve-chart. Reuso: shared/kpi-card extraido (dashboard refatorado pra usa-lo), core/chart-theme.ts extraido (compartilhado entre os 2 graficos). Achado real corrigido em feat-012.6: mock de e2e com envelope errado pro endpoint GET /api/v1/statistics/teams (array puro, nao paginado) - documentado em docs/TESTING.md. Gate story->develop falhou 3x por achados reais do SonarCloud (a11y de inputs de data, duplicacao de codigo entre os 2 graficos e entre dashboard/search-statistics) - todos corrigidos na raiz, nao contornados. Delivery Reviewer (1 revisor independente): PASS. Test Suite Auditor: PASS. npm test 41/41 (127/127) + Playwright 28/28 verdes. ./init.sh do app e da raiz verdes.",
       "harness": "apps/web/"
     },
     {
