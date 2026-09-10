@@ -300,9 +300,14 @@ Routing keys: `bet.created` para `BetCreated`, `bet.settled` para `BetSettled` �
 `stats.bet-events`. Nomes em inglês, mesma regra do topo desta nota.
 
 `x-delivery-limit` só existe em quorum queue (classic queue reentrega indefinidamente e nunca
-chegaria à DLQ sozinha) — é o mecanismo que implementa o "limite de tentativas" descrito em
-[[infra]]. Mudança em qualquer linha desta tabela é mudança de contrato: atualiza
-`infra/rabbitmq/definitions.json`, [[bets-service]], [[stats-service]] e [[infra]] no mesmo commit.
+chegaria à DLQ sozinha) — continua configurado como defesa em profundidade, mas **desde
+2026-09-09 não é mais o mecanismo primário de "limite de tentativas"**: RabbitMQ 4.3+ (versão
+real deste projeto) não conta `nack(requeue=true)` — o que qualquer falha de consumo produz por
+padrão no Spring AMQP — para esse limite; quem hoje aciona a DLQ de verdade é o retry de
+aplicação de `stats-service` (`spring.rabbitmq.listener.simple.retry`, 3 tentativas, ver
+[[infra]] seção "Dead Letter Queue (DLQ)" para o achado completo). Mudança em qualquer linha
+desta tabela é mudança de contrato: atualiza `infra/rabbitmq/definitions.json`, [[bets-service]],
+[[stats-service]] e [[infra]] no mesmo commit.
 
 - `schemaVersion` incrementa em qualquer mudança incompatível do `payload`; o consumidor deve
   ignorar (ou tratar explicitamente) versões que não reconhece, nunca falhar silenciosamente.

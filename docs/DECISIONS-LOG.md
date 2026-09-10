@@ -1460,3 +1460,47 @@ da entrega final.
 - Não afeta epics/features já `done` — `docker-compose.yml` continua sendo o ambiente de
   desenvolvimento válido enquanto a migração não acontece; esta entrada não invalida
   `infra/feat-001` nem pede rollback de nada já entregue.
+
+## 2026-09-09 — RabbitMQ 4.3+ não conta `nack(requeue=true)` para `x-delivery-limit`: DLQ virou responsabilidade de aplicação
+
+**Contexto**: `infra/feat-002` (teste de resiliência cross-service do `epic-007`) rodou o cenário
+de DLQ pela primeira vez contra o broker real (`rabbitmq:4-management-alpine` → 4.3.5, não uma
+versão mais antiga). O plano — derrubar `postgres-stats`, publicar 1 evento, observar a mensagem
+cair em `stats.bet-events.dlq` após esgotar `x-delivery-limit: 3` — nunca convergiu: o consumidor
+falhou **15 vezes seguidas** (`CannotGetJdbcConnectionException`) sem a mensagem nunca sair da
+fila principal. Inspeção do header da mensagem (`GET` na Management API) mostrou `x-delivery-
+count: 1` travado, com `x-acquired-count` subindo a cada tentativa.
+
+**Causa raiz**: a partir do RabbitMQ 4.3, `nack(requeue=true)` — o comportamento padrão do
+`ConditionalRejectingErrorHandler` do Spring AMQP em qualquer exceção não-fatal do listener —
+virou um "explicit return" e **deixou de contar** para `x-delivery-limit`; só `reject`
+(`requeue=false`) ou redelivery real por queda de conexão/canal incrementa o contador. Toda a
+documentação/config deste projeto (`infra/rabbitmq/definitions.json`, [[API-CONTRACTS]],
+[[infra]]) assumia o comportamento de versões anteriores do RabbitMQ, onde nack-requeue contava
+normalmente. Sem correção, uma mensagem "envenenada" travaria o único consumidor de
+`stats-service` para sempre, em vez de isolar via DLQ — o oposto do objetivo do `epic-007`.
+
+**Decisão do usuário sobre o mecanismo de fix** (via pergunta direta): mover a contagem de
+tentativas do broker para a aplicação, usando o retry nativo do Spring Boot
+(`spring.rabbitmq.listener.simple.retry`) em vez de um handler customizado. Implementado em
+`stats-service/feat-010`: `enabled: true`, `max-attempts: 3` (preserva o número já normativo, só
+muda onde é contado), `initial-interval: 1000` (fixo, sem backoff exponencial — decisão de manter
+simples). Após esgotar as tentativas **em processo** (sem tocar o broker entre elas), o
+`RejectAndDontRequeueRecoverer` padrão do Spring Boot rejeita a mensagem com `requeue=false`, que
+sempre morta-letra via DLX independente da contagem do broker — mecanismo ortogonal ao bug.
+
+**Impacto**:
+- [[infra]] seção "Dead Letter Queue (DLQ)" e [[API-CONTRACTS]] (tabela de topologia RabbitMQ)
+  corrigidas no mesmo commit desta entrada — `x-delivery-limit: 3` continua configurado como
+  defesa em profundidade (queda real de conexão/canal ainda incrementa `x-delivery-count`), mas
+  não é mais o mecanismo primário.
+- `stats-service/pom.xml` ganhou `org.springframework.retry:spring-retry:2.0.13` (não gerenciado
+  pela BOM do Spring Boot 4.1.1 — versão precisou ser fixada manualmente).
+- Teste novo (`BetEventListenerRetryIntegrationTest`, contexto Spring próprio) prova o cenário
+  "falha transitória esgota tentativas → DLQ", que os 2 testes de DLQ pré-existentes não cobriam
+  (cobriam só o caminho de reject imediato por erro de dado).
+- Qualquer outro serviço Java que vier a consumir fila própria (nenhum hoje além de
+  `stats-service`) precisa do mesmo `spring.rabbitmq.listener.simple.retry` para ter DLQ
+  funcional neste RabbitMQ — não é peculiaridade só de `stats-service`.
+- `epic-007` (raiz) permanece `in-progress`: `infra/feat-002` retomou o cenário de DLQ após este
+  fix, ver evidência em `infra/feature_list.json`.

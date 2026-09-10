@@ -76,12 +76,34 @@ sequenceDiagram
 *Diagrama original: `docs/diagrams/flows/dead-letter-queue.png`.*
 
 O limite de tentativas é `x-delivery-limit: 3` na fila `stats.bet-events` (quorum queue — ver
-tabela de topologia em [[API-CONTRACTS]]). Ambiente local usa a estratégia de dead-lettering
-**default do RabbitMQ, `at-most-once`**: em falha de broker a mensagem pode se perder no
-trajeto até a DLQ. `at-least-once` exigiria `overflow: reject-publish` (que passa a rejeitar
-publicação quando a fila enche, mudando o comportamento visível de `bets-service`) — tradeoff
-aceito conscientemente para o ambiente de desenvolvimento, ver [[DECISIONS-LOG]]. Reavaliar se
-`epic-007` (`feat-002`) mostrar perda de mensagem no teste de resiliência.
+tabela de topologia em [[API-CONTRACTS]]), mas **desde 2026-09-09 esse número só é decorativo no
+broker — quem efetivamente conta e aciona a DLQ é o retry de aplicação em `stats-service`**, não
+mais o RabbitMQ. Ambiente local usa a estratégia de dead-lettering **default do RabbitMQ,
+`at-most-once`**: em falha de broker a mensagem pode se perder no trajeto até a DLQ.
+`at-least-once` exigiria `overflow: reject-publish` (que passa a rejeitar publicação quando a
+fila enche, mudando o comportamento visível de `bets-service`) — tradeoff aceito conscientemente
+para o ambiente de desenvolvimento, ver [[DECISIONS-LOG]].
+
+> **Achado real de `infra/feat-002` (2026-09-09), confirmado ao vivo contra o broker**: a partir
+> do RabbitMQ 4.3 (a versão real deste projeto é `rabbitmq:4-management-alpine` → 4.3.5),
+> `nack(requeue=true)` — o que o `ConditionalRejectingErrorHandler` padrão do Spring AMQP faz em
+> qualquer exceção não-fatal do listener — virou um "explicit return" e **deixou de contar** para
+> `x-delivery-limit`; só `reject` (`requeue=false`) ou redelivery real por queda de
+> conexão/canal conta. Reproduzido ao vivo: derrubar `postgres-stats` e publicar 1 evento fez o
+> consumidor falhar **15 vezes seguidas** sem a mensagem nunca sair de `stats.bet-events` — o
+> `x-delivery-count` da mensagem ficava travado em `1` (`x-acquired-count` subindo a cada
+> tentativa). Sem correção, isso quebraria o próprio objetivo deste epic: uma mensagem
+> "envenenada" travaria o único consumidor para sempre, em vez de isolar via DLQ.
+> **Fix aplicado em `stats-service/feat-010`**: `spring.rabbitmq.listener.simple.retry`
+> (`enabled: true`, `max-attempts: 3`, `initial-interval: 1000`, ver `application.yml`) — após
+> esgotar as tentativas **em processo** (sem tocar o broker entre elas), o
+> `RejectAndDontRequeueRecoverer` padrão do Spring Boot rejeita a mensagem com `requeue=false`,
+> o que sempre morta-letra via DLX **independente da contagem do broker**. `x-delivery-limit: 3`
+> continua configurado na fila como defesa em profundidade (protege contra o caso de queda real
+> de conexão/canal, que ainda incrementa `x-delivery-count`), mas deixou de ser o mecanismo
+> primário. Qualquer outro serviço Java que vier a consumir fila própria (nenhum hoje além de
+> `stats-service`) precisa do mesmo `spring.rabbitmq.listener.simple.retry` para ter DLQ
+> funcional em RabbitMQ 4.3+.
 
 ### Consumo idempotente (verificação de `PROCESSED_EVENT`)
 
