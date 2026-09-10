@@ -1979,3 +1979,21 @@ repositórios tocados nesta sessão (`infra`, `api-gateway`, `auth-service`, `be
 **Todos os 9 epics do backlog raiz estão `done`.** Próximo trabalho do projeto, se houver, vem
 de fora do backlog original — gaps já conhecidos (`apps/web feat-009`/`feat-010`, RF12/RF13) ou
 nova decisão do usuário.
+
+## Addendum — `telegram-integration feat-008`: residual de auth resolvido (2026-09-10, mesmo dia)
+
+Antes de encerrar a sessão, verificação final: `n8n/README.md` de `telegram-integration`
+documentava um residual aceito com gatilho explícito — "`POST /bets/capture`/`POST
+/telegram/link` sem autenticação... revisitar quando este serviço for containerizado". O
+`feat-004` de `infra` (mesma sessão) acabara de containerizar esse serviço, atingindo o
+gatilho. Levado ao usuário via `AskUserQuestion`: resolver agora (escolhido) em vez de só
+registrar o gap.
+
+`telegram-integration feat-008`: os dois endpoints passaram a exigir `X-Service-Key` (mesmo
+segredo já usado nas chamadas de saída deste serviço, não um novo) + limite de corpo de 10 MiB.
+Achado real no caminho: `locales/*.json` na raiz do repositório nunca era instalado junto com o
+pacote Python — só funcionava em modo de desenvolvimento (`editable install`), quebrando com
+`500` em qualquer imagem de produção real. Só apareceu testando o container reconstruído de
+verdade (`docker run` + `curl`), não em nenhum teste unitário. Corrigido movendo os arquivos
+para dentro do pacote (`src/telegram_integration/locales/`). 93 testes, 100% cobertura, CI+
+SonarCloud verdes de primeira nos dois PRs. Verificado também de dentro do cluster `kind`.
