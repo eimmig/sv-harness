@@ -48,7 +48,7 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
    | Prefixo | Destino |
    |---|---|
    | `/api/v1/users/**`, `/api/v1/auth/**`, `/api/v1/telegram-links/**` | [[auth-service]] |
-   | `/api/v1/betting-houses/**`, `/api/v1/bets/**`, `/api/v1/transactions/**`, `/api/v1/sports/**`, `/api/v1/leagues/**`, `/api/v1/markets/**` | [[bets-service]] |
+   | `/api/v1/betting-houses/**`, `/api/v1/bets/**`, `/api/v1/transactions/**`, `/api/v1/sports/**`, `/api/v1/leagues/**`, `/api/v1/markets/**`, `/api/v1/tipsters/**` | [[bets-service]] |
    | `/api/v1/statistics/**` | [[stats-service]] |
 
    `/api/v1/telegram-links/**` acrescentada em `feat-003` (achado real): endpoint já existia em
@@ -60,8 +60,15 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
    chama `auth-service` direto). `/api/v1/sports/**`, `/api/v1/leagues/**`, `/api/v1/markets/**`
    acrescentadas em `feat-007` (achado real do Plan Review de `telegram-integration feat-004`):
    os 3 catálogos existiam em [[bets-service]] desde a `feat-002` daquele serviço mas nunca
-   tinham rota aqui. `/api/v1/tipsters/**` fica de fora de propósito — `tipsterId` é opcional em
-   `POST /api/v1/bets` e nenhum consumidor atual o preenche.
+   tinham rota aqui — `feat-007` deixou `/api/v1/tipsters/**` de fora **de propósito**, porque
+   `tipsterId` era opcional em `POST /api/v1/bets` e nenhum consumidor o preenchia ainda.
+   **`/api/v1/tipsters/**` acrescentada em `feat-008` (2026-09-09, achado real de `infra/feat-002`,
+   teste de resiliência do `epic-007`)**: a decisão de `feat-007` ficou obsoleta sem que nenhuma
+   sessão a revisitasse quando `apps/web feat-008` (catálogos) ganhou a aba de tipsters — o
+   consumidor que faltava em `feat-007` passou a existir, mas a rota nunca foi atualizada. Só veio
+   à tona porque `infra/feat-002` precisou provisionar um tipster de verdade via Gateway para
+   registrar uma aposta de teste; `apps/web feat-008` não tem nenhum teste de integração contra
+   um Gateway real, só contra `HttpClient` mockado, então não pegou a rota ausente.
 
 4. **Credencial de serviço para [[telegram-integration]]**: o bot não tem um usuário logado com
    token PASETO — só sabe o `telegramUserId` de quem mandou a mensagem. Para esse caminho:

@@ -105,6 +105,18 @@ para o ambiente de desenvolvimento, ver [[DECISIONS-LOG]].
 > `stats-service`) precisa do mesmo `spring.rabbitmq.listener.simple.retry` para ter DLQ
 > funcional em RabbitMQ 4.3+.
 
+> **Tempo real observado (`infra/feat-002.4`, rodada final após o fix acima)**: com o fix já
+> aplicado, derrubar `postgres-stats` e publicar 1 evento levou **~105s** até a mensagem cair em
+> `stats.bet-events.dlq` (`x-death` com `reason: rejected`) — bem mais que os 3×1s que
+> `initial-interval: 1000` sozinho sugeriria. Causa: cada uma das 3 tentativas de aplicação
+> primeiro tenta adquirir uma conexão do pool do HikariCP, que só desiste após o
+> `connection-timeout` default (30s) — 3 × ~30s domina o tempo total, o `initial-interval` entre
+> tentativas é irrelevante perto disso. O registro síncrono da aposta via `api-gateway` devolveu
+> `201` imediatamente mesmo com `postgres-stats` fora do ar (não houve poll contínuo de health
+> durante os ~105s de retry, mas `auth-service`/`bets-service`/`api-gateway` foram reconferidos
+> saudáveis logo após a mensagem cair na DLQ) — isolamento de falha confirmado ao vivo, não só
+> por leitura de código.
+
 ### Consumo idempotente (verificação de `PROCESSED_EVENT`)
 
 Complementar ao retry acima: mesmo quando a entrega é duplicada (redelivery após um ACK que se
