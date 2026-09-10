@@ -233,7 +233,7 @@ período"). Sem nenhuma dependência nova sobre `epic-013`/`epic-014` (não usa 
 saldo) — só `epic-004` (`done`). Ver [[STATISTICS]] para o formato da resposta e
 [[API-CONTRACTS]] para o contrato completo.
 
-## Busca de estatísticas por combinação (`epic-011` da raiz, planejado)
+## Busca de estatísticas por combinação (`epic-011` da raiz, done)
 
 `GET /api/v1/statistics/search` (ver [[API-CONTRACTS]]) — motor de decisão pré-aposta: usuário
 escolhe esporte+liga (obrigatórios) e opcionalmente time/casa/mercado/tipster/período, recebe
@@ -246,7 +246,8 @@ Duas mudanças de schema que este endpoint pressupõe, sobre o modelo de `feat-0
 - **`DIM_TEAM` nova** (ver [[DATA-MODEL]]): resolvida por nome (chave natural), não por id vindo
   do evento — `team1`/`team2` não têm catálogo em `bets-service` (texto livre por aposta). `
   FACT_BET` ganha `team1Id`/`team2Id` (nullable); filtro por `teamId` casa contra qualquer um dos
-  dois.
+  dois. **Atualizado no dia seguinte (`feat-013`)**: a chave natural passou de `name` sozinho
+  para `(name, sportId)` composta — ver seção "Times escopados por esporte" abaixo.
 - **`odd` persistida em `FACT_BET`** (nullable): já trafegava em `BetCreated`/`BetSettled`
   (`odd`, campo obrigatório do evento) mas nunca era gravada — sem requisito anterior que
   precisasse. `DimensionResolver` e os *listeners* de evento (`feat-001.9`/`feat-002`/`feat-003`)
@@ -286,6 +287,23 @@ até `BetCreated` processar depois — `BetCreated` nunca sobrescreve uma liquid
 retroativamente nesse caso raro. Corrigir isso de verdade exigiria propagar `betDate` também no
 evento `BetSettled` (mudança de contrato cross-service com `bets-service`) — fora do escopo de
 `epic-011`.
+
+### Times escopados por esporte (`feat-013`, addendum do dia seguinte)
+
+Planejando a tela "Buscar Estatísticas" em [[web]] (`epic-012`), achado real: `DIM_TEAM` não
+tinha nenhum endpoint de listagem — sem catálogo em `bets-service`, o frontend não tinha como
+saber quais `teamId` existiam pra montar o autocomplete de time. Decisão do usuário: em vez de só
+adicionar a listagem, `DIM_TEAM` ganha `sportId` (FK `DIM_SPORT`) — a chave natural vira
+**`(name, sportId)`** composta, porque o mesmo nome de time pode existir em esportes diferentes
+(ex. clubes com time de futebol e de basquete). `DimensionResolver.resolveTeam(name, sportId)`
+resolve pela chave composta; o achado do `Persistence Auditor` acima (corrida check-then-act)
+continua valendo, sem mudança de severidade — mesmo mecanismo, só com um campo a mais na chave.
+
+`GET /api/v1/statistics/teams?sportId=<uuid>` (ver [[API-CONTRACTS]]) lista `[{id, name}]`
+escopado por esporte, `sportId` obrigatório (mesma `MissingRequiredStatisticsFilterException` de
+`GET /api/v1/statistics/search`) — troca de esporte na tela refiltra a lista, nunca mistura times
+de esportes diferentes. `ListTeamsUseCase`/`ListTeamsService` mantêm o limite hexagonal (
+`adapter/in` nunca chama `port/out` direto), mesmo padrão de `SearchStatisticsUseCase`.
 
 ## Ver também
 

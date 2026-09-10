@@ -1997,3 +1997,42 @@ pacote Python — só funcionava em modo de desenvolvimento (`editable install`)
 verdade (`docker run` + `curl`), não em nenhum teste unitário. Corrigido movendo os arquivos
 para dentro do pacote (`src/telegram_integration/locales/`). 93 testes, 100% cobertura, CI+
 SonarCloud verdes de primeira nos dois PRs. Verificado também de dentro do cluster `kind`.
+
+## Segunda rodada de escopo: `epic-011..021` planejados, `epic-011` fechado (2026-09-10, mesmo dia)
+
+Com os 9 epics originais do TCC 1 fechados, usuário pediu escopo novo sobre estatísticas de
+decisão pré-aposta, dashboard consolidado e telas analíticas por cadastro (referências: prints de
+planilha pessoal do usuário). 11 epics novos planejados (`epic-011..021`) e registrados em
+`feature_list.json` da raiz, dependências mapeadas entre eles e sobre os 9 originais.
+
+`epic-011` (`stats-service feat-012`, `GET /api/v1/statistics/search`) fechado na mesma sessão —
+ver entrada em `services/stats-service/progress.md`. `docs/STATISTICS.md` criada (fórmulas de
+ROI/taxa de acerto/odd média/drawdown máximo/Índice de Sharpe simplificado, fundamentação teórica
+TCC1 cap. 2.4/2.5), compartilhada entre `epic-011` e `epic-012`.
+
+## Addendum `feat-013` (`stats-service`) — `DIM_TEAM` escopado por esporte (2026-09-10, mesmo dia)
+
+Planejando `epic-012` (`apps/web feat-012`, tela "Buscar Estatísticas"), o Plan Reviewer daquela
+feature sinalizou um residual não-bloqueante: `DIM_TEAM` (introduzida por `feat-012` de
+`stats-service`) não tinha FK de esporte, então o mesmo nome de time em esportes diferentes
+colidiria no autocomplete de time da tela nova. Usuário leu o residual e decidiu o contrário do
+Plan Reviewer: corrigir agora, não aceitar como débito técnico.
+
+`stats-service feat-013` (story SV-299, 3 subtasks): `DIM_TEAM` ganha `sportId` (FK `DIM_SPORT`,
+NOT NULL — tabela introduzida na mesma sessão, nunca usada em tenant real, `ALTER TABLE` direto
+sem backfill), chave natural vira `(name, sportId)`; `GET /api/v1/statistics/teams?sportId=<uuid>`
+novo (autocomplete escopado por esporte, `sportId` obrigatório). Desvio de plano aceito: endpoint
+entrou no `StatisticsController` já existente em vez de um `TeamsController` novo — mesmo limite
+hexagonal, sem duplicar classe pra uma rota só.
+
+Achado real do Test Suite Auditor corrigido antes de fechar: a `UNIQUE(name, sport_id)` nova não
+tinha nenhum teste provando a constraint no banco (só o caminho de aplicação, que já evita
+duplicata antes do `save()`). Achado de gate corrigido: o PR `feature/SV-299 -> develop` falhou o
+Quality Gate do SonarCloud num arquivo que `feat-013` nunca tocou (`EquityCurveCalculator.java`,
+de `feat-012`) — o projeto `sv-stats-backend` usa janela de "New Code" por tempo, não por diff de
+PR, então código de horas atrás ainda conta como novo. Corrigido (cast de `int` pra `long` antes
+de `BigDecimal.valueOf`, evita overflow teórico) mesmo fora do escopo nominal da feature, por
+bloquear o merge. Ver `services/stats-service/progress.md` para o detalhe completo.
+
+`docs/DATA-MODEL.md`, `docs/API-CONTRACTS.md`, `docs/services/stats-service.md` atualizados no
+mesmo commit lógico. `./init.sh` da raiz e do serviço verdes. Libera `epic-012` (`apps/web`).

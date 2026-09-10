@@ -180,6 +180,20 @@ e [[CONVENTIONS]] para arquitetura/código.
   chamada. Sempre calculado direto (sem cache-aside) — o espaço de combinações possíveis
   (esporte × liga × time × mercado × tipster × período) é grande demais para caber no padrão de
   chave fixa por tenant de `feat-005`.
+- **`GET /api/v1/statistics/teams` (`stats-service`, `feat-013`, addendum do dia seguinte à
+  entrega de `GET /api/v1/statistics/search`)**: lista `[{id, name}]` de `DIM_TEAM` para
+  popular o autocomplete de time da tela "Buscar Estatísticas" — `DIM_TEAM` não tem catálogo em
+  `bets-service` (texto livre por aposta), sem esse endpoint não haveria como o frontend saber
+  quais `teamId` existem. **`sportId` obrigatório** (`400` RFC 7807 localizado, mesma
+  `MissingRequiredStatisticsFilterException` de `GET /api/v1/statistics/search`) — decisão do
+  usuário: `DIM_TEAM` tem chave natural composta `(name, sportId)` (ver [[DATA-MODEL]]), então a
+  listagem é sempre escopada por esporte; trocar de esporte na tela refiltra a lista, nunca
+  mistura times de esportes diferentes. Sem paginação (volume baixo por tenant, mesmo raciocínio
+  já aceito para as outras dimensões de `FACT_BET` sem índice):
+  `?sportId=<uuid>`
+  ```json
+  [ { "id": "...", "name": "Flamengo" }, { "id": "...", "name": "Vasco" } ]
+  ```
 - **Idempotência do `POST /api/v1/bets`**: aceita um header opcional `Idempotency-Key`.
   Necessário porque `telegram-integration` pode reenviar a mesma mensagem em caso de retry do
   webhook — sem isso, uma falha de rede no bot pode duplicar uma aposta. `bets-service` apenas

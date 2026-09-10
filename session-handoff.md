@@ -7,24 +7,26 @@
 
 ## Objetivo atual
 
-**Todos os 9 epics do backlog raiz estão `done`** (`epic-001..010`, exceto `epic-010` que fechou
-nesta sessão junto com `epic-007`). Não há epic `not-started` elegível — o backlog original do
-TCC 1, mapeado desde o início do projeto, está completo.
+Os 9 epics originais do TCC 1 estão `done`. Usuário abriu uma segunda rodada de escopo novo
+(`epic-011..021`, pedida nesta mesma sessão) sobre estatísticas de decisão pré-aposta, dashboard
+consolidado e telas analíticas por cadastro. `epic-011` (busca de estatísticas por combinação,
+`stats-service`) fechou primeiro; durante o planejamento de `epic-012` (tela "Buscar
+Estatísticas" em `apps/web`) surgiu um addendum (`feat-013`, `DIM_TEAM` escopado por esporte) que
+também fechou nesta sessão. Próximo epic elegível: `epic-012` (`apps/web`, depende só de
+`epic-011`, já `done`).
 
 ## Concluído nesta sessão (2026-09-10)
 
-- [x] **`epic-007` fechado** (resiliência DLQ/retry) — ver entrada datada em `progress.md` para
-      o detalhe completo (cenário DLQ testado contra a stack real, 2 achados reais corrigidos em
-      outros serviços, achado de processo de PR/CI corrigido retroativamente).
-- [x] **`epic-010` fechado** (migração para Kubernetes) — manifests YAML puros em `infra/k8s/`,
-      validados de ponta a ponta contra um cluster `kind` local (tenant/login/aposta via Ingress
-      real, evento consumido dentro do cluster). Dockerfile de cada um dos 5 serviços de
-      aplicação (4 Java + `telegram-integration`, que entrou no escopo por decisão do usuário)
-      feito como feature própria em cada repositório de serviço. Ver entrada datada em
-      `progress.md` para o detalhe completo (decisões de escopo via `AskUserQuestion`, achado do
-      SonarCloud investigado e marcado Won't Fix em `telegram-integration`).
-- [x] **Limpeza de branches** em todos os 6 repositórios de serviço tocados — dezenas de
-      branches antigas já mescladas, não só as desta sessão.
+- [x] **`epic-011` fechado** (`stats-service feat-012`, `GET /api/v1/statistics/search`) — motor
+      de decisão pré-aposta, `DIM_TEAM`+`odd` novos em `FACT_BET`.
+- [x] **Addendum `feat-013` fechado** (`stats-service`, sobre `epic-011`) — `DIM_TEAM` ganha
+      `sportId` (chave natural composta `(name, sportId)`), `GET /api/v1/statistics/teams` novo.
+      Achado real de Test Suite Auditor corrigido (constraint UNIQUE sem teste DB-level) e achado
+      de gate corrigido (Reliability finding do SonarCloud em código de `feat-012`, capturado pela
+      janela de "New Code" por tempo do projeto, não por diff do PR) antes de fechar. Ver entrada
+      datada em `services/stats-service/progress.md` para o detalhe completo.
+- [x] `epic-012..021` planejados e registrados em `feature_list.json` (raiz), todos
+      `not-started`, dependências mapeadas.
 
 ## Bloqueios / Riscos
 
@@ -33,10 +35,10 @@ Nenhum.
 ## Próxima sessão — por onde começar
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. **Nenhum epic `not-started` resta.** Antes de inventar trabalho novo, perguntar ao usuário o
-   que vem a seguir — o backlog original do TCC 1 está completo. Candidatos conhecidos, nenhum
-   deles bloqueando nada: `apps/web feat-009`/`feat-010` (RF12/RF13, `not-started` naquele
-   harness, gap aceito ao fechar `epic-006`); qualquer refinamento/hardening adicional que o
-   usuário queira sobre o que já está `done`.
-3. Cluster `kind` (`stakevault`) pode continuar no ar de sessões anteriores — checar com
-   `kubectl get pods` antes de assumir que precisa recriar.
+2. Epic elegível: `epic-012` (`apps/web` — tela "Buscar Estatísticas", consome `stats-service
+   feat-012`+`feat-013`, ambos `done`). `epic-013` (`bets-service`) também elegível em paralelo
+   (WIP por harness, serviços diferentes).
+3. Projeto SonarCloud de `sv-stats-backend` usa janela de "New Code" por tempo (não por diff de
+   PR) — um PR sem nenhuma linha tocada num arquivo ainda pode falhar o gate por código de
+   horas/dias atrás entrando na janela (aconteceu nesta sessão, `feat-013`). Não investigado se é
+   intencional; sinalizado em `services/stats-service/session-handoff.md`.

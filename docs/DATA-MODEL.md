@@ -215,6 +215,7 @@ erDiagram
     DIM_TIPSTER ||--o{ FACT_BET : identifica
     DIM_TEAM ||--o{ FACT_BET : "identifica (mandante)"
     DIM_TEAM ||--o{ FACT_BET : "identifica (visitante)"
+    DIM_SPORT ||--o{ DIM_TEAM : escopa
 
     DIM_DATE {
         uuid id PK
@@ -247,6 +248,7 @@ erDiagram
     DIM_TEAM {
         uuid id PK
         varchar name
+        uuid sportId FK
     }
     FACT_BET {
         uuid id PK
@@ -286,6 +288,13 @@ erDiagram
 > (`team1Id`/`team2Id`, ambas nullable — nem toda aposta tem confronto de dois lados,
 > ex. handicap de jogador) em vez de uma dimensão-ponte; filtrar "por time" nas estatísticas é
 > `team1Id = X OR team2Id = X`. Ver [[stats-service]] para o endpoint que consome isso.
+
+> **`DIM_TEAM` ganha `sportId` no mesmo dia** (addendum descoberto planejando a tela "Buscar
+> Estatísticas" — decisão do usuário): a chave natural passa de `name` sozinho para **`(name,
+> sportId)`** composta — o mesmo nome de time pode existir em esportes diferentes. `sportId`
+> também viabiliza `GET /api/v1/statistics/teams?sportId=<uuid>` (autocomplete de time escopado
+> por esporte na tela — trocar de esporte refiltra a lista). Ver [[API-CONTRACTS]] para o
+> endpoint.
 
 > **`betType` acrescentado em 2026-09-10** (`epic-014` da raiz, extensão do dashboard
 > consolidado) — mesmo padrão de `team1Id`/`team2Id`/`odd`: só existe em `BetCreated`, nunca em
