@@ -280,6 +280,22 @@ cada `UUID.randomUUID()`/`BigDecimal.valueOf()`/`Instant.now()` dentro do lambda
 variáveis locais antes do `assertThatThrownBy`, deixando só a chamada que deve lançar
 (`new Bet(id, ..., campoInvalido, ...)`) dentro do lambda.
 
+**Sexta armadilha, achada em `telegram-integration feat-009` (2026-09-10, primeiro
+`develop` -> `main` de verdade desse repositório)**: a correção da Terceira armadilha (pular
+`sonar.qualitygate.wait` em push direto pra `develop`) foi implementada em `sv-*-backend` (Java,
+`sonar-maven-plugin`) com lógica imperativa em bash (`WAIT_FLAG`, se-então), mas em
+`sv-telegram-integration-backend` (Python, `SonarSource/sonarqube-scan-action`, `args` como
+string única) virou uma expressão do GitHub Actions no formato `cond && '' || flag` — essa forma
+**nunca funciona** quando o ramo verdadeiro é string vazia: a expressão do Actions trata `''`
+como falsy, então o `||` sempre cai no `flag` do lado direito, não importa o valor de `cond`. O
+guard existia no arquivo, parecia correto na leitura, mas nunca desligou o wait em push pra
+`develop` - só nunca dava erro visível porque o gate sempre passava até esta feature encontrar um
+achado real (S9073) bloqueando de verdade. Corrigido invertendo a condição pra o ramo verdadeiro
+nunca ser a string vazia: `!cond && flag || ''`. Regra geral pra qualquer expressão condicional
+do GitHub Actions no formato ternário `cond && A || B`: só é seguro quando `A` é sempre truthy -
+se `A` puder ser `''`/`0`/`false`, inverta a condição pra que o ramo `&&` produza sempre o valor
+não-vazio.
+
 ## Setup pendente (uma vez por repositório, quando cada um for criado)
 
 Repetir para cada um dos 6 serviços de aplicação (`infra/` só precisa do passo 1 — não usa
@@ -432,6 +448,77 @@ não está fazendo efeito.
 
 Sem `GH_TOKEN`, a API pública responde `403 rate limit exceeded` rápido (60 requisições/hora por
 IP) — não confunda isso com repositório privado ou com falha de pipeline.
+
+## Build e push de imagem Docker pro GHCR (job `build-and-push-image`)
+
+Job adicional (não um dos 6 passos numerados acima — roda em paralelo, não dentro do job
+`pipeline`), acrescentado em 2026-09-10 aos 4 primeiros repositórios de aplicação que já tinham
+Dockerfile (`api-gateway`, `auth-service`, `stats-service`, `telegram-integration` — ver
+`feat-011`/`feat-014`/`feat-014`/`feat-009` de cada um; `bets-service` e `web` ainda pendentes)
+para viabilizar deploy fora do cluster kind local: `docker/setup-buildx-action` +
+`docker/login-action` (registry `ghcr.io`, `github.actor`/`secrets.GITHUB_TOKEN`) +
+`docker/build-push-action`, tags `<sha>` e `latest`, `needs: pipeline` e
+`if: github.event_name == 'push' && github.ref_name == 'main'` — só builda depois que a pipeline
+de qualidade inteira já passou, e só na branch estável (nunca em PR nem em push para `develop`).
+
+**Achado real, confirmado contra a API do GitHub antes de rodar** (Plan Reviewer, verificado
+depois com `gh api repos/<owner>/<repo>/actions/permissions/workflow` nos 4 repositórios — todos
+vieram `"default_workflow_permissions":"read"`): declarar `permissions: packages: write` no job
+**não basta**. Esse campo eleva a permissão só até o teto que o repositório permite — se
+"Workflow permissions" (Settings → Actions → General) estiver em "Read repository contents
+permission" (o default), o pedido do job é **limitado silenciosamente**, sem erro de sintaxe: o
+`docker/login-action` funciona (só precisa de leitura), e o push falha com 403 dentro do
+`build-push-action`, parecendo problema de credencial. Correção: mudar "Workflow permissions"
+para "Read and write permissions" em cada repositório **antes** do primeiro push em `main` que
+depende desse job — não tem como fazer isso via `ci.yml`, é configuração do repositório, uma vez
+por repositório (mesma categoria de setup do item "Setup pendente" acima, mas feito via
+`gh api -X PUT repos/<owner>/<repo>/actions/permissions/workflow -f default_workflow_permissions=write`
+ou manualmente na UI — a chamada via `gh api` é bloqueada pelo classificador de modo automático
+do Claude Code por mudar configuração de segurança do repositório, então nesta sessão foi pedida
+confirmação explícita ao usuário em vez de rodada direto).
+
+`docker/setup-buildx-action` antes do login/build não é obrigatório (o runner já tem Buildx,
+builds simples com push funcionam sem ele) mas é a recomendação oficial do
+`docker/build-push-action` — mantido por padrão, custo zero.
+
+**Segundo achado real, mesma sessão**: o SonarCloud reprovou o quality gate (`new_security_rating`)
+nos 4 repositórios pela regra `githubactions:S7637` — `uses: docker/<action>@v3`/`@v6` (tag
+mutável) é vulnerabilidade de supply-chain (a tag pode ser movida para apontar pra código
+malicioso depois). Correção: pinar pelo SHA completo do commit, com a versão em comentário pra
+não perder legibilidade (`uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 #
+v3.7.0`) — vale pras 3 actions deste job (`setup-buildx-action`, `login-action`,
+`build-push-action`) e por extensão pra qualquer action de terceiro adicionada depois num
+`ci.yml` deste projeto (as actions oficiais `actions/*`/`SonarSource/*` já em uso não foram
+sinalizadas porque são first-party do GitHub/Sonar, não third-party). SHA resolvido via
+`gh api repos/<owner>/<repo>/tags`, não escrito de memória.
+
+**Visibilidade do pacote**: pacote publicado via `GITHUB_TOKEN` nasce **privado** por padrão,
+sem passo extra. Pra um cluster de produção conseguir `docker pull` uma imagem privada, precisa
+de um Personal Access Token clássico com escopo `read:packages` (da mesma conta dona do pacote)
+convertido num `kubectl create secret docker-registry` (`imagePullSecrets`) no cluster — isso é
+responsabilidade do lado do deploy (`infra/`/servidor), não deste job nem do repositório do
+serviço.
+
+**Terceiro achado real, sessão seguinte (`stats-service`, 2026-09-10, mesmo dia)**: o primeiro
+push real em `main` de um repositório (primeiro merge `develop` → `main` de sempre daquele
+serviço) pode reprovar a etapa SonarCloud do `pipeline` — e por consequência bloquear
+`build-and-push-image` (`needs: pipeline`) — mesmo sem nenhum problema real de qualidade.
+Investigado via API do SonarCloud (`SONAR_TOKEN` em `tools/.sonar.env`, não assumido):
+`GET /api/qualitygates/project_status?analysisId=...` devolveu `status: "NONE"` com
+`conditions: []` — zero condições reprovadas. Confirmado contra o código-fonte oficial do
+SonarQube (`ProjectStatusAction.java`, `SonarSource/sonarqube` no GitHub): o status `NONE`
+"é retornado quando não há quality gate associada àquela análise" — não é reprovação de métrica
+nenhuma. O `sonar-scanner-engine` (`QualityGateCheck.java`) trata qualquer status diferente de
+`OK` (inclusive `NONE`) como falha, e por isso o log da CI mostra `QUALITY GATE STATUS: FAILED`
+sem nenhuma condição real listada. Causa provável: a definição de "New Code" do projeto
+(New Code Definition) não tem baseline pra comparar na primeira análise de sempre de uma branch —
+`gh run rerun` no mesmo commit **não resolve** (testado, mesmo resultado, descarta race condition
+simples). Correção real: ajustar o New Code Definition da branch/projeto no dashboard web do
+SonarCloud (Administration → New Code) — não existe API pública de escrita pra essa configuração
+(`/api/new_code_periods/*` não existe no SonarCloud, só no SonarQube Server). Depois do ajuste,
+um novo push (commit vazio ou qualquer outro) passa limpo. **Qualquer serviço que ainda não fez
+seu primeiro merge `develop` → `main` pode bater no mesmo problema** — verificar o dashboard do
+SonarCloud daquele projeto antes de assumir defeito de código.
 
 ## Ver também
 
