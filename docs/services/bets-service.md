@@ -139,15 +139,25 @@ dashboard consolidado em [[web]]) — 3 mudanças independentes:
   por `betDate` — o saldo só muda quando o resultado é realizado. Ver [[API-CONTRACTS]] e
   [[STATISTICS]] "Saldo inicial/final do período" para a fórmula completa e o porquê de não
   replicar isso para `stats-service` via evento.
-- **`BET.betType` vira enum `PRE`/`LIVE`** (Flyway migration + Bean Validation) — antes era
-  `varchar` livre, sem valores fixos (usuário digitava qualquer coisa). Linhas existentes não têm
-  remapeamento seguro (texto arbitrário → 2 valores fixos) e ficam `NULL` após a migração —
-  apostas antigas saem das contagens PRÉ/LIVE do dashboard (ver [[STATISTICS]]).
-- **`TENANT_SETTINGS` nova** (schema-per-tenant, linha única): `unitPercent` (`decimal`, default
-  `0.01`), seed automático via Flyway na criação do schema do tenant (mesmo mecanismo já usado
-  pra provisionar o schema — sem SQL cru montado na mão). `GET`/`PATCH /api/v1/settings`
-  (admin-only, `403` para `role = member`) — "unidade" de banca é percentual configurável, não
-  valor fixo em R$ nem campo por aposta (decisão do usuário).
+- **`BET.betType` vira enum `PRE`/`LIVE`** (`feat-014.2`, `BetType` + `BetTypeAttributeConverter`,
+  mesmo padrão de `BetStatus`/`BetStatusAttributeConverter`) — antes era `varchar` livre, sem
+  valores fixos (usuário digitava qualquer coisa). Migração normaliza pra lowercase e zera
+  (`NULL`) qualquer valor fora de `('pre','live')` antes de aplicar o `CHECK` — linhas existentes
+  não têm remapeamento seguro (texto arbitrário → 2 valores fixos), apostas antigas saem das
+  contagens PRÉ/LIVE do dashboard (ver [[STATISTICS]]). Publicado no evento `BetCreated`
+  (`docs/contracts/bet-created.schema.json` ganhou `enum: [pre, live, null]`) — serializado
+  minúsculo como qualquer outro enum de domínio deste serviço (`status`), não revalidado por
+  `stats-service`, que só grava o valor recebido.
+- **`TENANT_SETTINGS` nova** (schema-per-tenant, linha única, `feat-014.1`): `unitPercent`
+  (`decimal`, default `0.01`), seed automático via Flyway na criação do schema do tenant (mesmo
+  mecanismo já usado pra provisionar o schema — sem SQL cru montado na mão, `UUID` constante
+  literal na linha única já que este codebase não usa `pgcrypto`/`gen_random_uuid()`).
+  `GET`/`PATCH /api/v1/settings` — `PATCH` restrito a `X-User-Role: admin` (header novo injetado
+  por `api-gateway`/`auth-service`, ver [[DECISIONS-LOG]] "Claim role no PASETO" — este serviço
+  não tem tabela `USER` pra resolver role localmente como `auth-service` faz, confia no header já
+  validado pelo Gateway), `403` (`AdminRoleRequiredException`) caso ausente ou `member`.
+  "Unidade" de banca é percentual configurável, não valor fixo em R$ nem campo por aposta
+  (decisão do usuário).
 
 ## Histórico (RF08, `feat-007`)
 

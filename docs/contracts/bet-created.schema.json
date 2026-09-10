@@ -65,7 +65,7 @@
         "team1": { "type": ["string", "null"] },
         "team2": { "type": ["string", "null"] },
         "description": { "type": ["string", "null"] },
-        "betType": { "type": ["string", "null"] },
+        "betType": { "type": ["string", "null"], "enum": ["pre", "live", null] },
         "playType": { "type": ["string", "null"] },
         "stake": {
           "type": "number",
