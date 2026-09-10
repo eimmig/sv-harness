@@ -103,9 +103,11 @@ Mensagens que o bot envia de volta ao usuário (erro de vínculo, confirmação 
 aposta, orientação para vincular a conta, etc.) são localizadas — não é só o frontend, ver
 [[CONVENTIONS]] seção "Internacionalização (i18n)". Idioma escolhido pelo `language_code` que o
 próprio update do Telegram já traz — não é necessário armazenar preferência de idioma em nenhum
-serviço para isso. Formato **JSON**, um arquivo por locale em `locales/{pt-BR,en-US,es}.json`
-(decisão fechada em 2026-08-02, ver [[DECISIONS-LOG]] — `docs/CONVENTIONS.md` deixava JSON ou
-`gettext` em aberto até então). Os três locales sempre em sincronia, mesma regra do resto do
+serviço para isso. Formato **JSON**, um arquivo por locale em
+`src/telegram_integration/locales/{pt-BR,en-US,es}.json` (decisão fechada em 2026-08-02, ver
+[[DECISIONS-LOG]] — `docs/CONVENTIONS.md` deixava JSON ou `gettext` em aberto até então; caminho
+movido pra dentro do pacote em `feat-008`, 2026-09-10 — só funcionava fora dele em install
+editable). Os três locales sempre em sincronia, mesma regra do resto do
 projeto — nenhuma mensagem nova do bot é considerada `done` traduzida para só um ou dois deles.
 
 ## Ver também

@@ -456,9 +456,12 @@ princípios que não se misturam (ver também [[API-CONTRACTS]] seção "Interna
 
 - Mensagens que o bot envia de volta ao usuário (ex.: "conta ainda não vinculada", confirmações
   de captura de aposta) também são localizadas — não é só o frontend. Mecanismo: dicionário de
-  strings por locale, um arquivo **JSON** por idioma em `locales/{pt-BR,en-US,es}.json` (decisão
-  fechada em 2026-08-02, ver [[DECISIONS-LOG]] — evita introduzir `gettext` como dependência só
-  para isso, e usa o mesmo formato de [[web]]), selecionado pelo campo `language_code` que o
+  strings por locale, um arquivo **JSON** por idioma em
+  `src/telegram_integration/locales/{pt-BR,en-US,es}.json` (decisão fechada em 2026-08-02, ver
+  [[DECISIONS-LOG]] — evita introduzir `gettext` como dependência só para isso, e usa o mesmo
+  formato de [[web]]; caminho dentro do pacote, não na raiz do repositório, desde 2026-09-10 —
+  um caminho relativo fora do pacote só resolvia certo em install editable, quebrando em
+  qualquer imagem de produção), selecionado pelo campo `language_code` que o
   próprio Telegram Bot API já envia em todo update — não é necessário armazenar preferência de
   idioma em nenhum serviço para isso. Formato validado automaticamente pelo passo de i18n da
   pipeline de CI — ver [[CI-CD]].
