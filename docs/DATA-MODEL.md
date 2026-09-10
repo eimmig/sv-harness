@@ -143,7 +143,7 @@ erDiagram
         varchar team1
         varchar team2
         varchar description
-        varchar betType
+        varchar betType "enum PRE/LIVE desde epic-013, nullable (apostas antigas em texto livre)"
         varchar playType
         decimal stake
         decimal odd
@@ -156,6 +156,10 @@ erDiagram
         uuid settledByUserId "quem liquidou, pode ser diferente de createdByUserId"
         decimal profit
         timestamp settledAt
+    }
+    TENANT_SETTINGS {
+        uuid id PK
+        decimal unitPercent "default 0.01 (1%)"
     }
 ```
 
@@ -170,6 +174,19 @@ de auditoria de **qual usuário** dentro do tenant fez cada ação (`X-User-Id`,
 `X-Tenant-Id` que isola o schema). Não são FK reais (`USER` vive no banco `auth`, outro serviço —
 Database per Service não permite FK cross-database) — apenas o `uuid` copiado do header no
 momento da chamada, sem integridade referencial garantida pelo Postgres.
+
+> **`betType` vira enum e `TENANT_SETTINGS` é nova em 2026-09-10** (`epic-013` da raiz, pedido do
+> usuário, especificação do dashboard consolidado) — sem relação com `bets-service-erd.png`
+> original nem com o TCC1. `betType` era `varchar` livre desde o início (sem enum, usuário
+> digitava qualquer coisa no registro da aposta); migra para `PRE`/`LIVE` porque o dashboard
+> passa a contar apostas por esse campo (ver [[STATISTICS]]) — contagem por string livre
+> fragmentaria (`"Live"`/`"live"`/`"Ao vivo"` como valores distintos). Migration não remapeia
+> dados antigos (sem forma segura de inferir PRE/LIVE de texto arbitrário) — linhas existentes
+> ficam `NULL`. `TENANT_SETTINGS` é linha única por schema de tenant (sem FK — não referencia
+> nem é referenciada por nenhuma outra entidade), seed automático (via Flyway, mesmo mecanismo já
+> usado pra criar o schema do tenant) com `unitPercent = 0.01` no provisionamento; editável via
+> `PATCH /api/v1/settings` (ver [[API-CONTRACTS]]). "Unidade" aqui é percentual configurável da
+> banca, decisão do usuário — não um valor fixo em R$ nem um campo por aposta.
 
 ## stats-service (OLAP, esquema estrela, schema-per-tenant)
 
@@ -196,6 +213,8 @@ erDiagram
     DIM_LEAGUE ||--o{ FACT_BET : organiza
     DIM_MARKET ||--o{ FACT_BET : tipifica
     DIM_TIPSTER ||--o{ FACT_BET : identifica
+    DIM_TEAM ||--o{ FACT_BET : "identifica (mandante)"
+    DIM_TEAM ||--o{ FACT_BET : "identifica (visitante)"
 
     DIM_DATE {
         uuid id PK
@@ -225,6 +244,10 @@ erDiagram
         uuid id PK
         varchar name
     }
+    DIM_TEAM {
+        uuid id PK
+        varchar name
+    }
     FACT_BET {
         uuid id PK
         uuid dateId FK
@@ -233,7 +256,11 @@ erDiagram
         uuid leagueId FK
         uuid marketId FK
         uuid tipsterId FK
+        uuid team1Id FK "nullable"
+        uuid team2Id FK "nullable"
+        varchar betType "nullable, enum PRE/LIVE - epic-014"
         decimal stake
+        decimal odd "nullable"
         decimal profit "nullable"
         boolean isWin "nullable"
         varchar status
@@ -245,6 +272,29 @@ erDiagram
         timestamp processedAt
     }
 ```
+
+> **`DIM_TEAM` e `odd` acrescentados em 2026-09-10** (epic-011 da raiz, tela "Buscar
+> Estatísticas") — extensão sobre o ERD original do TCC1, que só previa as 6 dimensões acima.
+> `team1`/`team2` já trafegavam no payload de `BetCreated`/`BetSettled` desde o início (ver
+> [[bets-service]] `BET.team1`/`team2`, varchar livre — cobre também esportes individuais,
+> jogador vai no lugar de time) e `odd` também, mas nenhum dos dois era persistido em
+> `FACT_BET` até então (sem requisito que precisasse). `DIM_TEAM`, diferente das outras 5
+> dimensões nominais, **não tem catálogo em `bets-service`** (`team1`/`team2` são texto livre
+> digitado por aposta, sem tabela `TEAM` própria) — por isso é resolvida por **chave natural
+> (nome)**, mesmo padrão já usado por `DIM_DATE` (upsert-if-missing por nome, não por id vindo
+> do evento). Como uma aposta referencia até 2 times, `FACT_BET` ganha duas FKs
+> (`team1Id`/`team2Id`, ambas nullable — nem toda aposta tem confronto de dois lados,
+> ex. handicap de jogador) em vez de uma dimensão-ponte; filtrar "por time" nas estatísticas é
+> `team1Id = X OR team2Id = X`. Ver [[stats-service]] para o endpoint que consome isso.
+
+> **`betType` acrescentado em 2026-09-10** (`epic-014` da raiz, extensão do dashboard
+> consolidado) — mesmo padrão de `team1Id`/`team2Id`/`odd`: só existe em `BetCreated`, nunca em
+> `BetSettled` (ver [[bets-service]]), então é gravado **só no insert inicial** e nunca
+> sobrescrito pelo *upsert* de liquidação. Fonte é o `BET.betType` de `bets-service`, que migrou
+> de texto livre para enum `PRE`/`LIVE` na mesma rodada (`epic-013`, ver seção "bets-service"
+> acima) — sem essa migração, agrupar por `betType` aqui seria agrupar por string arbitrária.
+> Apostas com `betType` nulo (anteriores à migração) não entram em nenhuma contagem PRÉ/LIVE do
+> dashboard (ver [[STATISTICS]]).
 
 `PROCESSED_EVENT` não participa do esquema estrela (não é fato nem dimensão) — controle técnico
 de idempotência de consumo de evento, sem relacionamento de FK com `FACT_BET`. Ver seção

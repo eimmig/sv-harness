@@ -116,6 +116,139 @@
       "status": "done",
       "evidence": "Fechado em 2026-09-10 por infra/feat-002 (ver evidencia detalhada em infra/feature_list.json). Teste cross-service executado contra a stack real (infra + auth-service/bets-service/stats-service/api-gateway): cenario retry (stats-service morto, 4 mensagens acumuladas sem perda, drenadas corretamente ao religar) e cenario DLQ (postgres-stats parado, mensagem morta-letrada em ~105s, demais servicos permaneceram responsivos). Duas correcoes cross-service feitas durante o teste: RabbitMQ 4.3+ nao conta mais nack(requeue=true) para x-delivery-limit, corrigido via retry de aplicacao em services/stats-service/feat-010; api-gateway nao roteava /api/v1/tipsters (decisao obsoleta de feat-007 daquele servico), corrigido em services/api-gateway/feat-008. Estrategia at-most-once da DLQ (docs/DECISIONS-LOG.md 2026-08-03) reconfirmada valida - nenhuma perda observada.",
       "harness": "infra/"
+    },
+    {
+      "id": "epic-011",
+      "name": "stats-service — busca de estatisticas por combinacao (fonte de verdade pre-aposta)",
+      "description": "Escopo novo, fora do backlog original do TCC1 (pedido do usuario, 2026-09-10, apos os 9 epics originais fecharem) - complementa RF09/RF11 com um endpoint de decisao pre-aposta: GET /api/v1/statistics/search, esporte+liga obrigatorios, demais filtros (time, casa, mercado, tipster, periodo) opcionais, retornando ROI, taxa de acerto, odd media, drawdown maximo e Indice de Sharpe simplificado da combinacao exata, mais serie temporal de lucro acumulado. Exige 2 mudancas de schema em FACT_BET sobre o modelo de epic-004: DIM_TEAM nova (resolvida por nome, sem catalogo em bets-service - team1/team2 sao texto livre) com team1Id/team2Id em FACT_BET, e persistencia de odd (ja trafega no evento, nunca foi gravada). Formulas e fundamentacao teorica (TCC1 cap. 2.4/2.5) em docs/STATISTICS.md - nota nova, compartilhada com epic-012. Backlog granular em services/stats-service/feature_list.json (feat-012).",
+      "dependencies": [
+        "epic-004"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "services/stats-service/"
+    },
+    {
+      "id": "epic-012",
+      "name": "web — tela \"Buscar Estatisticas\"",
+      "description": "Escopo novo, fora do backlog original do TCC1 (mesmo pedido de epic-011, 2026-09-10). Tela nova em apps/web, distinta do dashboard consolidado (epic-006/feat-006): formulario de busca com esporte+liga obrigatorios e time/casa/mercado/tipster/periodo opcionais, consumindo GET /api/v1/statistics/search (epic-011). Resultado em cards (ROI, taxa de acerto, odd media, volume/lucro liquido, drawdown maximo, Indice de Sharpe simplificado) mais grafico de linha da serie de lucro acumulado (equity curve). Fonte de verdade para decisao pre-aposta - ver docs/STATISTICS.md para as formulas. Backlog granular em apps/web/feature_list.json (feat-012).",
+      "dependencies": [
+        "epic-011"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "apps/web/"
+    },
+    {
+      "id": "epic-013",
+      "name": "bets-service — saldo consolidado por data, betType como enum PRE/LIVE, config de unidade de banca",
+      "description": "Escopo novo, fora do backlog original do TCC1 (pedido do usuario, 2026-09-10, especificacao do dashboard consolidado) - 3 mudancas independentes, todas dentro de bets-service, decididas via AskUserQuestion nesta sessao: (1) GET /api/v1/bankroll/balance?at=<yyyy-MM-dd> (default hoje) - saldo consolidado somando TODAS as casas de apostas do tenant (decisao do usuario - nao exige bettingHouseId no filtro) no instante `at`: SUM(BETTING_HOUSE.initialBalance) + SUM(TRANSACTION.amount assinado por type, createdAt <= at) + SUM(BET_RESULT.profit, settledAt <= at - corte por LIQUIDACAO, nao por betDate/data do jogo, porque o saldo so se move quando o resultado e realizado). Fecha gap ja documentado em docs/services/bets-service.md secao feat-005 ('RF07 nao ganhou endpoint de saldo consolidado proprio'). Consumido por epic-015 (saldo inicial/final do periodo do dashboard, 2 chamadas com from/to do filtro). (2) BET.betType migra de texto livre (varchar, sem enum) para enum PRE/LIVE (Flyway migration + Bean Validation) - apostas antigas com texto livre nao tem remapeamento seguro, viram NULL (nao classificadas). (3) TENANT_SETTINGS nova (schema-per-tenant, linha unica): unitPercent decimal, default 0.01 (1%) - decisao do usuario: unidade de banca = percentual configuravel da banca, nao um valor fixo em R$ nem digitado por aposta. GET/PATCH /api/v1/settings (admin-only, mesmo padrao de gestao restrita a admin de auth-service), seed automatico via Flyway na criacao do schema do tenant (reusa mecanismo ja existente, sem SQL cru). Backlog granular em services/bets-service/feature_list.json.",
+      "dependencies": [
+        "epic-003"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "services/bets-service/"
+    },
+    {
+      "id": "epic-014",
+      "name": "stats-service — extensao do dashboard consolidado (PRE/LIVE, odd media, vitorias/derrotas)",
+      "description": "Escopo novo, fora do backlog original do TCC1 (mesmo pedido de epic-013, 2026-09-10). GET /api/v1/statistics (BetMetrics/overall) ganha: wonCount/lostCount/voidCount (contagens brutas - winRate ja existe como fracao, so faltavam os numeros absolutos), preCount/liveCount (a partir do FACT_BET.betType novo, populado so no insert de BetCreated, nunca sobrescrito por BetSettled - mesmo padrao ja usado por team1Id/team2Id/odd em epic-011; apostas sem betType classificado nao entram em nenhum dos dois buckets, soma pode ficar menor que settledCount), avgOdd (AVG(odd) das apostas liquidadas do recorte - reaproveita a persistencia de odd em FACT_BET se epic-011 ja tiver adicionado a coluna, ou adiciona aqui se epic-014 chegar primeiro - risco de colisao de coluna entre as duas epics do mesmo harness, sinalizar no plan review de quem implementar por ultimo). Os campos novos (wonCount/lostCount/voidCount/avgOdd) aninham tambem em bySport/byMarket/byBettingHouse/byLeague/byTipster/monthly (mesma regra ja existente pros campos herdados de RN09 - sem excecao documentada). 'Quantidade de unidades apostadas' e 'saldo inicial/final do periodo' NAO entram aqui - decisao de arquitetura desta sessao: saldo e config de unidade sao dominio de bets-service (epic-013), nao replicados via evento pro esquema estrela; unidades apostadas e calculado no cliente (apps/web, epic-015) combinando totalStaked (stats-service) com saldo atual + unitPercent (bets-service), evitando side-car de saldo/transacao dentro de stats-service. **`byBetType` novo** (acrescentado 2026-09-10, pedido da tela 'Visao geral' de epic-021): mesmo formato de bySport/byMarket/byBettingHouse/byLeague/byTipster, 2 buckets fixos (PRE/LIVE, apostas sem betType classificado ficam de fora dos dois) - existe pra dar netProfit/totalStaked/roi/settledCount/wonCount/lostCount/avgOdd JA SEPARADOS por tipo, sem exigir 2 chamadas filtradas (betType nunca foi nem vai virar query param de filtro - so um agrupamento pronto, mesmo racional ja usado pros outros 5 segmentos). Formulas novas em docs/STATISTICS.md antes do codigo. Backlog granular em services/stats-service/feature_list.json.",
+      "dependencies": [
+        "epic-004",
+        "epic-013"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "services/stats-service/"
+    },
+    {
+      "id": "epic-015",
+      "name": "web — dashboard consolidado: filtro de periodo com presets e novos cards de KPI",
+      "description": "Escopo novo, fora do backlog original do TCC1 (mesmo pedido de epic-013/epic-014, 2026-09-10) - reespecifica o dashboard ja entregue em feat-006 (epic-006, done), nao substitui a tela. (1) Filtro de periodo: presets Hoje (default - MUDA o comportamento atual de feat-006, que carrega sem filtro nenhum no ngOnInit), Ultima semana, Ultimos 15 dias, Ultimo mes (mes calendario anterior completo) e Este mes (dia 1 do mes corrente ate hoje), mais date range picker (Material) pra periodo customizado - todos convertidos client-side pra from/to (mesmo contrato yyyy-MM-dd ja usado, sem mudanca de query param). (2) Dashboard passa a combinar 2 fontes via forkJoin (mesmo padrao ja usado pros catalogos em feat-004/005/008): GET /api/v1/statistics (stats-service, epic-014) e GET /api/v1/bankroll/balance?at=<from|to> (bets-service, epic-013, 2 chamadas - saldo inicial e final do periodo). (3) Cards novos ao lado dos ja existentes (lucro/prejuizo=netProfit, quantidade de apostas=settledCount, ROI - os 3 ja existem desde feat-006): unidades apostadas (calculado no cliente, nao vem de nenhuma API pronta - totalStaked / (saldoAtual x unitPercent), unitPercent de GET /api/v1/settings de epic-013), apostas PRE/LIVE (preCount/liveCount), vitorias/derrotas lado a lado com a taxa de acerto ja existente (wonCount/lostCount + winRate), odd media (avgOdd), saldo inicial do periodo, saldo final do periodo. (4) Campo/tela de configuracao do percentual de unidade (admin-only, consumindo PATCH /api/v1/settings de epic-013) - local exato na UI (aba nova vs. tela de casas de apostas vs. area de usuario) fica pro plan review desta feature. Backlog granular em apps/web/feature_list.json.",
+      "dependencies": [
+        "epic-014",
+        "epic-013",
+        "epic-006"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "apps/web/"
+    },
+    {
+      "id": "epic-016",
+      "name": "stats-service — quebra diaria de metricas (GET /api/v1/statistics/daily)",
+      "description": "Escopo novo, fora do backlog original do TCC1 (pedido do usuario, 2026-09-10, print de planilha anexado como referencia de layout - nao vinculante, so as informacoes). GET /api/v1/statistics/daily - mesmos filtros de GET /api/v1/statistics (feat-006), granularidade por dia em vez de por mes (DIM_DATE ja tem day/month/year, mesma mecanica de agregacao ja usada por MonthlyBetMetrics, so troca o groupBy). Resposta: array esparso (so dias com pelo menos 1 aposta liquidada) de {date, totalStaked, netProfit, roi, betCount} ordenado por data - dias sem aposta dentro do periodo NAO vem na resposta, preenchidos com zero pelo cliente (apps/web, epic-017). Sem cache-aside (mesmo padrao de qualquer consulta filtrada de stats-service - filtro presente sempre bypassa cache). Unica dependencia nova deste endpoint: nenhuma alem de epic-004 (done) - nao depende de epic-013/014 (nao usa betType/odd/saldo). Backlog granular em services/stats-service/feature_list.json.",
+      "dependencies": [
+        "epic-004"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "services/stats-service/"
+    },
+    {
+      "id": "epic-017",
+      "name": "web — pagina \"Relatorio do periodo\"",
+      "description": "Escopo novo, fora do backlog original do TCC1 (pedido do usuario, 2026-09-10, print de planilha anexado - layout livre, conteudo e o que importa). Pagina nova, distinta do dashboard consolidado (epic-006/015) e da tela \"Buscar Estatisticas\" (epic-012) - visao fechada do desempenho num periodo, sempre com filtro de data obrigatorio (reusa o componente de presets+date-range de epic-015: Hoje/Ultima semana/Ultimos 15 dias/Ultimo mes/Este mes/customizado). Combina 4 chamadas (forkJoin): GET /api/v1/statistics (overall, feat-006/epic-014), GET /api/v1/statistics/daily (epic-016), GET /api/v1/bankroll/balance?at=from e ?at=to (epic-013, saldo inicial/final - MESMAS 2 chamadas ja usadas pelo dashboard de epic-015, reaproveitadas aqui), GET /api/v1/settings (unitPercent, epic-013). Tudo o resto e calculado no cliente, sem campo novo de backend: tabela de dias (uma linha por dia do intervalo, preenchendo com zero os dias sem aposta que nao vem no array esparso de epic-016 - ROI%, ROI em unidades = netProfit do dia / (saldoAtual x unitPercent), ROI em R$, total de apostas do dia); Profit em unidades e R$ (mesma conversao de unidades, aplicada ao netProfit agregado do periodo); ROI Bankroll = netProfit / saldoInicial(from) - formula NOVA e distinta do ROI ja existente em stats-service (netProfit/totalStaked) - nomear diferente na UI pra nao confundir as duas; ROI Average Profit = media simples (nao ponderada por volume) do %ROI de cada dia com aposta, tirada do array de epic-016 - decisao do usuario via AskUserQuestion; % Units Total = unitPercent (settings); Stake medio = totalStaked/settledCount (ja existe em feat-006, sem campo novo); Dias Green/Red = contagem de dias (do array de epic-016) com netProfit>0 vs <0 - dias sem aposta nao contam; Entradas Green/Red = wonCount/lostCount (epic-014) - void excluido do total (denominador so wonCount+lostCount, formula DIFERENTE da taxaDeAcerto/winRate ja existente, que inclui void); +EV = taxaDeAcertoEntradas(green/(green+red)) - (1/avgOdd) - formula confirmada pelo usuario contra os numeros do print anexado (2026-09-10). 'Cashout Favor/Contra' do print NAO entra no escopo - decisao do usuario via AskUserQuestion: conceito de cashout antecipado nao existe no dominio de bets-service hoje, fora de escopo desta feature. Formulas completas em docs/STATISTICS.md. Backlog granular em apps/web/feature_list.json.",
+      "dependencies": [
+        "epic-016",
+        "epic-013",
+        "epic-015"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "apps/web/"
+    },
+    {
+      "id": "epic-018",
+      "name": "stats-service — segmentos byLeague/byTipster em GET /api/v1/statistics",
+      "description": "Escopo novo, fora do backlog original do TCC1 (pedido do usuario, 2026-09-10, reestruturacao de menu por cadastro). GET /api/v1/statistics ja devolve bySport/byMarket/byBettingHouse (feat-006, done) mas NAO byLeague/byTipster - leagueId/tipsterId so estreitavam os outros segmentos como filtro (decisao original registrada no plan_review de web feat-006 e em docs/services/stats-service.md). Pedido do usuario exige dashboard por TODOS os cadastros (esporte/liga/mercado/tipster/casa de apostas) - fecha essa lacuna, mesma mecanica de agregacao ja usada pros 3 segmentos existentes (SegmentedBetMetrics, sem campo novo - so mais 2 arrays no bundle). Sem mudanca de schema (DIM_LEAGUE/DIM_TIPSTER ja existem desde epic-004). Backlog granular em services/stats-service/feature_list.json.",
+      "dependencies": [
+        "epic-004"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "services/stats-service/"
+    },
+    {
+      "id": "epic-019",
+      "name": "web — menu por cadastro (Cadastrar + Dashboard) pra esporte/liga/mercado/tipster/casa de apostas",
+      "description": "Escopo novo, fora do backlog original do TCC1 (pedido do usuario, 2026-09-10). Reestrutura a nav: hoje 'Catalogos' e um unico link com abas internas (Esportes/Ligas/Mercados/Tipsters, feat-008) e 'Casas de Apostas' e outro link separado (feat-003) - ambos so cadastro, sem nenhuma visao analitica por item. Pedido do usuario: cada um dos 5 cadastros vira um menu proprio com 2 itens - 'Cadastrar <recurso>' (reaproveita telas ja existentes de feat-003/008, so muda a navegacao/agrupamento, sem reescrever o CRUD) e 'Dashboard' (tela nova, ranking do recorte filtrado por periodo - reusa o componente de presets+date-range de epic-015): mercados/esportes/ligas/tipsters/casas mais e menos lucrativos (ordenado por ROI, com netProfit tambem visivel - SegmentedBetMetrics ja tem os 2 campos, sem decisao de schema pendente), quantidade de entradas (settledCount) e total ganho/perdido (netProfit) por item do cadastro. Fonte: bySport/byLeague/byMarket/byTipster (byLeague/byTipster novos, epic-018) e byBettingHouse (ja existe, feat-006) de GET /api/v1/statistics. Decisao de design a reaproveitar do precedente de feat-008 (evitar o achado de duplicacao do SonarCloud de feat-003): 1 componente parametrizado (input: nome do segmento/recurso) pros 5 dashboards, nao 5 telas quase identicas. Backlog granular em apps/web/feature_list.json.",
+      "dependencies": [
+        "epic-018",
+        "epic-015",
+        "epic-006"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "apps/web/"
+    },
+    {
+      "id": "epic-020",
+      "name": "web — dashboard: grade de graficos mensais de drawdown (curva acumulada em unidades)",
+      "description": "Escopo novo, fora do backlog original do TCC1 (pedido do usuario, 2026-09-10, referencia: print de planilha pessoal - grade de mini-graficos de linha, um por mes, eixo Y em unidades). Secao/aba nova dentro do dashboard consolidado (epic-006/epic-015, mesma tela, nao pagina separada). Decisao do usuario via AskUserQuestion: cada linha mensal e ACUMULADA (curva tipo equity/patrimonio, reseta pra 0 no dia 1 de cada mes, soma dia a dia dentro do mes) - nao o lucro isolado de cada dia. **Revisado 2026-09-10, mesma sessao**: navegacao NAO e mais por ano fixo com setas - e um filtro de 2 date pickers (inicio/fim), a quantidade de mini-graficos e DINAMICA (1 por mes coberto pelo intervalo, nao fixo em 12). O intervalo efetivo trava em fronteira de mes: comeco = dia 01 do mes do date picker inicial, fim = ultimo dia do mes do date picker final (30/31 conforme o mes - nao o dia exato clicado em nenhum dos dois pickers, so o mes escolhido importa). Continua distinto do filtro de periodo com presets de epic-015 (Hoje/semana/mes etc.) - este e um filtro de RANGE DE MESES dedicado, proprio desta secao. Fonte de dados: GET /api/v1/statistics/daily (epic-016) com from=dia 1 do mes inicial e to=ultimo dia do mes final, 1 chamada so pro intervalo inteiro; cliente agrupa por mes, converte netProfit de cada dia pra unidades (profitUnidades, epic-013/017) e calcula o acumulado dia a dia dentro de cada mes - dia sem aposta carrega o acumulado igual (reset so na virada de mes). Zero backend novo - so composicao no cliente de dados ja planejados em epic-013/016. Grade com N mini-graficos (N = numero de meses do intervalo, layout que acomoda a contagem variavel, nao fixo em 3x4) via ngx-echarts (mesmo padrao de shared/monthly-profit-chart de feat-006) - componente unico parametrizado por mes, reaproveitado N vezes (mesmo precedente de evitar duplicacao de feat-008/epic-019). Formula completa em docs/STATISTICS.md. Backlog granular em apps/web/feature_list.json.",
+      "dependencies": [
+        "epic-016",
+        "epic-013",
+        "epic-006"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "apps/web/"
+    },
+    {
+      "id": "epic-021",
+      "name": "web — tela \"Visao geral\" pos-login (curva de drawdown vitalicia + resumo mensal)",
+      "description": "Escopo novo, fora do backlog original do TCC1 (pedido do usuario, 2026-09-10, referencia: print de planilha pessoal). Tela nova, distinta de todas as outras 5 desta rodada (dashboard consolidado epic-006/015, Buscar Estatisticas epic-012, Relatorio do periodo epic-017, dashboards por cadastro epic-019, grade mensal epic-020) - visao de vida inteira do tenant, SEM filtro de periodo (unica tela desta rodada sem filtro de data, por definicao - 'todo o periodo do tenant'). Diferente da grade de epic-020 (12 mini-graficos que resetam por mes), aqui e UMA curva continua de lucro acumulado em unidades desde a primeira aposta liquidada do tenant ate hoje, nunca reseta - formula em docs/STATISTICS.md. Fonte: GET /api/v1/statistics/daily (epic-016) sem from/to (historico completo), GET /api/v1/statistics sem periodo (overall + monthly do ano corrente + byBetType novo de epic-014) e GET /api/v1/bankroll/balance (epic-013, 1 chamada no ponto mais antigo do historico - saldo dos meses seguintes e derivado client-side somando o netProfit diario acumulado, sem chamada por mes) + GET /api/v1/settings (unitPercent). Cards: Lucro Total (U) (netProfit total do periodo inteiro convertido pra unidades, mesma formula de profitUnidades ja usada em epic-017/020), Pre/Live (netProfit de cada bucket de byBetType convertido pra unidades), Lucro Medio Mensal (U) = lucroTotalUnidades / 12 (formula nova, distinta do roiMedioDiario de epic-017 - divide por 12 meses fixos do ano corrente, nao pelos dias com aposta), ROI = roiMedioDiario (mesma formula de epic-017 'Average Profit', reaproveitada aqui sem filtro de periodo, escopo = ano corrente). Tabela mensal (Jan-Dez do ano corrente): Comeco/Final (saldo derivado client-side, ver acima), Entradas/Vitorias/Perdas (settledCount/wonCount/lostCount), Odd AVG (avgOdd), WR% (winRate), ROI (roi ja existente), Profit ($) (netProfit), Profit (U) - tudo por mes de monthly[] (feat-006 + campos novos de epic-014, ja aninhados la). Decisao de UX pendente de plan review (nao bloqueante, nao decidida nesta sessao): se esta tela substitui o redirect pos-login atual (que hoje vai pra /dashboard desde feat-002) ou e so um link novo na nav. Backlog granular em apps/web/feature_list.json.",
+      "dependencies": [
+        "epic-016",
+        "epic-014",
+        "epic-013",
+        "epic-006"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "apps/web/"
     }
   ]
 }

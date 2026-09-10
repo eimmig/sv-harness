@@ -177,6 +177,104 @@ Meta de performance (RNF03): resposta de dashboard < 300 ms (depende do cache es
 > `JpaFactBetRepository`. **Fecha o backlog planejado deste serviço** (`feat-001`..`feat-006`,
 > `epic-004` da raiz).
 
+## Extensão do dashboard consolidado — PRE/LIVE, odd média, vitórias/derrotas (`epic-014` da raiz, planejado)
+
+Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10, especificação do
+dashboard). `overall`/`bySport`/`byMarket`/`byBettingHouse`/`monthly` de
+`GET /api/v1/statistics` (`feat-006`) ganham `wonCount`/`lostCount`/`voidCount` (contagens brutas
+por trás do `winRate` já existente), `preCount`/`liveCount` e `avgOdd` — fórmulas em
+[[STATISTICS]], forma da resposta em [[API-CONTRACTS]].
+
+Duas dependências deste serviço sobre `epic-013` (`bets-service`, mesmo pedido):
+
+- `FACT_BET.betType` (nullable) — só existe se `BET.betType` virar enum `PRE`/`LIVE` primeiro
+  (`epic-013`); contar por texto livre fragmentaria o agrupamento. Gravado só no *insert* de
+  `BetCreated` (mesmo padrão de `team1Id`/`team2Id`/`odd`, `epic-011`), nunca sobrescrito pelo
+  *upsert* de `BetSettled` (payload daquele evento não carrega `betType`).
+- `odd` persistida em `FACT_BET` — **coluna compartilhada com `epic-011`**: a persistência de
+  `odd` (e o `DimensionResolver`/*listener* que a grava) já é escopo daquela epic; se `epic-011`
+  implementar primeiro, `epic-014` só reaproveita a coluna existente para `avgOdd`, sem migração
+  nova. Se `epic-014` implementar primeiro, adiciona a coluna e `epic-011` reaproveita depois —
+  sinalizar no plan review de quem codificar por último pra não duplicar a migration.
+- **`byBetType` novo** (acrescentado 2026-09-10, pedido da tela "Visão geral" de [[web]]
+  `epic-021`): 6º segmento de `GET /api/v1/statistics`, mesmo formato dos outros 5
+  (`bySport`/`byMarket`/`byBettingHouse`/`byLeague`/`byTipster`) — só que com 2 buckets fixos
+  (`PRE`/`LIVE`) em vez de um por linha de catálogo. `betType` nunca vira query param de filtro,
+  só esse agrupamento pronto.
+
+**Saldo inicial/final do período e "unidades apostadas" NÃO entram neste serviço** — decisão de
+arquitetura desta sessão: saldo é dado transacional (domínio de `bets-service`, que já mantém
+`initialBalance`/`TRANSACTION`/`BET_RESULT`); replicar isso pro esquema estrela via eventos novos
+(`BettingHouseCreated`/`TransactionCreated`) foi avaliado e descartado por complexidade
+desproporcional — `bets-service` ganha um endpoint parametrizado no tempo em vez disso
+(`GET /api/v1/bankroll/balance?at=`, `epic-013`). "Unidades apostadas" é calculado inteiramente
+no cliente (`web`, `epic-015`), combinando `totalStaked` (daqui) com saldo e `unitPercent`
+(`bets-service`). Ver [[STATISTICS]] para o racional completo.
+
+## Segmentos byLeague/byTipster (`epic-018` da raiz, planejado)
+
+Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10, menu por cadastro
+em [[web]]). `GET /api/v1/statistics` ganha `byLeague`/`byTipster`, mesmo formato de
+`bySport`/`byMarket`/`byBettingHouse` (`feat-006`) — até aqui `leagueId`/`tipsterId` só
+estreitavam os outros segmentos como filtro (decisão original, ver plan review de `web feat-006`),
+nunca tiveram o próprio agrupamento. Mesma mecânica de agregação já usada pelos 3 segmentos
+existentes (`SegmentedBetMetrics`), sem schema novo (`DIM_LEAGUE`/`DIM_TIPSTER` já existem desde
+`epic-004`).
+
+## Quebra diária (`epic-016` da raiz, planejado)
+
+Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10, referência: print
+de planilha pessoal do usuário — layout livre, só o conteúdo importa). `GET
+/api/v1/statistics/daily` — mesmos filtros de `GET /api/v1/statistics`, `groupBy` por dia em vez
+de mês (`DIM_DATE.day`/`month`/`year` já existe, mesma agregação já usada para `MonthlyBetMetrics`
+desde `feat-004`, só troca a chave de agrupamento). Array esparso — só dias com pelo menos 1
+aposta liquidada, sem preencher os dias vazios (isso fica pro cliente, ver [[web]] "Relatório do
+período"). Sem nenhuma dependência nova sobre `epic-013`/`epic-014` (não usa `betType`/`odd`/
+saldo) — só `epic-004` (`done`). Ver [[STATISTICS]] para o formato da resposta e
+[[API-CONTRACTS]] para o contrato completo.
+
+## Busca de estatísticas por combinação (`epic-011` da raiz, planejado)
+
+`GET /api/v1/statistics/search` (ver [[API-CONTRACTS]]) — motor de decisão pré-aposta: usuário
+escolhe esporte+liga (obrigatórios) e opcionalmente time/casa/mercado/tipster/período, recebe
+ROI, taxa de acerto, odd média, drawdown máximo e Índice de Sharpe simplificado daquela
+combinação exata, mais uma série temporal de lucro acumulado. Fórmulas e fundamentação teórica
+em [[STATISTICS]] — não duplicadas aqui.
+
+Duas mudanças de schema que este endpoint pressupõe, sobre o modelo de `feat-002`/`feat-004`:
+
+- **`DIM_TEAM` nova** (ver [[DATA-MODEL]]): resolvida por nome (chave natural), não por id vindo
+  do evento — `team1`/`team2` não têm catálogo em `bets-service` (texto livre por aposta). `
+  FACT_BET` ganha `team1Id`/`team2Id` (nullable); filtro por `teamId` casa contra qualquer um dos
+  dois.
+- **`odd` persistida em `FACT_BET`** (nullable): já trafegava em `BetCreated`/`BetSettled`
+  (`odd`, campo obrigatório do evento) mas nunca era gravada — sem requisito anterior que
+  precisasse. `DimensionResolver` e os *listeners* de evento (`feat-001.9`/`feat-002`/`feat-003`)
+  precisam gravar `team1Id`/`team2Id`/`odd` no mesmo *insert*/*upsert* que já fazem para as
+  outras 5 dimensões — não é uma tabela nova de consumo, é campo a mais na mesma linha.
+
+`maxDrawdown`/`sharpeRatio` não são agregados SQL simples (`SUM`/`AVG`/`COUNT`) como o resto do
+serviço — exigem a série de `profit` ordenada por `betDate` (data do jogo — ver [[STATISTICS]])
+das apostas liquidadas do recorte, iterada em memória (`domain`, calculador puro sem I/O, ver
+"Cálculo de decisão" abaixo) depois de uma única consulta ordenada ao repositório. Sem
+cache-aside (ver [[API-CONTRACTS]] — espaço de combinações grande demais).
+
+**Achado real do plan review de `epic-011`, corrigido antes do código**: `processSettled`
+(upsert de `BetSettled`) recalculava `dateId` a partir de `event.settledAt()` — sobrescrevendo o
+`dateId` correto (resolvido de `betDate` no *insert* de `processCreated`) com a data de
+liquidação, toda vez que uma aposta liquidava. Como `betDate` é a data do jogo (não de registro
+nem de liquidação, decisão do usuário), isso corrompia silenciosamente a granularidade mensal já
+usada pelo dashboard consolidado (`monthly`, `feat-006`) para qualquer aposta liquidada em mês
+diferente do jogo — não só a série nova desta feature. Corrigido: `processSettled` preserva o
+`dateId` já existente na linha (não recalcula) quando `BetCreated` já processou antes. Residual
+aceito: se `BetSettled` chegar antes do `BetCreated` correspondente (mensagens fora de ordem), a
+linha ainda nasce com `dateId` derivado de `settledAt` (sem `betDate` no payload de `BetSettled`)
+até `BetCreated` processar depois — `BetCreated` nunca sobrescreve uma liquidação já aplicada
+(comportamento existente desde `feat-003`), então esse `dateId` de estimativa nunca é corrigido
+retroativamente nesse caso raro. Corrigir isso de verdade exigiria propagar `betDate` também no
+evento `BetSettled` (mudança de contrato cross-service com `bets-service`) — fora do escopo de
+`epic-011`.
+
 ## Ver também
 
 - [[bets-service]] — produtor de `BetCreated` e `BetSettled`.

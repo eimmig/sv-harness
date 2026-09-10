@@ -70,6 +70,116 @@ e [[CONVENTIONS]] para arquitetura/código.
   Sem nenhum dos 7 filtros, a resposta vem do cache-aside de `feat-005` (RNF03, meta < 300 ms com
   cache quente); qualquer filtro presente bypassa o cache (as chaves só cobrem a vista sem filtro
   nenhum por tenant) e calcula direto contra `FACT_BET` — ver [[stats-service]].
+- **`overall` de `GET /api/v1/statistics` ganha campos novos** (`stats-service`, `epic-014` da
+  raiz, extensão do dashboard consolidado, 2026-09-10): `wonCount`/`lostCount`/`voidCount`
+  (contagens brutas — `winRate` já existente continua sendo a fração), `preCount`/`liveCount`
+  (a partir de `BET.betType`, que vira enum `PRE`/`LIVE` em `bets-service feat-013` — apostas com
+  `betType` nulo não entram em nenhum dos dois), `avgOdd` (`AVG(odd)` do recorte liquidado, reusa
+  a coluna `odd` de `FACT_BET` já introduzida por `epic-011`):
+  ```json
+  {
+    "overall": {
+      "totalStaked": 1000.00, "netProfit": 150.00, "roi": 0.15, "winRate": 0.55, "settledCount": 42,
+      "wonCount": 23, "lostCount": 18, "voidCount": 1,
+      "preCount": 30, "liveCount": 10,
+      "avgOdd": 1.92
+    }
+  }
+  ```
+  Os mesmos campos novos aninham em `bySport`/`byMarket`/`byBettingHouse`/`byLeague`/`byTipster`/
+  `monthly` também (RN09 já aplica as métricas existentes por segmento — os campos novos seguem
+  a mesma regra, sem exceção documentada). Ver [[STATISTICS]] para as fórmulas.
+- **`byBetType` novo em `GET /api/v1/statistics` (`stats-service`, `epic-014` da raiz, pedido da
+  tela "Visão geral" de `epic-021`, 2026-09-10)**: 6º segmento, mesmo formato dos outros 5 — só
+  que com exatamente 2 itens fixos (`PRE`/`LIVE`, apostas sem `betType` classificado não entram
+  em nenhum dos dois):
+  ```json
+  { "byBetType": [
+    { "dimensionId": "PRE", "dimensionName": "PRE", "metrics": { "totalStaked": 700.00, "netProfit": 100.00, "roi": 0.14, "winRate": 0.55, "settledCount": 30, "wonCount": 17, "lostCount": 13, "voidCount": 0, "avgOdd": 1.90 } },
+    { "dimensionId": "LIVE", "dimensionName": "LIVE", "metrics": { "totalStaked": 300.00, "netProfit": 50.00, "roi": 0.17, "winRate": 0.58, "settledCount": 12, "wonCount": 7, "lostCount": 5, "voidCount": 0, "avgOdd": 2.10 } }
+  ] }
+  ```
+  `betType` nunca é query param de filtro — só um agrupamento pronto, `dimensionId`/
+  `dimensionName` carregam o próprio valor do enum em vez de um `uuid` (único segmento sem FK de
+  catálogo por trás).
+- **`GET /api/v1/bankroll/balance` (`bets-service`, `epic-013` da raiz, 2026-09-10)**: saldo
+  consolidado — soma de **todas as casas de apostas do tenant**, sem filtro por
+  `bettingHouseId` (decisão do usuário: a métrica é sempre agregada, nunca por casa individual).
+  Query param opcional `at` (`yyyy-MM-dd`, default hoje) — saldo naquele instante, não só o
+  corrente: `initialBalance` de todas as casas + transações (`createdAt <= at`) + `profit` das
+  apostas liquidadas (`settledAt <= at`, **não** `betDate` — ver [[STATISTICS]] "Saldo
+  inicial/final do período"). Fecha o gap já sinalizado em [[bets-service]] `feat-005` ("RF07 não
+  ganhou endpoint de saldo consolidado próprio") — reaproveita a mesma fórmula que
+  `GET /api/v1/betting-houses` já usa por casa (`balance = initialBalance + depósitos - saques +
+  profit líquido`), só que somada entre casas e parametrizável no tempo:
+  `?at=2026-09-01`
+  ```json
+  { "at": "2026-09-01", "balance": 4820.50 }
+  ```
+  Consumido pelo dashboard (`web`, `epic-015`) 2x por consulta (`from`/`to` do filtro de período)
+  para os cards de saldo inicial/final, e 1x sem `at` (saldo atual) para o cálculo client-side de
+  "unidades apostadas".
+- **`GET`/`PATCH /api/v1/settings` (`bets-service`, `epic-013` da raiz, 2026-09-10)**:
+  configuração por tenant, linha única (`TENANT_SETTINGS`, ver [[DATA-MODEL]]). Só `unitPercent`
+  por enquanto (`decimal`, default `0.01`) — "unidade" de banca como percentual configurável
+  (decisão do usuário: não é valor fixo em R$ nem campo por aposta). `PATCH` restrito a
+  `role = admin` (mesmo padrão de gestão restrita a admin já usado em [[auth-service]]), `403`
+  caso contrário:
+  ```json
+  { "unitPercent": 0.01 }
+  ```
+  Consumido pelo dashboard (`web`, `epic-015`) para calcular "unidades apostadas" e por uma tela
+  de configuração (admin-only) para editar o percentual.
+- **`byLeague`/`byTipster` novos em `GET /api/v1/statistics` (`stats-service`, `epic-018` da
+  raiz, 2026-09-10)**: mesmo formato de `bySport`/`byMarket`/`byBettingHouse` já existentes
+  (array de `{dimensionId, dimensionName, metrics: SegmentedBetMetrics}`), fechando a lacuna
+  documentada desde `feat-006` ("nenhum endpoint separado por `byLeague`/`byTipster` —
+  `leagueId`/`tipsterId` só estreitavam os outros segmentos como filtro"). Motivado pelo menu por
+  cadastro de [[web]] (`epic-019`) — cada um dos 5 catálogos precisa do próprio ranking. Sem
+  campo novo em `SegmentedBetMetrics`, só mais 2 arrays no bundle.
+- **`GET /api/v1/statistics/daily` (`stats-service`, `epic-016` da raiz, página "Relatório do
+  período" de [[web]], 2026-09-10)**: mesmos 7 filtros de `GET /api/v1/statistics`, granularidade
+  diária em vez de mensal (mesma mecânica de agregação de `monthly`, `DIM_DATE` já tem
+  `day`/`month`/`year`). Resposta é **array esparso** — só dias com pelo menos 1 aposta liquidada
+  no recorte, ordenado por data:
+  ```json
+  [
+    { "date": "2026-07-01", "totalStaked": 34.94, "netProfit": 34.94, "roi": 1.00, "betCount": 22 },
+    { "date": "2026-07-03", "totalStaked": 34.94, "netProfit": -0.57, "roi": -0.0162, "betCount": 28 }
+  ]
+  ```
+  Dias sem aposta dentro de `from`..`to` **não aparecem** na resposta — o cliente preenche com
+  zero antes de montar a tabela (ver [[STATISTICS]] "Quebra diária"). Sem cache-aside, mesmo
+  padrão de qualquer consulta filtrada deste serviço.
+- **`GET /api/v1/statistics/search` (`stats-service`, `epic-011` da raiz, tela "Buscar
+  Estatísticas" de [[web]])**: rota nova, distinta de `GET /api/v1/statistics` — existe pra
+  responder uma combinação específica de filtro com métricas de decisão (RN04/RN09 + as 3 novas
+  de [[STATISTICS]]: odd média, drawdown máximo, Índice de Sharpe simplificado), não o bundle
+  consolidado do dashboard. **`sportId` e `leagueId` são obrigatórios** (`400`, RFC 7807, se
+  ausentes) — único ponto do contrato onde um filtro de estatística deixa de ser opcional,
+  decisão de produto da tela (não RN08, que continua regendo o dashboard). Demais filtros
+  opcionais, mesmo vocabulário de `GET /api/v1/statistics` mais `teamId` (novo — casa contra
+  `team1Id` **ou** `team2Id` em `FACT_BET`, ver [[DATA-MODEL]] "`DIM_TEAM`"), `from`/`to` também
+  `yyyy-MM-dd`:
+  `?sportId=<uuid>&leagueId=<uuid>&teamId=<uuid>&bettingHouseId=<uuid>&marketId=<uuid>&tipsterId=<uuid>&from=2026-01-01&to=2026-01-31`
+  ```json
+  {
+    "filters": { "sportId": "...", "leagueId": "...", "teamId": null, "bettingHouseId": null, "marketId": null, "tipsterId": null, "from": null, "to": null },
+    "summary": {
+      "betCount": 42, "totalStaked": 1000.00, "netProfit": 150.00,
+      "roi": 0.15, "winRate": 0.55, "avgOdd": 1.87,
+      "maxDrawdown": 80.00, "sharpeRatio": 0.42
+    },
+    "timeline": [ { "date": "2026-01-03", "cumulativeProfit": 30.00 }, { "date": "2026-01-07", "cumulativeProfit": -10.00 } ]
+  }
+  ```
+  `sharpeRatio` é `null` quando o recorte tem menos de 2 apostas liquidadas ou desvio-padrão zero
+  (ver [[STATISTICS]] "casos-limite") — nunca divisão por zero. `timeline` é a série ordenada por
+  `betDate` de lucro acumulado das apostas liquidadas do recorte (mesma série usada para calcular
+  `maxDrawdown`), reaproveitada pelo frontend para o gráfico de equity curve sem uma segunda
+  chamada. Sempre calculado direto (sem cache-aside) — o espaço de combinações possíveis
+  (esporte × liga × time × mercado × tipster × período) é grande demais para caber no padrão de
+  chave fixa por tenant de `feat-005`.
 - **Idempotência do `POST /api/v1/bets`**: aceita um header opcional `Idempotency-Key`.
   Necessário porque `telegram-integration` pode reenviar a mesma mensagem em caso de retry do
   webhook — sem isso, uma falha de rede no bot pode duplicar uma aposta. `bets-service` apenas

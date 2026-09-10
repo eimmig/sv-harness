@@ -126,6 +126,29 @@ numa única query agregada por página (join implícito `BET_RESULT`/`BET`, `bet
 próprio — nenhuma nota do vault documenta um; o total é a soma dos `balance` já retornados,
 responsabilidade do consumidor (ex.: `apps/web`).
 
+## Saldo consolidado por data, enum PRE/LIVE, configuração de unidade (`epic-013` da raiz, planejado)
+
+Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10, especificação do
+dashboard consolidado em [[web]]) — 3 mudanças independentes:
+
+- **`GET /api/v1/bankroll/balance?at=<yyyy-MM-dd>`** (default hoje): fecha o gap já citado acima
+  ("RF07 não ganhou endpoint de saldo consolidado próprio") — soma o `balance` de **todas as
+  casas do tenant** (mesma fórmula de `GET /api/v1/betting-houses` por casa — `initialBalance` +
+  depósitos - saques + profit líquido) num único número, parametrizável no tempo via `at`
+  (`TRANSACTION.createdAt <= at`, `BET_RESULT.settledAt <= at`). Corte por **liquidação**, não
+  por `betDate` — o saldo só muda quando o resultado é realizado. Ver [[API-CONTRACTS]] e
+  [[STATISTICS]] "Saldo inicial/final do período" para a fórmula completa e o porquê de não
+  replicar isso para `stats-service` via evento.
+- **`BET.betType` vira enum `PRE`/`LIVE`** (Flyway migration + Bean Validation) — antes era
+  `varchar` livre, sem valores fixos (usuário digitava qualquer coisa). Linhas existentes não têm
+  remapeamento seguro (texto arbitrário → 2 valores fixos) e ficam `NULL` após a migração —
+  apostas antigas saem das contagens PRÉ/LIVE do dashboard (ver [[STATISTICS]]).
+- **`TENANT_SETTINGS` nova** (schema-per-tenant, linha única): `unitPercent` (`decimal`, default
+  `0.01`), seed automático via Flyway na criação do schema do tenant (mesmo mecanismo já usado
+  pra provisionar o schema — sem SQL cru montado na mão). `GET`/`PATCH /api/v1/settings`
+  (admin-only, `403` para `role = member`) — "unidade" de banca é percentual configurável, não
+  valor fixo em R$ nem campo por aposta (decisão do usuário).
+
 ## Histórico (RF08, `feat-007`)
 
 `GET /api/v1/bets` (listagem, além do `GET /api/v1/bets/{id}` de `feat-004`) e

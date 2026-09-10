@@ -43,6 +43,9 @@ código e arquivos de harness ficam fora do vault, ver [[ARCHITECTURE#Harness mu
 - [[AGENT-SKILLS]] — Caveman + claude-code-skills (18 skills/7 suítes), prioritárias em
   arquitetura/desenvolvimento/testes/validação — mapeamento por etapa, instaladas (escopo
   `user`) em 2026-08-02.
+- [[STATISTICS]] — fórmulas e conceitos estatísticos usados no dashboard e na tela "Buscar
+  Estatísticas" (ROI, taxa de acerto, odd média, drawdown máximo, Índice de Sharpe
+  simplificado), com a fundamentação teórica do TCC1 citada por métrica.
 
 ## Serviços
 
