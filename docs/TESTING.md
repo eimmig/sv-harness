@@ -90,13 +90,30 @@ código" em `docs/CONVENTIONS.md`).
 - **Unitários/componente**: `vitest` via `@angular/build:unit-test` — confirmado no bootstrap real
   do `ng new` em `feat-001.1` (Angular 22.x já migrou de Karma por padrão), não mais em aberto.
 - **E2E**: Playwright, cobrindo todos os fluxos cadastro de aposta manual,
-  atualização de status de aposta, e filtro de dashboard recalculando métricas (RN08).
+  atualização de status de aposta, filtro de dashboard recalculando métricas (RN08), e busca de
+  estatísticas por combinação (`apps/web feat-012`: esporte+liga obrigatórios bloqueando o
+  submit, resultado renderizado, estado de zero resultados, autocomplete de time escopado por
+  esporte).
   **Locators**: `data-testid` (ou `getByRole` sem depender do nome/texto), nunca cópia
   traduzida nem classe de estilo como seletor — achado real de `feat-001.7`, a primeira versão
   de `e2e/smoke.spec.ts` usava `getByRole('button', {name: /modo (claro|escuro)/i})`, ou seja,
   o próprio texto sob teste de i18n também localizava o elemento; se a redação mudasse, o teste
   quebraria pelo motivo errado. Texto/cópia só entra como asserção (`toHaveText`), nunca como
   localizador.
+- **Forma do mock precisa bater com o envelope real do endpoint** (achado real, `apps/web
+  feat-012.6`): um helper de mock genérico (`catalogRoute()`, pensado pros catálogos
+  paginados — `{content:[...], page, size, ...}`) foi reaproveitado por engano pra
+  `GET /api/v1/statistics/teams`, que devolve **array puro** (`[{id,name}]`, sem envelope — ver
+  [[API-CONTRACTS]]). O componente recebia `{content:[...]}` em vez de `[...]` e tentava iterar
+  esse objeto num `@for`, produzindo `TypeError: newCollection[Symbol.iterator] is not a
+  function` — um erro só visível no console real do Chromium (`page.on('console')`/log do
+  `ng serve`), nunca reproduzido pelos testes unitários (`HttpTestingController` já tinha o
+  fixture com a forma certa desde o início). Sintoma enganoso: o formulário parecia simplesmente
+  travado (botão de submit nunca habilitava), sem nenhuma mensagem de erro visível na tela —
+  Angular engoliu a exceção do `@for` e parou de atualizar aquele branch do template, sem
+  quebrar o resto da página. Lição: ao mockar um endpoint novo em Playwright, conferir a forma
+  exata da resposta em `docs/API-CONTRACTS.md` antes de reaproveitar um helper de mock existente
+  — dois endpoints "parecidos" (ambos devolvem `{id,name}`) podem ter envelopes diferentes.
 - **Cobertura**: gate de 80% (statements/branches/functions/lines) via `coverageThresholds` em
   `apps/web/angular.json`, aplicado automaticamente em todo `ng test` — não precisa mais da flag
   `--code-coverage`/`--coverage` na linha de comando (era a sintaxe do Karma, stale desde que o
