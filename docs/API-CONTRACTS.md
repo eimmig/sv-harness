@@ -123,8 +123,8 @@ e [[CONVENTIONS]] para arquitetura/código.
   configuração por tenant, linha única (`TENANT_SETTINGS`, ver [[DATA-MODEL]]). Só `unitPercent`
   por enquanto (`decimal`, default `0.01`) — "unidade" de banca como percentual configurável
   (decisão do usuário: não é valor fixo em R$ nem campo por aposta). `PATCH` restrito a
-  `role = admin` (mesmo padrão de gestão restrita a admin já usado em [[auth-service]]), `403`
-  caso contrário:
+  `X-User-Role: admin` (header novo do Gateway, ver seção de headers acima — `bets-service` não
+  tem tabela `USER` pra resolver role localmente como `auth-service` faz), `403` caso contrário:
   ```json
   { "unitPercent": 0.01 }
   ```
@@ -251,7 +251,8 @@ o código-fonte do outro serviço.
 
 > **`X-User-Id` deixou de ser sinônimo de tenant em 2026-08-02** (ver [[DECISIONS-LOG]] "Modelo
 > de tenant multiusuário"): um tenant agora pode ter vários usuários independentes. O Gateway
-> injeta **dois** headers distintos — não confundir os dois nem tratá-los como intercambiáveis.
+> injeta **três** headers distintos (o terceiro, `X-User-Role`, desde 2026-09-10) — não
+> confundir nenhum dos três nem tratá-los como intercambiáveis.
 
 - O **[[api-gateway]]** (`epic-008`, `services/api-gateway/`) é o único ponto que valida o token
   PASETO. O cliente (web ou qualquer chamador autenticado por usuário) envia o token no header
@@ -259,7 +260,7 @@ o código-fonte do outro serviço.
   reservada para esse caso; os headers `X-Admin-Api-Key`/`X-Service-Key` abaixo continuam
   dedicados aos dois caminhos que não são "usuário logado com token PASETO" (decisão implícita
   ao criar `api-gateway feat-002`, nunca antes escrita nesta nota — nenhum outro documento do
-  vault fixava o transporte do token até este ponto). Ao validar, injeta dois headers na
+  vault fixava o transporte do token até este ponto). Ao validar, injeta três headers na
   requisição antes de rotear para `bets-service`/`stats-service`:
   - `X-User-Id`: qual usuário fez a chamada. **Persistido como trilha de auditoria** (decisão de
     2026-08-02, ver [[DECISIONS-LOG]]): `BET.createdByUserId` e `BET_RESULT.settledByUserId` em
@@ -269,6 +270,12 @@ o código-fonte do outro serviço.
     (resolvido no login a partir do slug informado, ver [[auth-service]]). O valor é o slug do
     tenant; cada serviço deriva o nome físico do schema deterministicamente a partir dele
     (`tenant_<slug>`, ver [[CONVENTIONS]] seção "Migrations").
+  - `X-User-Role` (desde 2026-09-10, ver [[DECISIONS-LOG]] "Claim `role` no PASETO"): `admin` ou
+    `member`, extraído do claim `role` do token (embutido por [[auth-service]] na emissão). Existe
+    porque serviços além de `auth-service` passaram a precisar de uma checagem `role = admin`
+    (`bets-service epic-013`, `PATCH /api/v1/settings`) sem ter acesso à tabela `USER` — mesmo
+    princípio de confiança dos outros dois headers: o Gateway já validou o token, o serviço
+    downstream não revalida nada, só confia no valor injetado.
 - `bets-service` e `stats-service` **não revalidam o token PASETO** — apenas exigem que
   `X-User-Id` e `X-Tenant-Id` estejam presentes nas rotas autenticadas; `X-Tenant-Id` é a
   identidade confiável usada para resolver o schema da conexão. Isso evita reimplementar a

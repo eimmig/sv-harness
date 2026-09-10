@@ -1504,3 +1504,37 @@ sempre morta-letra via DLX independente da contagem do broker — mecanismo orto
   funcional neste RabbitMQ — não é peculiaridade só de `stats-service`.
 - `epic-007` (raiz) permanece `in-progress`: `infra/feat-002` retomou o cenário de DLQ após este
   fix, ver evidência em `infra/feature_list.json`.
+
+## 2026-09-10 — Claim `role` no PASETO + header `X-User-Role`: bets-service precisa de autorização admin sem ter a tabela USER
+
+`bets-service epic-013` (`PATCH /api/v1/settings`, já documentado em [[API-CONTRACTS]] como
+"restrito a `role = admin`") esbarrou num gap real ao chegar na implementação: o token PASETO v4.local
+emitido por [[auth-service]] carrega só `userId`/`tenantId` (`PasetoClaims`, sem `role`), e
+[[api-gateway]] injeta só `X-User-Id`/`X-Tenant-Id` ao validar o token — nenhum dos dois carrega o
+papel do usuário. O único precedente de checagem por `role` no sistema é dentro do próprio
+`auth-service` (`ListUsersService`, `POST /api/v1/users`), que resolve isso consultando a própria
+tabela `USER` local pelo `callerId` — mecanismo que não existe em `bets-service` (não modela
+`USER`, por design, ver `../../CLAUDE.md` "Harness multinível").
+
+**Decisão do usuário** (`AskUserQuestion`, 3 opções apresentadas): estender o mesmo padrão de
+confiança já usado para `userId`/`tenantId` — token ganha claim `role`, gateway extrai e injeta um
+terceiro header confiável, `X-User-Role`. Rejeitadas: (a) deixar sem enforcement real (contradiz o
+`403` já normativo em [[API-CONTRACTS]]); (b) `bets-service` chamar `auth-service` síncrono pra
+checar role (introduziria acoplamento runtime direto entre serviços de aplicação, inexistente hoje
+— comunicação sempre via gateway ou evento assíncrono).
+
+**Impacto** (3 repositórios, cada um com epic/feature já `done` antes desta sessão — mudança
+cirúrgica em cada, não reabre o épico inteiro):
+- `auth-service`: `PasetoClaims` ganha `role`; `PasetoAccessTokenIssuer.issue(...)` passa a receber
+  o `Role` do usuário autenticado e embutir no claim.
+- `api-gateway`: `PasetoClaims` (cópia local, mesma estrutura) ganha `role`;
+  `ResolvedIdentityRequestWrapper` passa a injetar `X-User-Role` além dos dois headers já
+  existentes; `PasetoAuthenticationFilter` extrai o terceiro campo.
+- `bets-service`: `PATCH /api/v1/settings` confia em `X-User-Role` (presente e `= "admin"`) — não
+  revalida contra nenhuma tabela própria, mesmo princípio de confiança já usado pra
+  `X-User-Id`/`X-Tenant-Id` (o gateway é o único ponto que valida o token de verdade).
+- [[API-CONTRACTS]] atualizado (seção de headers injetados pelo gateway + `PATCH
+  /api/v1/settings`) no mesmo commit desta entrada.
+- Precedente reaproveitável: qualquer rota futura de qualquer serviço (exceto `auth-service`, que
+  já tem acesso direto) que precisar de uma checagem `role = admin` usa `X-User-Role` em vez de
+  inventar um mecanismo novo.
