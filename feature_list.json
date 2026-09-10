@@ -124,8 +124,8 @@
       "dependencies": [
         "epic-004"
       ],
-      "status": "not-started",
-      "evidence": "",
+      "status": "done",
+      "evidence": "Fechado em 2026-09-10 por services/stats-service feat-012 (ver evidencia detalhada em services/stats-service/feature_list.json). GET /api/v1/statistics/search entregue: sportId/leagueId obrigatorios (400 RFC 7807 localizado), DIM_TEAM + odd em FACT_BET (migration aditiva), summary (ROI/taxa de acerto/odd media/drawdown maximo/Indice de Sharpe simplificado) + timeline (equity curve). Achado real corrigido no mesmo escopo: bug pre-existente em processSettled que corrompia silenciosamente o agregado mensal do dashboard consolidado (feat-006) para apostas liquidadas em mes diferente do jogo. Delivery Reviewer/Test Suite Auditor/Persistence Auditor rodados (PASS/PASS/CONCERNS, sem P0/P1 nao resolvido). ./init.sh do servico e da raiz verdes. Libera epic-012 (web).",
       "harness": "services/stats-service/"
     },
     {

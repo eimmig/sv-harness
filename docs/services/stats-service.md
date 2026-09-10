@@ -253,6 +253,18 @@ Duas mudanças de schema que este endpoint pressupõe, sobre o modelo de `feat-0
   precisam gravar `team1Id`/`team2Id`/`odd` no mesmo *insert*/*upsert* que já fazem para as
   outras 5 dimensões — não é uma tabela nova de consumo, é campo a mais na mesma linha.
 
+**Achado do `Persistence Auditor` (P2, aceito como risco residual)**: `DimensionResolver.resolveTeam`
+tem a mesma corrida check-then-act (`findByName` → `save`, não atômico) já presente nas outras 5
+dimensões (`existsById` → `save`) — mas com exposição maior na prática: as outras 5 têm `id`
+determinístico vindo de `bets-service` (colisão só se dois eventos citarem o MESMO catálogo pela
+primeira vez ao mesmo tempo), enquanto `DIM_TEAM` não tem catálogo — o mesmo nome de time aparece
+em várias apostas diferentes desde o início. Falha (violação de `uq_dim_team_name`) derruba o
+processamento daquela mensagem, mas o mecanismo de retry/DLQ já validado em `epic-007` a
+reprocessa com sucesso (na segunda tentativa, `findByName` já encontra a linha commitada pela
+transação concorrente) — auto-recuperável, sem perda de dado. Não corrigido agora: uma correção de
+verdade (`INSERT ... ON CONFLICT`) mudaria as 6 dimensões de uma vez, fora do escopo pontual desta
+feature.
+
 `maxDrawdown`/`sharpeRatio` não são agregados SQL simples (`SUM`/`AVG`/`COUNT`) como o resto do
 serviço — exigem a série de `profit` ordenada por `betDate` (data do jogo — ver [[STATISTICS]])
 das apostas liquidadas do recorte, iterada em memória (`domain`, calculador puro sem I/O, ver
