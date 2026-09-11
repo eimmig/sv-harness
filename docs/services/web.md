@@ -72,7 +72,7 @@ localizados (ver [[CONVENTIONS]]) mesmo os query params enviados sendo sempre em
 `sport`/`league`/`market` como esta nota dizia antes — mesma correção de nomenclatura já feita em
 [[API-CONTRACTS]] para `bets-service`, só não tinha sido propagada até aqui.
 
-## Dashboard consolidado — filtro de período com presets e novos cards (`epic-015` da raiz, planejado)
+## Dashboard consolidado — filtro de período com presets e novos cards (`epic-015` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10) — reespecifica o
 dashboard já entregue em `feat-006` (`done`), não cria tela nova.
@@ -99,6 +99,24 @@ inicial do período, saldo final do período. Fórmulas completas em [[STATISTIC
 **Configuração de unidade**: campo/tela admin-only para editar `unitPercent`
 (`PATCH /api/v1/settings`, `epic-013`) — local exato na UI (aba nova, dentro de casas de
 apostas, ou área de usuário) é decisão de plan review daquela feature, não fixada aqui.
+
+> **Implementado em `web feat-014`**. Decisões do plan review: (1) campo de unidade inline no
+> próprio painel de filtros do dashboard (não aba/tela nova), gated por `Auth.isAdmin()` — é
+> onde o valor é consumido, menor atrito que navegar para outra tela; `GET /api/v1/settings` não
+> é restrito (todo usuário precisa de `unitPercent` para `unidadesApostadas`), só o `PATCH` é
+> admin-only (403 do backend, gate client-side é só UX). (2) `unidadesApostadas`/`avgOdd`
+> indeterminados (saldoAtual ou `unitPercent` = 0) renderizam texto localizado, não lançam
+> exceção nem dividem por zero. `shared/period-preset-filter` (presets + range customizado com
+> `<input type="date">`, não Material Datepicker — sem precedente no inventário de
+> `docs/DESIGN-SYSTEM.md`, evita dependência nova para 1 par de campos) fica em `shared/` porque
+> `epic-017` ("Relatório do período") reusa o mesmo componente. Mudança de comportamento
+> intencional: o dashboard agora aplica o preset "Hoje" por padrão no load (antes carregava sem
+> filtro nenhum) — mudanças de período aplicam na hora, os 5 filtros de catálogo continuam atrás
+> do botão "Aplicar filtro" existente. `StatisticsApi.BetMetrics` (frontend) nunca tinha sido
+> atualizado desde `feat-006`, apesar do backend (`stats-service epic-014`) já expor
+> `wonCount`/`lostCount`/`voidCount`/`preCount`/`liveCount`/`avgOdd` há várias sessões — gap real
+> fechado aqui, escopo restrito só aos 6 campos que os cards desta feature consomem
+> (`byBetType`/`byLeague`/`byTipster` ficam para quando `epic-019`/`epic-021` precisarem deles).
 
 ## Tela "Visão geral" pós-login (`epic-021` da raiz, planejado)
 
