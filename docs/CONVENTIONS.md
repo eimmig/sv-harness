@@ -231,6 +231,13 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   Spring Data JPA chama o método de acesso do record diretamente (`#filter.campo()`, com
   parênteses — não `#filter.campo`, que só funciona para getters JavaBean). Preferir este padrão
   em qualquer método de repositório novo com mais de ~5 filtros opcionais combináveis.
+- **JPQL: `FUNCTION('make_date', ...)` no `SELECT` combinado com `GROUP BY` nas colunas cruas
+  funciona** (confirmado em `stats-service feat-016`, `aggregateByDay` — Hibernate/Postgres deste
+  projeto aceitam expressão determinística das próprias colunas agrupadas sem repeti-la no
+  `GROUP BY`, provado por teste de integração real). Combinação nova na época (`findOrderedSettledProfits`
+  já usava `FUNCTION('make_date',...)` sem agregação; `aggregateByMonth` já usava `GROUP BY` sem
+  `FUNCTION()`) — próxima agregação por data neste ou outro serviço Java schema-per-tenant pode
+  reaproveitar o padrão direto, sem precisar redescobrir se funciona.
 - **`com.networknt:json-schema-validator` — não pinar a versão mais recente sem checar a API**
   (achado real de `bets-service feat-006`): a versão `3.0.7` (a mais nova no Maven Central no
   momento) é uma reescrita completa da biblioteca — nenhuma das classes clássicas
