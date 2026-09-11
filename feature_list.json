@@ -249,6 +249,17 @@
       "status": "not-started",
       "evidence": "",
       "harness": "apps/web/"
+    },
+    {
+      "id": "epic-022",
+      "name": "web — navegacao lateral (sidebar) substitui nav superior, animacoes no shell e no login",
+      "description": "Escopo novo, fora do backlog original do TCC1 (pedido do usuario, 2026-09-11). Fecha uma divergencia real ja documentada: docs/DESIGN-SYSTEM.md item 1 do inventario de componentes ('Shell/nav lateral de icones') sempre especificou nav lateral, mas a implementacao real (feat-002 em diante) ficou como nav horizontal no topo - nunca corrigido ate agora. Pedido do usuario, com 2 decisoes resolvidas via AskUserQuestion: (1) sidebar colapsavel (icone+texto expandido / so icone retraido, alternado por um botao), nao um dos dois extremos fixos; (2) os 5 submenus de catalogo (Esportes/Ligas/Mercados/Tipsters/Casas de apostas) continuam como popup flutuante (mat-menu), nao viram secao expansivel inline - mesmo comportamento de epic-019, so a barra host muda de orientacao. Tela de login perde o header duplo (hoje: barra de idioma/tema no topo + nav horizontal quando autenticado, lendo como '2 headers' pro usuario) - pedido adicional do usuario: na tela de login (nao autenticado, sem sidebar) idioma+tema viram controles flutuantes no canto inferior esquerdo, lado a lado, sem nenhuma barra. Pedido adicional: animacao autoral no formulario de login (linha verde tracando a borda da caixa, saindo de um ponto em duas direcoes, se encontrando do lado oposto, revertendo em loop) e uma passada de motion no app inteiro ('bastante animacoes, bem fluido') - usar as skills de design (Impeccable prioritário, ver docs/DESIGN-SYSTEM.md/docs/AGENT-SKILLS.md) para orientar a implementacao, nao inventar do zero. Achado adicional (nao pedido, encontrado durante investigacao): o seletor de idioma (mat-select) tem o painel de opcoes largo travado na largura do idioma atualmente selecionado (bug real de UX, corrigido nesta feature) - as strings de nav em si ja estavam 100% traduzidas nos 3 locales (parity check + QA visual ao vivo nao encontraram nenhuma chave faltando; nao esta claro qual sintoma exato o usuario viu, mas o painel de opcoes cortado e a causa mais provavel do relato). Backlog granular em apps/web/feature_list.json.",
+      "dependencies": [
+        "epic-019"
+      ],
+      "status": "in-progress",
+      "evidence": "",
+      "harness": "apps/web/"
     }
   ]
 }
