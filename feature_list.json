@@ -195,8 +195,8 @@
         "epic-013",
         "epic-015"
       ],
-      "status": "in-progress",
-      "evidence": "",
+      "status": "done",
+      "evidence": "Fechado em 2026-09-11 por apps/web feat-015 (ver evidencia detalhada em apps/web/feature_list.json). Pagina nova /period-report: forkJoin com 4 chamadas (overall, /daily, bankroll x2 at=from/at=to, settings), disparado pelo period-preset-filter (sempre tem valor - satisfaz filtro obrigatorio sem mudanca no componente compartilhado). period-report-metrics.ts (modulo puro) com roiBankroll/roiMedioDiario/profitUnidades-Reais/stakeMedio/diasVerdes-Vermelhos/+EV, testado contra os valores do print de referencia do usuario (22.11% ROI Bankroll, 37.00% taxa de acerto das entradas) como oraculo independente. Achado real: docs/STATISTICS.md tinha erro de aritmetica no proprio exemplo de +EV (37.00%-31.06% escrito como 5.98%, correto e 5.94%), corrigido no mesmo commit. Decisao do plan review: 'saldoAtual' das formulas usa saldoFinal (saldoEm(to)) - so 2 chamadas de bankroll, nao 3 como o dashboard. Delivery Reviewer/Test Suite Auditor: PASS. QA visual real (2 temas x desktop/mobile) sem achados. ./init.sh do app e da raiz verdes, 163 testes unitarios + 35 Playwright. Libera epic-019 (ja liberado por epic-018/006, mas dependia tambem deste).",
       "harness": "apps/web/"
     },
     {
