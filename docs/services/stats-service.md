@@ -236,7 +236,7 @@ nunca tiveram o próprio agrupamento. Mesma mecânica de agregação já usada p
 existentes (`SegmentedBetMetrics`), sem schema novo (`DIM_LEAGUE`/`DIM_TIPSTER` já existem desde
 `epic-004`).
 
-## Quebra diária (`epic-016` da raiz, planejado)
+## Quebra diária (`epic-016` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10, referência: print
 de planilha pessoal do usuário — layout livre, só o conteúdo importa). `GET
@@ -247,6 +247,15 @@ aposta liquidada, sem preencher os dias vazios (isso fica pro cliente, ver [[web
 período"). Sem nenhuma dependência nova sobre `epic-013`/`epic-014` (não usa `betType`/`odd`/
 saldo) — só `epic-004` (`done`). Ver [[STATISTICS]] para o formato da resposta e
 [[API-CONTRACTS]] para o contrato completo.
+
+> **Implementado em `stats-service feat-016`** sem divergência do planejado.
+> `FactBetRepository.aggregateByDay` usa `FUNCTION('make_date', d.year, d.month, d.day)` no
+> `SELECT` combinado com `GROUP BY` nas colunas cruas — combinação nova neste codebase
+> (`aggregateByMonth` já usava `GROUP BY`, `findOrderedSettledProfits` já usava `FUNCTION()`, nunca
+> os dois juntos), confirmada funcional pelo teste de integração real na primeira tentativa
+> (fallback client-side previsto no plan review não foi necessário) — ver
+> [[CONVENTIONS]] "JPQL". `calculateDaily` reaproveita a regra RN04 de `roi=ZERO` via helper
+> privado `roiOf`, extraído de `toMetrics` (elimina duplicação entre os dois cálculos).
 
 ## Busca de estatísticas por combinação (`epic-011` da raiz, done)
 
