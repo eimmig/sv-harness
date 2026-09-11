@@ -524,6 +524,23 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
     quase-cópias" (`feat-003`/`008`) se aplica também a um array de configuração de rotas: extrair
     uma tabela de dados (`{path, resourcePath}[]`) e gerar os objetos `Route` via `.map()` em vez
     de repetir o literal.
+  - **`mat-select`/`mat-form-field` (appearance `outline`) mantêm o label flutuante clicável,
+    interceptando cliques em campos estreitos** (achado real, `apps/web feat-018`, sidebar
+    lateral estreitou a grade de 3 colunas de `register-bet`): o rótulo visualmente flutuado
+    (`label.mdc-floating-label`, posicionado via `transform`, não por layout) mantém
+    `pointer-events: all` nesta versão do Material em vez do `none` que a especificação MDC
+    normalmente daria a ele — o mesmo vale pro `<mat-label>` cru projetado e pro espelho do
+    rótulo dentro de `.mdc-notched-outline` (usado só pra dimensionar o recorte do contorno). Os
+    três se sobrepõem geometricamente ao campo **independente da largura do layout** — só vira
+    problema quando o campo fica estreito o bastante pro centro do clique (onde `page.click()`
+    do Playwright mira por padrão) cair sobre um deles em vez de além. Bug latente, não novo:
+    qualquer usuário clicando nesse mesmo intervalo de pixels já falhava em abrir o dropdown
+    antes desta feature estreitar o campo o bastante pra tornar isso provável. Corrigido
+    globalmente em `src/styles.scss`: `mat-label`, `.mdc-notched-outline` (`pointer-events: none`
+    simples resolve) e `.mdc-floating-label` (precisa de `!important` — o Material injeta uma
+    declaração concorrente em empate de especificidade, depois desta folha de estilo global, e
+    vence o empate por ordem). `mat-select` já encaminha o clique do rótulo via `aria-owns`, não
+    por `<label for>` nativo — nenhum dos três elementos tem papel interativo legítimo próprio.
 - **Estilo**: SCSS por componente (`:host`), utilizando Angular Material. Tema (claro/escuro),
   paleta de cores e inventário de componentes visuais já decididos em [[DESIGN-SYSTEM]] — não
   escolher uma paleta alternativa por conta própria.
