@@ -237,6 +237,34 @@ verde): tenant provisionado via `port-forward`, login e registro de aposta via `
 `docker-compose`, agora rodando no cluster. Passo a passo completo em `infra/CLAUDE.md` seção
 "Verificação — Kubernetes".
 
+### Migração pro k3s de produção (`infra/feat-005`, 2026-09-11)
+
+Mesmos manifests, agora contra o servidor Debian real (k3s, não `kind`) puxando as 6 imagens do
+GHCR (`imagePullSecrets: ghcr-pull`) em vez de `kind load` — ver `docs/CI-CD.md` seção "Build e
+push de imagem Docker pro GHCR". `web` (frontend) ganhou manifest próprio pela primeira vez
+(nunca tinha, mesmo depois de `feat-004`); `ingress.yaml` foi dividido por path pra acomodar os
+dois (`/api` pro `api-gateway`, `/` pro `web` — rotas de negócio já nascem com o prefixo
+`/api/v1/...`, sem precisar de rewrite).
+
+**Achado real, só apareceu no servidor real (nunca no `kind`)**: `readinessProbe`/
+`livenessProbe` do RabbitMQ (`exec: rabbitmq-diagnostics check_running`) sem `timeoutSeconds`
+explícito usam o default do Kubernetes (**1 segundo**) — curto demais pro
+`rabbitmq-diagnostics`, que tem overhead real de boot do Erlang/JVM e rotineiramente passa de 1s
+sob qualquer carga. Sintoma: RabbitMQ reiniciado dezenas de vezes em poucas horas (kubelet mata o
+container a cada timeout de probe), o que também deixava o `Job` `rabbitmq-init` preso pra
+sempre no `initContainer` (nunca havia uma janela estável de RabbitMQ de pé por tempo
+suficiente). Corrigido com `timeoutSeconds: 10` nos dois probes. Qualquer probe `exec` contra uma
+CLI de diagnóstico (não um `httpGet` simples) deveria vir com `timeoutSeconds` explícito desde o
+início, não confiar no default de 1s.
+
+**Segundo achado, mesmo evento**: o `ConfigMap` `rabbitmq-definitions` (gerado manualmente via
+`kubectl create configmap --from-file=...`, nunca um arquivo YAML versionado - ver
+`infra/CLAUDE.md`) precisa ser recriado em **todo cluster novo**, não só documentado uma vez para
+o `kind` original - faltou nesse primeiro `apply` no k3s (cluster novo, nunca tinha rodado o
+comando), e o sintoma (`MountVolume.SetUp failed ... configmap "rabbitmq-definitions" not
+found`) só aparece no `kubectl describe pod` do Job, não no `kubectl get pods` nem nos logs do
+RabbitMQ em si.
+
 ## Onde fica
 
 `infra/docker-compose.yml` (criado em `feat-001`, 2026-08-03), mais:
