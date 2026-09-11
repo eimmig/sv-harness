@@ -168,7 +168,7 @@ mais/menos lucrativo por `roi`, `netProfit` visível ao lado, quantidade de entr
 achado de duplicação do SonarCloud de `feat-003`): 1 componente parametrizado pelos 5 dashboards,
 não 5 telas quase idênticas.
 
-## Página "Relatório do período" (`epic-017` da raiz, planejado)
+## Página "Relatório do período" (`epic-017` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10, referência: print
 de planilha pessoal — layout livre, conteúdo normativo). Página nova, distinta do dashboard
@@ -189,6 +189,15 @@ Profit"), stake médio (`totalStaked/settledCount`, já existe desde `feat-006`)
 green/red, taxa de acerto das entradas sem `void` e `+EV`. Fórmulas completas e a decisão de
 deixar "Cashout Favor/Contra" (do print de referência) fora do escopo em [[STATISTICS]] seção
 "Métricas da página \"Relatório do período\"".
+
+> **Implementado em `web feat-015`** sem divergência do planejado. Decisão do plan review (única
+> não coberta explicitamente pelo escopo do epic): "saldoAtual" nas fórmulas desta página (usado
+> por `roiUnidades`/`profitUnidades`) resolve para `saldoFinal` (`saldoEm(to)`) — esta página faz
+> só 2 chamadas de bankroll (`at=from`/`at=to`, sem uma 3ª "agora" separada), diferente do
+> dashboard consolidado. Módulo de cálculo puro (`period-report-metrics.ts`) testado contra os
+> valores do print de referência do usuário como oráculo independente — achado real: a própria
+> nota do vault tinha um erro de aritmética no exemplo de `+EV` (`37,00% − 31,06% = 5,98%` estava
+> escrito, o correto é `5,94%`), corrigido em [[STATISTICS]] no mesmo commit deste fechamento.
 
 ## Tela "Buscar Estatísticas" (`epic-012` da raiz, planejado)
 

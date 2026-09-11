@@ -190,7 +190,10 @@ EV = taxaDeAcertoEntradas − (1 / oddMedia)
 ```
 
 Fórmula confirmada pelo usuário (2026-09-10) contra os números do print de referência:
-`37,00% − (1 / 3,22) = 37,00% − 31,06% = 5,98%` — bate com o `+EV` mostrado. `1 / oddMedia` é a
+`37,00% − (1 / 3,22) = 37,00% − 31,06% = 5,94%` (corrigido em `web feat-015.4` — a versão anterior
+desta nota tinha um erro de aritmética, "5,98%", nunca batendo com a própria subtração ao lado;
+reconferido de forma independente ao implementar `period-report-metrics.ts`, a fórmula em si já
+estava correta e confirmada pelo usuário, só o resultado escrito aqui estava errado). `1 / oddMedia` é a
 probabilidade implícita da odd média (sem descontar a margem da casa) — `EV` positivo indica que
 a taxa de acerto real do usuário superou o que a odd média "precificava" como necessário para
 empatar. Casos-limite: sem apostas liquidadas no período (denominador zero) → `EV` indefinido
