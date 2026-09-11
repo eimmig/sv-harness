@@ -182,8 +182,8 @@
       "dependencies": [
         "epic-004"
       ],
-      "status": "in-progress",
-      "evidence": "",
+      "status": "done",
+      "evidence": "Fechado em 2026-09-11 por services/stats-service feat-016 (ver evidencia detalhada em services/stats-service/feature_list.json). GET /api/v1/statistics/daily novo: mesmos 7 filtros opcionais de GET /api/v1/statistics, granularidade diaria (DimDate.day/month/year), array esparso ordenado por data ascendente, sem cache-aside. Achado tecnico confirmado sem problema: FUNCTION('make_date', d.year, d.month, d.day) no SELECT combinado com GROUP BY nas colunas cruas (combinacao nova neste codebase) funcionou de primeira no teste de integracao real, documentado em docs/CONVENTIONS.md para reaproveitamento. Delivery Reviewer/Test Suite Auditor/Persistence Auditor: PASS. ./init.sh do servico e da raiz verdes. Libera epic-017 (web - pagina 'Relatorio do periodo').",
       "harness": "services/stats-service/"
     },
     {
