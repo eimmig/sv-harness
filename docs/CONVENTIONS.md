@@ -515,6 +515,15 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
     do `<mat-label>` correspondente). Banner de confirmação/erro com `role="status"`/`role="alert"`
     também é sinalizado (`Web:S6819`) — usar `<output>` no lugar de `role="status"` (mantém
     `role="alert"` pra erro, que não tem substituto semântico equivalente).
+  - **Duplicação (`new_duplicated_lines_density`, gate `feature -> develop`) também pega
+    literais de configuração repetidos, não só componentes** (achado real, `apps/web feat-016`,
+    gate `feature->develop`, PR #75): 9 blocos de rota quase idênticos em `app.routes.ts` (4
+    "Cadastrar" + 5 "Dashboard", só variando `path`/`resourcePath`/`segment`/`labelKey`) foram
+    detectados como 100% duplicados (11,1% de densidade no PR, limite é 3%) mesmo sem nenhum
+    componente duplicado — o mesmo precedente de "1 componente parametrizado em vez de N
+    quase-cópias" (`feat-003`/`008`) se aplica também a um array de configuração de rotas: extrair
+    uma tabela de dados (`{path, resourcePath}[]`) e gerar os objetos `Route` via `.map()` em vez
+    de repetir o literal.
 - **Estilo**: SCSS por componente (`:host`), utilizando Angular Material. Tema (claro/escuro),
   paleta de cores e inventário de componentes visuais já decididos em [[DESIGN-SYSTEM]] — não
   escolher uma paleta alternativa por conta própria.

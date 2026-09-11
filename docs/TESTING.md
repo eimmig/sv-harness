@@ -140,6 +140,15 @@ código" em `docs/CONVENTIONS.md`).
   dentro da aba pra um teste Playwright (navegador real, sem esse problema) — é o mesmo racional
   de "unit test só quando isola lógica, E2E pra comportamento observável pelo usuário" já usado
   no resto da suíte.
+- **`mat-menu` (e qualquer overlay do CDK) precisa de limpeza explícita em teste unitário**
+  (achado real de `feat-016.5`, primeiro uso de overlay do CDK na suíte): o conteúdo do menu
+  renderiza num painel anexado a `document.body`, fora do `nativeElement` do fixture — o teardown
+  automático do `TestBed` entre testes não remove esse painel. Sem limpeza, um teste que abre um
+  `mat-menu` deixa o painel órfão no `document.body`, arriscando falso positivo (ou falha confusa)
+  num teste seguinte que busque por seletor via `document.querySelector` em vez de restringir ao
+  fixture. Padrão adotado: `afterEach(() => TestBed.inject(OverlayContainer).ngOnDestroy())` (ver
+  `app-nav.spec.ts`) — replicar em qualquer spec novo que abra `mat-menu`/`mat-select`/outro
+  overlay do CDK.
 
 ## Python (telegram-integration)
 

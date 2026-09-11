@@ -152,7 +152,7 @@ anterior). Zero backend novo. Grade com N mini-gráficos (`ngx-echarts`, mesmo p
 componente parametrizado por mês, reaproveitado N vezes — mesmo precedente de `feat-008`/
 `epic-019` para não reincidir no achado de duplicação do SonarCloud.
 
-## Menu por cadastro — Cadastrar + Dashboard (`epic-019` da raiz, planejado)
+## Menu por cadastro — Cadastrar + Dashboard (`epic-019` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10). Reestrutura a nav
 existente: hoje "Catálogos" é um único link com abas internas (Esportes/Ligas/Mercados/Tipsters,
@@ -167,6 +167,17 @@ mais/menos lucrativo por `roi`, `netProfit` visível ao lado, quantidade de entr
 (`byLeague`/`byTipster` novos, `epic-018`). Mesmo precedente de design de `feat-008` (evitar o
 achado de duplicação do SonarCloud de `feat-003`): 1 componente parametrizado pelos 5 dashboards,
 não 5 telas quase idênticas.
+
+> **Implementado em `web feat-016`** sem divergência do planejado. Decisões técnicas do plan
+> review: (1) as 9 rotas ("Cadastrar" ×4 + "Dashboard" ×5) recebem `resourcePath`/`segment` via
+> `data` da rota + `withComponentInputBinding()` (novo em `app.config.ts`) em vez de 9
+> páginas-wrapper quase idênticas — mesmo precedente anti-duplicação citado acima, aplicado
+> também à camada de roteamento, não só aos componentes. (2) `pages/catalogs/` (grupo de abas)
+> foi removida por completo — cada catálogo agora é uma rota própria, alcançada pelo menu, sem
+> troca de aba em página única. (3) `app-nav` ganhou 5 `mat-menu` (primeiro uso de overlay do CDK
+> no app — gotcha de limpeza em teste unitário documentado em [[TESTING]]) com um helper
+> `isResourceActive()` pra destacar o gatilho ativo, já que o botão-gatilho de um `mat-menu` não é
+> ele mesmo um `routerLink` (`routerLinkActive` sozinho não o alcança).
 
 ## Página "Relatório do período" (`epic-017` da raiz, done)
 
