@@ -296,6 +296,23 @@ do GitHub Actions no formato ternário `cond && A || B`: só é seguro quando `A
 se `A` puder ser `''`/`0`/`false`, inverta a condição pra que o ramo `&&` produza sempre o valor
 não-vazio.
 
+**Sétima armadilha, mesma sessão, achada ao promover `api-gateway`/`auth-service`/
+`stats-service` pra `main` pela primeira vez**: a causa raiz da Terceira armadilha estava
+descrita errado - não é "branch != main" que a API recusa, é **qualquer branch longa sem leak
+period definido ainda** (nenhuma análise anterior pra comparar "new code"). Isso vale também pra
+`main` na primeira vez que ela é analisada: `api/qualitygates/project_status` devolve
+`{"status":"NONE","conditions":[]}` (sem violação real - `api/project_branches/list` confirmou
+`main` como `isMain: true`, 0 bugs/vulnerabilities/codeSmells) mas o `sonar-maven-plugin`/
+`sonarqube-scan-action` tratam qualquer status diferente de `"OK"` como reprovado, incluindo
+`"NONE"`. Sintoma: `QUALITY GATE STATUS: FAILED` alguns segundos depois de "Analysis report
+uploaded", com a issue/hotspot real = zero em qualquer consulta feita depois. Guard corrigido nos
+4 repositórios (`api-gateway`/`auth-service`/`stats-service`/`telegram-integration`) pra pular
+`sonar.qualitygate.wait` (passo 5) e o script de zero-issue (passo 6) em **qualquer push direto**
+(`github.event_name == 'push'`), não só push pra `develop` - o ponto de bloqueio real sempre foi
+a PR (que roda em modo "pull request" do Sonar, comparando contra a branch de origem, não uma
+branch nomeada - não sofre desse problema). Replicar essa correção em `bets-service`/`web` quando
+esses dois ganharem o job de build+push de imagem (ainda pendente).
+
 ## Setup pendente (uma vez por repositório, quando cada um for criado)
 
 Repetir para cada um dos 6 serviços de aplicação (`infra/` só precisa do passo 1 — não usa
@@ -421,6 +438,16 @@ Os scripts em `.github/scripts/` são versionados como `100755`. O Windows repor
 isso o `run:` que os invoca direto quebra com *Permission denied* no primeiro PR. `init.sh` tem o
 mesmo tratamento — a CI não o chama, mas o `CLAUDE.md` manda rodá-lo, e um clone Linux não
 conseguiria.
+
+**Mesmo mecanismo, achado real em `auth-service feat-014.4` (2026-09-10)**: `mvnw` também precisa
+de `100755` — não só os scripts de `.github/scripts/`. `sv-auth-backend` tinha `mvnw` versionado
+`100644` (mesmo blob que `api-gateway`/`stats-service`, que já estavam `100755`) e isso passou
+despercebido em todos os PRs normais (`mvn -B verify` do passo 4 chama o `mvnw` do runner via
+`actions/setup-java`, que não depende do bit de execução do arquivo do repositório) — só quebrou
+no primeiro build de imagem Docker de verdade a partir de um `git clone` limpo (`RUN ./mvnw ...`
+dentro do `Dockerfile`, que sim depende do bit). Qualquer repositório novo que adicionar
+`mvnw`/`gradlew` deveria conferir o bit de execução no mesmo commit que introduz o Dockerfile, não
+confiar em `mvn verify` local já passar como prova de que o arquivo está executável.
 
 ## Consultar o resultado da CI a partir de uma sessão
 
