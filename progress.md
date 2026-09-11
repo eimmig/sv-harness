@@ -2114,3 +2114,40 @@ falso positivo (`git diff` mostrava as entradas presentes na branch). Ver
 
 Libera `epic-014` (`stats-service`, `byBetType`) e os epics de `apps/web` que dependiam de
 `epic-013`/`epic-014`.
+
+## `epic-014` fechado — stats-service, extensão do dashboard consolidado (2026-09-11)
+
+`stats-service feat-015` (4 subtasks, story SV-343): `GET /api/v1/statistics` ganha
+`wonCount`/`lostCount`/`voidCount`/`preCount`/`liveCount`/`avgOdd` em `overall`/`bySport`/
+`byMarket`/`byBettingHouse`/`monthly`, mais 6º segmento `byBetType` (2 buckets fixos `PRE`/
+`LIVE`). `FACT_BET.betType` persistido — gravado só no *insert* de `BetCreated`, preservado no
+*upsert* de `BetSettled` (payload daquele evento não carrega `betType`), mesmo padrão exato já
+usado para `dateId`.
+
+Plan Reviewer (READY WITH CONCERNS, 3 MAJOR corrigidos no plano, nenhum exigiu decisão do
+usuário): (1) toda comparação de enum em JPQL deve usar `@Param` tipado (`BetStatus`/`BetType`),
+nunca literal de string solto — o codebase já evitava esse padrão desde `feat-006` (`:pending`),
+aqui ficou explícito o porquê (literal arrisca o `AttributeConverter` não ser aplicado de forma
+garantida); (2) projeção de `byBetType` expõe o getter no tipo real do enum, conversão pra
+`String` explícita no adapter, não implícita numa projeção Spring Data; (3) mudança de tipo
+`dimensionId` (`UUID`→`String`, único jeito de `byBetType` não usar um uuid de catálogo)
+exigiu atualizar 5 arquivos de teste — listado explicitamente pra não subestimar o escopo.
+
+Achado real do Delivery Reviewer (self-review, sem subagentes — independência reduzida,
+declarada): `docs/API-CONTRACTS.md` (escrito na sessão de planejamento anterior, antes do código)
+tinha o exemplo de `byBetType` sem `preCount`/`liveCount` — a decisão de implementação (reaproveitar
+o mesmo `record` `BetMetrics` dos outros 5 segmentos, já confirmada no `plan_review`) inclui esses
+2 campos ali também, ainda que triviais dentro do próprio bucket. Doc corrigido no commit de
+fechamento. Achado do self-review durante a implementação, refutado com evidência (não virou
+subtask): preocupação de que estender `BetMetrics` quebraria a deserialização do cache Redis
+pós-deploy não se confirmou — Jackson 3 preenche campo de `record` ausente no JSON com o *default*
+do tipo, não lança exceção (comportamento padrão do Spring Boot 4, sem override neste repositório).
+
+`Delivery Reviewer`/`Test Suite Auditor`/`Persistence Auditor` (passe próprio, sem subagentes):
+todos PASS. `./init.sh` do serviço e da raiz verdes. CI+SonarCloud verdes nas 4 PRs de subtask +
+PR `feature/SV-343 -> develop`. Ver `services/stats-service/progress.md` e `feature_list.json`
+(campo `evidence` de `feat-015`) para o detalhe completo.
+
+Libera `epic-015` (`apps/web`, dashboard consolidado reespecificado) do lado de `stats-service` —
+aquele epic também depende de `epic-013` (`bets-service`, já `done`). Epics elegíveis restantes em
+`stats-service`: `epic-016`/`epic-018` (ambos só dependem de `epic-004`, `done`).

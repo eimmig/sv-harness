@@ -158,8 +158,8 @@
         "epic-004",
         "epic-013"
       ],
-      "status": "in-progress",
-      "evidence": "",
+      "status": "done",
+      "evidence": "Fechado em 2026-09-11 por services/stats-service feat-015 (4 subtasks, story SV-343, ver evidencia detalhada em services/stats-service/feature_list.json). GET /api/v1/statistics ganha wonCount/lostCount/voidCount/preCount/liveCount/avgOdd em overall/bySport/byMarket/byBettingHouse/monthly, mais 6o segmento byBetType (2 buckets fixos PRE/LIVE). FACT_BET.betType (nullable) gravado so no insert de BetCreated, preservado no upsert de BetSettled. Plan Reviewer (READY WITH CONCERNS, 3 MAJOR corrigidos no plano: parametro tipado em vez de literal de string em comparacao de enum JPQL; getter no tipo real do enum na projecao de byBetType; mudanca de tipo dimensionId UUID->String com os 5 arquivos de teste afetados) + Delivery Reviewer/Test Suite Auditor/Persistence Auditor (todos PASS) rodados contra o diff completo. Achado real do Delivery Reviewer corrigido no mesmo commit: docs/API-CONTRACTS.md (exemplo de byBetType) nao mostrava preCount/liveCount, corrigido pra bater com a implementacao. ./init.sh do servico e da raiz verdes.",
       "harness": "services/stats-service/"
     },
     {

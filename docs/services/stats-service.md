@@ -177,7 +177,7 @@ Meta de performance (RNF03): resposta de dashboard < 300 ms (depende do cache es
 > `JpaFactBetRepository`. **Fecha o backlog planejado deste serviço** (`feat-001`..`feat-006`,
 > `epic-004` da raiz).
 
-## Extensão do dashboard consolidado — PRE/LIVE, odd média, vitórias/derrotas (`epic-014` da raiz, planejado)
+## Extensão do dashboard consolidado — PRE/LIVE, odd média, vitórias/derrotas (`epic-014` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10, especificação do
 dashboard). `overall`/`bySport`/`byMarket`/`byBettingHouse`/`monthly` de
@@ -191,16 +191,31 @@ Duas dependências deste serviço sobre `epic-013` (`bets-service`, mesmo pedido
   (`epic-013`); contar por texto livre fragmentaria o agrupamento. Gravado só no *insert* de
   `BetCreated` (mesmo padrão de `team1Id`/`team2Id`/`odd`, `epic-011`), nunca sobrescrito pelo
   *upsert* de `BetSettled` (payload daquele evento não carrega `betType`).
-- `odd` persistida em `FACT_BET` — **coluna compartilhada com `epic-011`**: a persistência de
-  `odd` (e o `DimensionResolver`/*listener* que a grava) já é escopo daquela epic; se `epic-011`
-  implementar primeiro, `epic-014` só reaproveita a coluna existente para `avgOdd`, sem migração
-  nova. Se `epic-014` implementar primeiro, adiciona a coluna e `epic-011` reaproveita depois —
-  sinalizar no plan review de quem codificar por último pra não duplicar a migration.
+- `odd` persistida em `FACT_BET` — **coluna compartilhada com `epic-011`**: `epic-011` (`feat-012`)
+  implementou primeiro, então `epic-014` só reaproveitou a coluna existente para `avgOdd`, sem
+  migração nova.
 - **`byBetType` novo** (acrescentado 2026-09-10, pedido da tela "Visão geral" de [[web]]
   `epic-021`): 6º segmento de `GET /api/v1/statistics`, mesmo formato dos outros 5
   (`bySport`/`byMarket`/`byBettingHouse`/`byLeague`/`byTipster`) — só que com 2 buckets fixos
   (`PRE`/`LIVE`) em vez de um por linha de catálogo. `betType` nunca vira query param de filtro,
   só esse agrupamento pronto.
+
+> **Implementado em `stats-service feat-015`** (3 subtasks): `feat-015.1` grava `betType` só no
+> *insert* de `BetCreated` e preserva o valor já gravado no *upsert* de `BetSettled` (mesmo padrão
+> exato de `dateId`, já que o payload de `BetSettled` não carrega `betType`) — enum `BetType`
+> (`PRE`/`LIVE`) com `AttributeConverter` dedicado (`@Converter(autoApply = true)`), mesmo padrão
+> de `BetStatusAttributeConverter`. `feat-015.2` estende as 5 queries JPQL existentes com os campos
+> novos — achado do plan review: toda comparação de enum (`f.status = ...`/`f.betType = ...`) usa
+> `@Param` tipado (`BetStatus`/`BetType`), nunca literal de string solto, para garantir que o
+> `AttributeConverter` seja aplicado (o codebase já evitava esse padrão desde `feat-006`, aqui só
+> ficou explícito por que). `feat-015.3` adiciona o segmento `byBetType` reaproveitando o mesmo
+> `record` `BetMetrics`/`SegmentedBetMetrics` dos outros 5 segmentos (não um tipo apartado) —
+> exigiu mudar `dimensionId` de `UUID` para `String` em `SegmentedBetAggregate`/
+> `SegmentedBetMetrics` (único segmento sem uuid de catálogo por trás, ver [[API-CONTRACTS]]), os
+> 3 segmentos existentes convertem via `.toString()` na fronteira do adapter
+> (`JpaFactBetRepository`). Cache-aside estendido com chave própria (`segment:byBetType`),
+> evictada junto das outras 4 chaves — mesma simetria de `bySport`/`byMarket`/`byBettingHouse`, não
+> um caso especial como `monthly` (que nunca é cacheado).
 
 **Saldo inicial/final do período e "unidades apostadas" NÃO entram neste serviço** — decisão de
 arquitetura desta sessão: saldo é dado transacional (domínio de `bets-service`, que já mantém

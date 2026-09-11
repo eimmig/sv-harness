@@ -95,10 +95,16 @@ e [[CONVENTIONS]] para arquitetura/código.
   em nenhum dos dois):
   ```json
   { "byBetType": [
-    { "dimensionId": "PRE", "dimensionName": "PRE", "metrics": { "totalStaked": 700.00, "netProfit": 100.00, "roi": 0.14, "winRate": 0.55, "settledCount": 30, "wonCount": 17, "lostCount": 13, "voidCount": 0, "avgOdd": 1.90 } },
-    { "dimensionId": "LIVE", "dimensionName": "LIVE", "metrics": { "totalStaked": 300.00, "netProfit": 50.00, "roi": 0.17, "winRate": 0.58, "settledCount": 12, "wonCount": 7, "lostCount": 5, "voidCount": 0, "avgOdd": 2.10 } }
+    { "dimensionId": "PRE", "dimensionName": "PRE", "metrics": { "totalStaked": 700.00, "netProfit": 100.00, "roi": 0.14, "winRate": 0.55, "settledCount": 30, "wonCount": 17, "lostCount": 13, "voidCount": 0, "preCount": 30, "liveCount": 0, "avgOdd": 1.90 } },
+    { "dimensionId": "LIVE", "dimensionName": "LIVE", "metrics": { "totalStaked": 300.00, "netProfit": 50.00, "roi": 0.17, "winRate": 0.58, "settledCount": 12, "wonCount": 7, "lostCount": 5, "voidCount": 0, "preCount": 0, "liveCount": 12, "avgOdd": 2.10 } }
   ] }
   ```
+  Implementado (`stats-service feat-015.3`) reaproveitando o mesmo `record` `BetMetrics` dos
+  outros 5 segmentos (`SegmentedBetMetrics`) em vez de um tipo apartado — `preCount`/`liveCount`
+  aparecem também aqui, ainda que triviais dentro do próprio bucket (`PRE` sempre tem
+  `preCount == settledCount` e `liveCount == 0`, e vice-versa): evita duplicar
+  `SegmentedBetMetrics` só para omitir 2 campos redundantes-mas-inofensivos, mesma decisão
+  registrada no `plan_review` daquela feature.
   `betType` nunca é query param de filtro — só um agrupamento pronto, `dimensionId`/
   `dimensionName` carregam o próprio valor do enum em vez de um `uuid` (único segmento sem FK de
   catálogo por trás).
