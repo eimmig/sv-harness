@@ -219,8 +219,8 @@
         "epic-015",
         "epic-006"
       ],
-      "status": "in-progress",
-      "evidence": "",
+      "status": "done",
+      "evidence": "apps/web feat-016 done (5 subtasks). StatisticsDashboard ganhou byLeague/byTipster; shared/catalog-dashboard novo (ranking por segmento, ordenado por ROI desc, reusado pelos 5 recursos); pages/catalogs/ removida, substituida por 9 rotas diretas (4 Cadastrar + 5 Dashboard) via route data + withComponentInputBinding(); app-nav com 5 mat-menu (Esportes/Ligas/Mercados/Tipsters/Casas de apostas). Delivery Reviewer (PASS) e Test Suite Auditor (CONCERNS, so P3 - corrigidos) rodados sobre o diff completo. 167 unitarios + 39 e2e verdes, ./init.sh verde. PR feature->develop (SV-373, #75) inicialmente reprovou o gate SonarCloud (new_duplicated_lines_density 11,1% > 3%, 9 blocos de rota quase identicos em app.routes.ts) - corrigido extraindo uma tabela de recursos + .map() (mesmo precedente anti-duplicacao de feat-003/008, ver docs/CONVENTIONS.md), gate passou na 2a rodada, merged. Detalhe completo em apps/web/feature_list.json (feat-016) e docs/services/web.md.",
       "harness": "apps/web/"
     },
     {

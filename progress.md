@@ -2151,3 +2151,34 @@ PR `feature/SV-343 -> develop`. Ver `services/stats-service/progress.md` e `feat
 Libera `epic-015` (`apps/web`, dashboard consolidado reespecificado) do lado de `stats-service` —
 aquele epic também depende de `epic-013` (`bets-service`, já `done`). Epics elegíveis restantes em
 `stats-service`: `epic-016`/`epic-018` (ambos só dependem de `epic-004`, `done`).
+
+## `epic-015`/`epic-017`/`epic-016`/`epic-018`/`epic-019` fechados (2026-09-11, mesma sessão)
+
+Sequência de 5 epics fechados em cadeia na mesma sessão, cada um com o processo completo
+(`plan_review` → Jira → branch → implementação → `Delivery Reviewer`/`Test Suite Auditor` (+
+`Persistence Auditor` nos serviços com banco) → evidência → fechamento em duas edições separadas
+de JSON, nunca subtask+feature juntas). Detalhe completo em cada `evidence` (raiz e do
+serviço/harness correspondente) e em `apps/web/progress.md`/`stats-service/progress.md`:
+
+- `epic-016`/`epic-018` (`stats-service`): quebra diária (`GET /api/v1/statistics/daily`) e
+  segmentos `byLeague`/`byTipster` em `GET /api/v1/statistics`, mesmo formato dos segmentos já
+  existentes.
+- `epic-015` (`apps/web`): dashboard consolidado ganha filtro de período (presets + range
+  customizado, `shared/period-preset-filter` novo) substituindo o filtro anterior sem período.
+- `epic-017` (`apps/web`): página nova "Relatório do período" (`roiBankroll`, ROI médio diário,
+  profit em unidades/R$, dias green/red, `+EV`) — achado real: `docs/STATISTICS.md` tinha um erro
+  de aritmética no exemplo de `+EV` (`5,98%` em vez de `5,94%`), corrigido no mesmo commit.
+- **`epic-019` (`apps/web`, "menu por cadastro")**: cada um dos 5 cadastros (esporte/liga/
+  mercado/tipster/casa de apostas) ganha menu próprio (`mat-menu`, primeiro uso de overlay do CDK
+  no app) com 2 destinos — Cadastrar (reaproveita telas de `feat-003`/`008`) e Dashboard (tela
+  nova, `shared/catalog-dashboard`, ranking por ROI desc). `pages/catalogs/` (abas) removida por
+  completo. Achado real no PR `feature->develop` (SV-373, #75): gate SonarCloud reprovou por
+  `new_duplicated_lines_density` (11,1% > 3%) nos 9 blocos de rota quase idênticos de
+  `app.routes.ts` — corrigido extraindo uma tabela de recursos + `.map()` (mesmo precedente
+  anti-duplicação de `feat-003`/`008`, agora também documentado pra configuração de rotas em
+  `docs/CONVENTIONS.md`). Gate passou na 2ª rodada, PR merged.
+
+Com esse fechamento, `epic-001`..`epic-019` estão todos `done`. Próximos elegíveis: `epic-020`
+("grade de gráficos mensais de drawdown") e `epic-021` ("tela Visão geral pós-login"), ambos
+`apps/web`, ambos já com as dependências satisfeitas — só um por vez pode ficar `in-progress`
+nesse harness (WIP 1 por serviço).
