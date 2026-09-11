@@ -2182,3 +2182,34 @@ Com esse fechamento, `epic-001`..`epic-019` estão todos `done`. Próximos eleg�
 ("grade de gráficos mensais de drawdown") e `epic-021` ("tela Visão geral pós-login"), ambos
 `apps/web`, ambos já com as dependências satisfeitas — só um por vez pode ficar `in-progress`
 nesse harness (WIP 1 por serviço).
+
+## `feat-017` (bugfix, sem epic) e `epic-022` fechados (2026-09-11, mesma sessão)
+
+- **`feat-017` (`apps/web`, sem epic na raiz)**: hotfix de produção — `apiGatewayUrl` hardcoded
+  pra um domínio placeholder que nunca existiu bloqueava login real por CORS no deploy k3s
+  (`infra/feat-005`). Corrigido pra caminho relativo (`''`), já que o Ingress serve `web` e
+  `api-gateway` no mesmo host. Implementado por uma sessão concorrente enquanto esta sessão
+  fechava `epic-019` — fechamento formal (evidence + status `done`) feito por esta sessão depois,
+  a pedido do usuário, já que a outra sessão tinha seguido pra outro problema sem fechar o
+  registro. WIP-1 por serviço respeitado: `epic-020` foi reivindicado e revertido no meio do
+  caminho quando o PR concorrente de `feat-017` apareceu (`subtask/SV-380`, #76) — impedimento
+  real, não hipotético.
+
+- **`epic-022` (`apps/web`, "navegação lateral (sidebar)")**: pedido novo do usuário (2026-09-11),
+  fora do backlog original. Fecha uma divergência real: `docs/DESIGN-SYSTEM.md` item 1 sempre
+  especificou nav lateral, a implementação (`feat-002` em diante) ficou como nav horizontal — só
+  corrigida agora. `app-side-nav` colapsável substitui `app-nav`; login perde o header duplo
+  (idioma/tema viram controles flutuantes só na tela não autenticada); motion pass
+  (`withViewTransitions()`, transição de collapse, `app-login-border-trace` — animação autoral no
+  card de login pedida explicitamente pelo usuário, orientada pela skill `impeccable`). **2
+  achados reais de QA/implementação, não pedidos**: (1) sidebar expandida comia a tela mobile
+  inteira (RNF01) — corrigido com default retraído abaixo de ~600px; (2) bug latente do Angular
+  Material (`pointer-events` em rótulo flutuante de `mat-select` interceptando clique em campo
+  estreito) exposto pela sidebar reduzir a grade de `register-bet` — corrigido globalmente,
+  confirmado com A/B via `git stash` contra o `develop` sem a sidebar antes de corrigir. Delivery
+  Reviewer PASS, Test Suite Auditor CONCERNS não-bloqueante (gap de cobertura do fix do Material
+  registrado pra sessão futura, ver `apps/web/feature_list.json` feat-018 evidence). Detalhe
+  completo em `apps/web/feature_list.json`/`progress.md` e `docs/services/web.md`.
+
+Com esse fechamento, `epic-020` e `epic-021` continuam os únicos elegíveis restantes em
+`apps/web` — mesma situação de antes, WIP-1 por serviço ainda vale.

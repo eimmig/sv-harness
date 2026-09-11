@@ -257,8 +257,8 @@
       "dependencies": [
         "epic-019"
       ],
-      "status": "in-progress",
-      "evidence": "",
+      "status": "done",
+      "evidence": "apps/web feat-018 done (4 subtasks). app-side-nav substitui app-nav - sidebar colapsavel, fecha a divergencia de docs/DESIGN-SYSTEM.md item 1 nunca corrigida desde feat-002; default retraido abaixo de ~600px (achado real de QA - expandido comia a tela mobile inteira, RNF01). Login perde o header duplo - idioma/tema flutuam no canto inferior esquerdo so na tela nao autenticada. language-selector: fix de min-width (causa raiz do painel de idioma cortado), mat-select mantido intacto. Motion pass: withViewTransitions(), transicao de collapse, app-login-border-trace (animacao autoral pedida pelo usuario - traco verde split/encontra/retrai em loop no card de login), tudo com prefers-reduced-motion. Achado real durante a implementacao: bug latente do Material (pointer-events em label flutuante de mat-select interceptando clique em campo estreito) exposto pela sidebar, corrigido globalmente, confirmado com A/B via git stash. Delivery Reviewer PASS, Test Suite Auditor CONCERNS nao-bloqueante (1 gap de cobertura registrado pra sessao futura). 170 unitarios + 40 e2e verdes, ./init.sh verde. Detalhe completo em apps/web/feature_list.json (feat-018) e docs/services/web.md.",
       "harness": "apps/web/"
     }
   ]
