@@ -143,6 +143,9 @@ e [[CONVENTIONS]] para arquitetura/código.
   `leagueId`/`tipsterId` só estreitavam os outros segmentos como filtro"). Motivado pelo menu por
   cadastro de [[web]] (`epic-019`) — cada um dos 5 catálogos precisa do próprio ranking. Sem
   campo novo em `SegmentedBetMetrics`, só mais 2 arrays no bundle.
+  Implementado (`stats-service feat-017`) sem divergência: `byTipster` exclui apostas sem
+  tipster atribuído (`tipsterId` opcional em `FACT_BET`, diferente de `leagueId`), mesmo padrão
+  já usado por `byBetType`.
 - **`GET /api/v1/statistics/daily` (`stats-service`, `epic-016` da raiz, página "Relatório do
   período" de [[web]], 2026-09-10)**: mesmos 7 filtros de `GET /api/v1/statistics`, granularidade
   diária em vez de mensal (mesma mecânica de agregação de `monthly`, `DIM_DATE` já tem

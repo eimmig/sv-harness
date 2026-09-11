@@ -226,7 +226,7 @@ desproporcional — `bets-service` ganha um endpoint parametrizado no tempo em v
 no cliente (`web`, `epic-015`), combinando `totalStaked` (daqui) com saldo e `unitPercent`
 (`bets-service`). Ver [[STATISTICS]] para o racional completo.
 
-## Segmentos byLeague/byTipster (`epic-018` da raiz, planejado)
+## Segmentos byLeague/byTipster (`epic-018` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10, menu por cadastro
 em [[web]]). `GET /api/v1/statistics` ganha `byLeague`/`byTipster`, mesmo formato de
@@ -235,6 +235,14 @@ estreitavam os outros segmentos como filtro (decisão original, ver plan review 
 nunca tiveram o próprio agrupamento. Mesma mecânica de agregação já usada pelos 3 segmentos
 existentes (`SegmentedBetMetrics`), sem schema novo (`DIM_LEAGUE`/`DIM_TIPSTER` já existem desde
 `epic-004`).
+
+> **Implementado em `stats-service feat-017`** sem divergência do planejado. `aggregateByLeague`
+> é mirror exato de `aggregateBySport`/`aggregateByMarket`; `aggregateByTipster` exclui
+> `f.tipsterId IS NULL` (campo opcional em `FACT_BET`, diferente de `leagueId`, sempre presente),
+> mesmo padrão de `aggregateByBetType.betType IS NOT NULL`. Cache-aside estendido com 2 chaves
+> novas (`segment:league`/`segment:tipster`) — `evict()` passou a incluir as 2 junto das
+> existentes, ponto sinalizado no plan review e coberto por teste de integração dedicado
+> (`RedisMetricsCacheRepositoryIntegrationTest`) para não regredir silenciosamente no futuro.
 
 ## Quebra diária (`epic-016` da raiz, done)
 
