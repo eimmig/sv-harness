@@ -187,6 +187,31 @@ abaixo para o racional completo do lookup de Telegram, que dependia de dois dest
   `stats-service` em código, então a ordem de dependência atual (`epic-002` antes de
   `epic-003`/`epic-004`) permanece correta.
 
+**Revertido em 2026-09-11** (decisão do usuário, testando o deploy real no k3s pela primeira
+vez — as 3 chamadas manuais eram repetitivas o suficiente pra valer a automação, mesmo sendo
+operação rara): `auth-service` passa a orquestrar as outras 2 chamadas em código
+(`RestClientDownstreamTenantProvisioner`, `feat-015`) depois de criar o schema+admin localmente
+com sucesso. O operador continua fazendo **1 chamada só** (`POST /api/v1/admin/tenants` em
+`auth-service`), não mais 3. Os riscos que motivaram a decisão original foram endereçados, não
+ignorados:
+- **Lógica de compensação para falha parcial**: decidido **não ter nenhuma** - `auth-service` já
+  commitou sua própria criação antes de chamar os outros 2, então não tem como "desfazer" isso de
+  forma segura (dropar o schema já criado seria destrutivo e arriscado). Em vez de rollback, a
+  resposta sempre `201` (a parte de `auth-service` sempre funcionou) carrega
+  `downstreamProvisioningFailures` (array de nomes de serviço) - vazio se os 2 downstream deram
+  certo, ou lista quem falhou. O operador repete a chamada standalone daquele serviço específico
+  (`bets-service`/`stats-service` continuam com a rota própria intacta, nunca removida) -
+  idempotente por design (409 se já provisionado), então repetir nunca corrompe nada.
+- **Dependência circular entre epics**: continua não se materializando - `auth-service` **chama**
+  `bets-service`/`stats-service` (cliente HTTP simples, `RestClient` com timeout, mesmo padrão já
+  usado em `api-gateway`), mas não fica esperando nada deles em troca nem os importa como
+  dependência de build/deploy - a ordem em `feature_list.json` da raiz continua válida (`epic-002`
+  ainda não depende de `epic-003`/`epic-004` pra subir).
+- **Operação rara não justificar automação**: julgamento revisto - mesmo rara, a fricção de
+  digitar 3 comandos manuais bateu de frente com o proposito de ter um passo de onboarding
+  simples; o custo de implementar a orquestração (client HTTP + 2 env vars novas +
+  `downstreamProvisioningFailures`) foi considerado baixo o suficiente.
+
 ### 4. Apenas o admin do tenant cria novos usuários
 
 **O que mudou**: dentro de um tenant já existente, só o usuário com `role = admin` pode criar

@@ -72,12 +72,24 @@ de banco" para o racional completo. Resumo:
   > `X-Admin-Api-Key` obrigatório, checado por `AdminApiKeyFilter` antes do `DispatcherServlet`):
   > body `{"slug": "acme", "tenantName": "Acme Corp"}` (`tenantName` opcional, default
   > `"Administrator"`) → `201` `{"userId": "...", "email": "admin@acme", "temporaryPassword":
-  > "..."}` — a senha só aparece nesta resposta, nunca mais recuperável. `409` se o slug já
-  > estiver provisionado (`gateway.exists()` checado **antes** de qualquer escrita — idempotência
-  > do `CREATE SCHEMA IF NOT EXISTS` faria uma segunda chamada reprovisionar em silêncio sem essa
-  > checagem); `422` para slug em formato inválido (validação de domínio, não Bean Validation —
-  > ver [[API-CONTRACTS]] seção "Formato de erro" para o corte 400/422); `401` sem tocar o banco
-  > se `X-Admin-Api-Key` ausente/incorreto.
+  > "...", "downstreamProvisioningFailures": []}` — a senha só aparece nesta resposta, nunca mais
+  > recuperável. `409` se o slug já estiver provisionado (`gateway.exists()` checado **antes** de
+  > qualquer escrita — idempotência do `CREATE SCHEMA IF NOT EXISTS` faria uma segunda chamada
+  > reprovisionar em silêncio sem essa checagem); `422` para slug em formato inválido (validação
+  > de domínio, não Bean Validation — ver [[API-CONTRACTS]] seção "Formato de erro" para o corte
+  > 400/422); `401` sem tocar o banco se `X-Admin-Api-Key` ausente/incorreto.
+  > **`downstreamProvisioningFailures` acrescentado em `feat-015` (2026-09-11, reverte a decisão
+  > de "3 chamadas manuais" - ver [[DECISIONS-LOG]] item 3)**: depois de criar schema+admin
+  > localmente, este serviço chama a mesma rota `POST /api/v1/admin/tenants` em `bets-service`
+  > (primeiro) e `stats-service` (depois) via `RestClientDownstreamTenantProvisioner`
+  > (`RestClient` com timeout de conexão 2s/leitura 5s, mesmo padrão de
+  > `ServiceKeyAuthenticationFilter` em `api-gateway`), com o mesmo `X-Admin-Api-Key` já
+  > configurado neste serviço (reaproveitado, não é um segredo novo). `409` de qualquer downstream
+  > é tratado como sucesso (idempotente); qualquer outra falha (rede, 4xx/5xx inesperado) entra no
+  > array, sem bloquear a chamada seguinte nem reverter o que já foi criado localmente - a
+  > resposta é sempre `201` se a parte deste serviço funcionou. Config nova:
+  > `BETS_SERVICE_URL`/`STATS_SERVICE_URL` (env vars, mesmo nome já usado por `api-gateway` pras
+  > mesmas URLs).
 - **Criação de usuário dentro de um tenant**: só o usuário `role = admin` daquele tenant pode
   criar outros usuários (`role = member`). Precisa de checagem de autorização por role no
   endpoint correspondente — não é feature transparente pelo simples fato de existir a coluna

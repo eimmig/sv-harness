@@ -309,18 +309,25 @@ o código-fonte do outro serviço.
   > tabela, sem precisar varrer schemas nem o bot informar o slug do tenant. Ver [[auth-service]]
   > e [[DATA-MODEL]].
 - **Chamadas administrativas do operador da plataforma** (criação de tenant — ver
-  [[DECISIONS-LOG]] item 3): autenticam com um header **`X-Admin-Api-Key`** (segredo estático,
-  ver [[OBSERVABILITY-AND-CONFIG]]), direto em cada serviço (`auth-service`, `bets-service`,
-  `stats-service`) — **não passam pelo `api-gateway`**, que só roteia tráfego de usuário/bot. O
-  operador faz **3 chamadas manuais separadas**, uma por serviço (`auth-service` primeiro, depois
-  `bets-service`, depois `stats-service`) — nenhum serviço chama os outros dois em código, decisão
-  que evita tanto lógica de compensação para falha parcial quanto o risco de dependência circular
-  entre os epics desses serviços (ver [[DECISIONS-LOG]] item 3). `auth-service` cria o primeiro
+  [[DECISIONS-LOG]] item 3, **revertido** em 2026-09-11, ver o mesmo item): autenticam com um
+  header **`X-Admin-Api-Key`** (segredo estático, ver [[OBSERVABILITY-AND-CONFIG]]), direto em
+  cada serviço (`auth-service`, `bets-service`, `stats-service`) — **não passam pelo
+  `api-gateway`**, que só roteia tráfego de usuário/bot. **O operador faz 1 chamada** — `POST
+  /api/v1/admin/tenants` em `auth-service` — que orquestra as outras 2 em código
+  (`RestClientDownstreamTenantProvisioner`, `auth-service feat-015`): cria o schema+admin
+  localmente, depois chama a mesma rota standalone em `bets-service` e `stats-service` (`bets-
+  service` primeiro, depois `stats-service`, sem paralelismo). Sem lógica de compensação/rollback
+  se um downstream falhar - `auth-service` já criou o tenant localmente com sucesso, então a
+  resposta `201` sempre reflete isso; falhas downstream vão no array
+  `downstreamProvisioningFailures` (nomes dos serviços que falharam, vazio se os 2 deram certo) e
+  o operador pode repetir a chamada standalone daquele serviço específico depois (idempotente,
+  409 se já provisionado - por isso nunca é destrutivo re-tentar). `auth-service` cria o primeiro
   usuário admin do tenant com senha aleatória e `mustChangePassword = true` (ver [[DATA-MODEL]]).
-  Contrato de `auth-service` implementado em `feat-003`: `POST /api/v1/admin/tenants` — ver
-  [[auth-service]] seção "Modelo de tenant" para o payload/resposta exatos. `bets-service`
-  implementa a mesma rota (`feat-001.4`) só criando o schema, sem usuário/senha — ver
-  [[bets-service]] seção "Provisionamento de tenant (rota admin)".
+  Contrato de `auth-service`: `POST /api/v1/admin/tenants` → `201`
+  `{"userId", "email", "temporaryPassword", "downstreamProvisioningFailures": []}` — ver
+  [[auth-service]] seção "Modelo de tenant" para o payload completo. `bets-service`/
+  `stats-service` continuam com a rota standalone intacta (`feat-001.4`), só criando o schema,
+  sem usuário/senha — ver [[bets-service]] seção "Provisionamento de tenant (rota admin)".
 - **Confirmação de vínculo de conta Telegram** (`telegram-integration feat-003`, decisão de
   2026-09-08): `POST /api/v1/telegram-accounts` em `auth-service` também **não passa pelo
   `api-gateway`**, mesmo precedente das chamadas administrativas acima. Motivo diferente das
