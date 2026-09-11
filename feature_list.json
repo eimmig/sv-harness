@@ -182,7 +182,7 @@
       "dependencies": [
         "epic-004"
       ],
-      "status": "not-started",
+      "status": "in-progress",
       "evidence": "",
       "harness": "services/stats-service/"
     },
