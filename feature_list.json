@@ -206,8 +206,8 @@
       "dependencies": [
         "epic-004"
       ],
-      "status": "in-progress",
-      "evidence": "",
+      "status": "done",
+      "evidence": "Fechado em 2026-09-11 por services/stats-service feat-017 (ver evidencia detalhada em services/stats-service/feature_list.json). GET /api/v1/statistics ganha byLeague/byTipster, mesmo formato {dimensionId, dimensionName, metrics} de bySport/byMarket/byBettingHouse. aggregateByTipster exclui apostas sem tipster (campo opcional, diferente de leagueId), mesmo padrao de byBetType. Cache-aside estendido com 2 chaves novas, evict() atualizado para incluir ambas (achado do plan review, coberto por teste dedicado). Delivery Reviewer/Test Suite Auditor/Persistence Auditor: PASS. ./init.sh do servico e da raiz verdes. Libera epic-019 (web - menu por cadastro).",
       "harness": "services/stats-service/"
     },
     {
