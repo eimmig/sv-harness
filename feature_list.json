@@ -171,8 +171,8 @@
         "epic-013",
         "epic-006"
       ],
-      "status": "in-progress",
-      "evidence": "",
+      "status": "done",
+      "evidence": "Fechado em 2026-09-11 por apps/web feat-014 (ver evidencia detalhada em apps/web/feature_list.json). Dashboard reespecificado (feat-006, done): shared/period-preset-filter (presets Hoje default/Ultima semana/Ultimos 15 dias/Ultimo mes/Este mes + range customizado), forkJoin combinando GET /api/v1/statistics + GET /api/v1/bankroll/balance (3x) + GET /api/v1/settings, cards novos (PRE/LIVE, vitorias/derrotas, odd media, saldo inicial/final, unidades apostadas), campo admin-only pra editar unitPercent. StatisticsApi.BetMetrics (frontend) atualizado com os 6 campos que o backend ja expunha desde epic-014 e nunca tinham sido consumidos. Delivery Reviewer/Test Suite Auditor: PASS. QA visual real (screenshots, 2 temas x desktop/mobile x admin/member) achou e corrigiu 1 bug real (label truncado); descartou 1 suspeita de overflow mobile apos investigacao controlada (artefato de hot-reload, nao defeito de codigo - nenhuma mudanca de escopo alheio mantida). ./init.sh do app e da raiz verdes, 148 testes unitarios + 32 Playwright. Libera epic-017/epic-019 (ambos dependiam deste).",
       "harness": "apps/web/"
     },
     {
