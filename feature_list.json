@@ -260,6 +260,68 @@
       "status": "done",
       "evidence": "apps/web feat-018 done (4 subtasks). app-side-nav substitui app-nav - sidebar colapsavel, fecha a divergencia de docs/DESIGN-SYSTEM.md item 1 nunca corrigida desde feat-002; default retraido abaixo de ~600px (achado real de QA - expandido comia a tela mobile inteira, RNF01). Login perde o header duplo - idioma/tema flutuam no canto inferior esquerdo so na tela nao autenticada. language-selector: fix de min-width (causa raiz do painel de idioma cortado), mat-select mantido intacto. Motion pass: withViewTransitions(), transicao de collapse, app-login-border-trace (animacao autoral pedida pelo usuario - traco verde split/encontra/retrai em loop no card de login), tudo com prefers-reduced-motion. Achado real durante a implementacao: bug latente do Material (pointer-events em label flutuante de mat-select interceptando clique em campo estreito) exposto pela sidebar, corrigido globalmente, confirmado com A/B via git stash. Delivery Reviewer PASS, Test Suite Auditor CONCERNS nao-bloqueante (1 gap de cobertura registrado pra sessao futura). 170 unitarios + 40 e2e verdes, ./init.sh verde. Detalhe completo em apps/web/feature_list.json (feat-018) e docs/services/web.md.",
       "harness": "apps/web/"
+    },
+    {
+      "id": "epic-023",
+      "name": "web — corrigir alinhamento, tema e acesso ao idioma na sidebar",
+      "description": "Escopo novo, continuacao de apps/web feat-018 (pedido do usuario, 2026-09-12). Corrigir tres problemas de UX na barra lateral: icones desalinhados entre as tres secoes, botao de expandir/colapsar com cor escura fixa no tema claro e seletor de idioma que desaparece quando a sidebar esta colapsada. Backlog granular em apps/web/feature_list.json (feat-019).",
+      "dependencies": [
+        "epic-022"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "apps/web/"
+    },
+    {
+      "id": "epic-024",
+      "name": "Evolucao do dominio de times, jogadores e data do evento",
+      "description": "Escopo novo, pedido do usuario em 2026-09-12. Avaliar a troca do rotulo 'Data da aposta' para 'Data do evento' e a evolucao do dominio de team1/team2 como texto livre para entidades de times, possivel entidade de jogador e vinculo entre time e esporte. O caso Furia em CS e LoL exige que o modelo nao trate o nome da organizacao como um time unico sem contexto esportivo. A avaliacao deve considerar bets-service como fonte do catalogo, stats-service/DIM_TEAM ja existente e contratos consumidos pelo frontend e telegram-integration. A tela de cadastro de time no web deve ser ajustada para permitir e preservar o vinculo com esporte. O frontend tambem deve padronizar todos os campos de data com date picker e exibicao localizada, sem alterar os formatos tecnicos das APIs. O seletor de idioma da tela de login tambem precisa manter o icone inteiro visivel e sem sobreposicao. As telas de cadastro devem ter espacamento adequado em relacao a sidebar e um botao Adicionar melhor posicionado. Backlogs granulares em services/bets-service/feature_list.json (feat-016), services/stats-service/feature_list.json (feat-018) e apps/web/feature_list.json (feat-020, feat-021, feat-022, feat-023 e feat-024).",
+      "dependencies": [
+        "epic-003",
+        "epic-011",
+        "epic-012"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "services/bets-service/"
+    },
+    {
+      "id": "epic-025",
+      "name": "web — gestão de saldo e movimentações financeiras",
+      "description": "Fechar o gap de integracao identificado em 2026-09-12: o backend possui TRANSACTION para depositos/retiradas e endpoints de saldo, e o frontend ja possui clientes HTTP, lista saldo por casa e formulario de movimentacoes no historico, mas o fluxo ainda precisa ser integrado ao contexto das casas e validado ponta a ponta pelo Gateway. Consolidar no apps/web depositos, retiradas, atualizacao do saldo por casa, saldo consolidado e historico financeiro. Backlog granular em apps/web/feature_list.json (feat-025).",
+      "dependencies": [
+        "epic-003",
+        "epic-013",
+        "epic-006"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "apps/web/"
+    },
+    {
+      "id": "epic-026",
+      "name": "api-gateway — rotas de bankroll e settings",
+      "description": "Corrigir a lacuna de integracao identificada na auditoria de 2026-09-12: bets-service ja expoe bankroll e settings, e o frontend ja os consome, mas o API Gateway nao roteia esses prefixos. Backlog granular em services/api-gateway/feature_list.json (feat-013).",
+      "dependencies": [
+        "epic-013",
+        "epic-008"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "services/api-gateway/"
+    },
+    {
+      "id": "epic-027",
+      "name": "web — paridade com betType, byBetType e vinculo Telegram",
+      "description": "Corrigir lacunas de paridade identificadas na auditoria de 2026-09-12: alinhar betType ao enum PRE/LIVE do bets-service, exibir byBetType ja produzido pelo stats-service e criar a tela para gerar codigo de vinculo Telegram ja suportada pelo auth-service. Backlog granular em apps/web/feature_list.json (feat-026 e feat-027).",
+      "dependencies": [
+        "epic-014",
+        "epic-005",
+        "epic-008"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "apps/web/"
     }
   ]
 }
