@@ -315,14 +315,51 @@ feat-018` (primeiro), `stats-service feat-019`, `api-gateway feat-014`, `auth-se
 agnóstico de stack), `web feat-030` (último, fecha `epic-028`). Guard provado em CI real nos 6
 (`deploy`/`build-and-push-image` corretamente `skipping` em evento de PR).
 
-**Disparo real do primeiro rollout contra produção, deliberadamente adiado nos 6**: nenhum dos 6
-repositórios promoveu `develop -> main` durante essa sessão para não forçar um deploy só para
-provar o job. `bets-service` tem razão concreta e documentada (`feat-017` quebra o contrato REST
-síncrono de `POST /api/v1/bets` até `apps/web feat-021` corrigir); os outros 5 adiaram porque
-promover `main` é decisão de release mais ampla, não exclusiva desta feature. **Quando a primeira
-promoção `develop -> main` de cada repositório acontecer**, registrar a confirmação real (log do
-GitHub Actions mostrando o `kubectl rollout restart` de verdade) nesta seção — ainda pendente para
-os 6.
+**Disparo real do primeiro rollout, tentado e FALHOU — achado real de infraestrutura (2026-09-15,
+mesmo dia, `bets-service` PR #70)**: depois de `apps/web feat-021` corrigir a quebra de contrato
+que motivava adiar, promovido `bets-service develop -> main` de propósito para provar o job
+`deploy` pela primeira vez. `build-and-push-image` funcionou (imagem nova publicada no GHCR); o
+passo `Reiniciar deployment` (`kubectl rollout restart`) falhou:
+
+```
+E0915 20:48:59.286373 memcache.go:381] "Couldn't get current server API group list" err="Get
+\"https://127.0.0.1:6443/api?timeout=32s\": dial tcp 127.0.0.1:6443: connect: connection refused"
+The connection to the server 127.0.0.1:6443 was refused
+```
+
+**Causa raiz**: o `KUBE_CONFIG` gerado por `tools/kube_deploy_setup.py` capturou o `server:` do
+contexto `kubectl` local no momento em que o usuário rodou o script — que era
+`https://127.0.0.1:6443`, o **túnel SSH local** (`ssh -L 6443:127.0.0.1:6443 eduardo@192.168.2.123`,
+ver `infra/session-handoff.md`), não o endereço real do k3s. Um runner hospedado do GitHub Actions
+é uma máquina completamente diferente, sem esse túnel — `127.0.0.1:6443` ali aponta pra ele mesmo
+(nada escutando), daí "connection refused", não um erro de credencial/RBAC. **Isso não é um bug
+de código para corrigir no `ci.yml`** — o job está correto, o `KUBE_CONFIG` distribuído é que não
+serve para o ambiente que o consome (só era válido para a máquina que tinha o túnel aberto no
+momento da geração). Falha idêntica esperada nos outros 5 repositórios (mesmo secret gerado na
+mesma sessão) — **promoções `develop -> main` dos outros 5 pausadas até essa decisão de rede**,
+não repetido de propósito.
+
+**Nenhum dano ao cluster**: `kubectl rollout restart` nunca chegou a se conectar, então nunca
+enviou o patch — o `Deployment bets-service` em produção continua rodando a imagem antiga, sem
+interrupção. Só a imagem nova ficou publicada no GHCR sem ser puxada ainda.
+
+**Decisão pendente do usuário** (bloqueio real de arquitetura de rede, mesma categoria dos
+bloqueios de acesso de produção já documentados nesta sessão): o certificado TLS do k3s só é
+válido para `127.0.0.1`/`localhost` (mesma limitação já documentada acima para acesso manual) —
+trocar só o endereço no `KUBE_CONFIG` pelo IP da LAN (`192.168.2.123`) sem regenerar o certificado
+quebraria a validação TLS. Três caminhos possíveis, nenhum decidido:
+1. Regenerar o certificado do servidor k3s com `--tls-san <endereço alcançável>` e expor a porta
+   6443 pra fora da rede local (VPN/firewall/DDNS) — runners hospedados do GitHub Actions rodam na
+   nuvem, precisam alcançar o servidor pela internet.
+2. Runner self-hosted do GitHub Actions dentro da rede local do usuário — alcança o k3s pelo IP
+   da LAN diretamente, sem expor nada pra internet, mas exige manter um serviço rodando na
+   infraestrutura do usuário.
+3. Túnel/relay seguro alcançável pelos runners hospedados (Tailscale, Cloudflare Tunnel) sem abrir
+   porta diretamente no roteador.
+
+Nenhuma AÇÃO de rede/infraestrutura foi tentada por esta sessão — decisão de topologia de rede e
+exposição do cluster do usuário, mesma categoria de decisão que o classificador de auto-mode já
+recusou tomar sozinho antes nesta sessão (ver "Bloqueio de ambiente" acima).
 
 ## Onde fica
 
