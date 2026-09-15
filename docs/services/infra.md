@@ -265,6 +265,16 @@ comando), e o sintoma (`MountVolume.SetUp failed ... configmap "rabbitmq-definit
 found`) só aparece no `kubectl describe pod` do Job, não no `kubectl get pods` nem nos logs do
 RabbitMQ em si.
 
+### Env vars de orquestração de tenant no k3s (`infra/feat-006`, 2026-09-15)
+
+`auth-service feat-015` (repositório próprio) passou a chamar `bets-service`/`stats-service` em
+código pra provisionar tenant nos 3 serviços com 1 chamada admin só (reverte as 3 chamadas
+manuais originais). `k8s/auth-service.yaml` ganhou `BETS_SERVICE_URL=http://bets-service:8082`/
+`STATS_SERVICE_URL=http://stats-service:8083` (`Service` `ClusterIP` interno, mesmo padrão de
+`epic-008`/api-gateway) — sem isso o pod sobe com a URL vazia e a orquestração falha em silêncio
+(erro de binding). Aplicado e verificado no k3s de produção: `kubectl apply` + `rollout restart`
++ 1 chamada admin real confirmando `downstreamProvisioningFailures: []`.
+
 ## Onde fica
 
 `infra/docker-compose.yml` (criado em `feat-001`, 2026-08-03), mais:
