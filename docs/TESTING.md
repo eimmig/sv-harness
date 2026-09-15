@@ -114,10 +114,37 @@ código" em `docs/CONVENTIONS.md`).
   quebrar o resto da página. Lição: ao mockar um endpoint novo em Playwright, conferir a forma
   exata da resposta em `docs/API-CONTRACTS.md` antes de reaproveitar um helper de mock existente
   — dois endpoints "parecidos" (ambos devolvem `{id,name}`) podem ter envelopes diferentes.
+- **Fixture com data fixa perto de `new Date()` real vira teste dependente do dia em que roda**
+  (achado real, `apps/web feat-019.4`, encontrado rodando o `init.sh` da raiz, não relacionado à
+  feature em si): `period-report.spec.ts` (unitário) e `e2e/period-report.spec.ts` tinham uma
+  fixture de dado diário fixa em `2026-09-11`, e o preset padrão "Hoje" da página resolve a partir
+  de `new Date()` real (`period-preset-filter.ts`) — o teste só passava enquanto "hoje" caísse
+  dentro da mesma data da fixture; assim que o tempo real avançou, a tabela parou de incluir
+  aquele dia e a asserção quebrou, sem nenhuma mudança de código. Sintoma só aparece depois que a
+  janela expira, não no momento em que o teste é escrito — passa despercebido até alguém rodar a
+  suíte num dia diferente. Corrigido congelando o relógio em vez de mudar a fixture (que não é o
+  que o componente controla): `vi.useFakeTimers()` + `vi.setSystemTime(...)` no unitário
+  (`vi` de `'vitest'`, padrão já usado em `app.spec.ts`/`splash.spec.ts`), `page.clock.setFixedTime(...)`
+  no Playwright — **não** `page.clock.install()`, que também congela `setTimeout`/`requestAnimationFrame`
+  e travaria a introdução do splash e qualquer animação/temporizador real da página. Qualquer teste
+  novo que dependa de "hoje" (presets de período, filtros relativos a data) deve congelar o relógio
+  desde o início, não hardcodar uma data e assumir que vai continuar batendo.
 - **Cobertura**: gate de 80% (statements/branches/functions/lines) via `coverageThresholds` em
   `apps/web/angular.json`, aplicado automaticamente em todo `ng test` — não precisa mais da flag
   `--code-coverage`/`--coverage` na linha de comando (era a sintaxe do Karma, stale desde que o
   gate foi configurado de verdade em `feat-001.7`).
+  - **`new_coverage` do SonarCloud (gate `feature -> develop`) só enxerga cobertura de `ng test`
+    (lcov do vitest) — Playwright não conta, mesmo provando o comportamento de verdade** (achado
+    real, `apps/web feat-025`): um branch novo só exercitado por um e2e passou no `ng test` local
+    (nenhum teste quebrou) mas reprovou o Quality Gate do PR `feature -> develop` com
+    `new_coverage: 70% < 80%` — o e2e prova o comportamento (é a fonte de verdade preferida por
+    `docs/TESTING.md`), mas o SonarCloud só recebe o relatório do `ng test`, então uma linha só
+    coberta por Playwright aparece como não coberta pra ele. Toda lógica nova de componente
+    (branch condicional, handler novo) precisa de pelo menos 1 teste unitário que a exercite, além
+    do e2e que prova o comportamento de ponta a ponta — não é "ou/ou", os dois cobrem perguntas
+    diferentes (unitário = gate do SonarCloud; e2e = prova real). Verificar localmente antes de
+    abrir o PR: `grep ",0$"` nas linhas novas do arquivo em `coverage/web/lcov.info` depois de
+    `ng test`.
 - **i18n**: pelo menos um fluxo Playwright roda com o idioma trocado para `en-US` (ou `es`) via
   o seletor de idioma, confirmando que o texto renderizado muda — não é suficiente testar só
   `pt-BR` (ver [[CONVENTIONS]] seção "Internacionalização"). Não é necessário duplicar todos os

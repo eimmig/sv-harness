@@ -48,7 +48,7 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
    | Prefixo | Destino |
    |---|---|
    | `/api/v1/users/**`, `/api/v1/auth/**`, `/api/v1/telegram-links/**` | [[auth-service]] |
-   | `/api/v1/betting-houses/**`, `/api/v1/bets/**`, `/api/v1/transactions/**`, `/api/v1/sports/**`, `/api/v1/leagues/**`, `/api/v1/markets/**`, `/api/v1/tipsters/**` | [[bets-service]] |
+   | `/api/v1/betting-houses/**`, `/api/v1/bets/**`, `/api/v1/transactions/**`, `/api/v1/sports/**`, `/api/v1/leagues/**`, `/api/v1/markets/**`, `/api/v1/tipsters/**`, `/api/v1/bankroll/**`, `/api/v1/settings/**` | [[bets-service]] |
    | `/api/v1/statistics/**` | [[stats-service]] |
 
    `/api/v1/telegram-links/**` acrescentada em `feat-003` (achado real): endpoint já existia em
@@ -69,6 +69,12 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
    à tona porque `infra/feat-002` precisou provisionar um tipster de verdade via Gateway para
    registrar uma aposta de teste; `apps/web feat-008` não tem nenhum teste de integração contra
    um Gateway real, só contra `HttpClient` mockado, então não pegou a rota ausente.
+   **`/api/v1/bankroll/**` e `/api/v1/settings/**` acrescentadas em `feat-013` (2026-09-15,
+   mesmo tipo de lacuna do `tipsters`)**: [[bets-service]] já expunha os dois e [[web]] já os
+   consumia, mas nenhuma rota cobria os prefixos aqui — corrigido acrescentando as duas
+   cláusulas `path()` na rota de `bets-service` (mesmo padrão de `feat-007`/`feat-008`, sem
+   filtro novo: `X-User-Id`/`X-Tenant-Id`/`X-User-Role` já são injetados pelo filtro global,
+   não por rota, então `PATCH /api/v1/settings` não precisou de tratamento especial).
 
 4. **Credencial de serviço para [[telegram-integration]]**: o bot não tem um usuário logado com
    token PASETO — só sabe o `telegramUserId` de quem mandou a mensagem. Para esse caminho:

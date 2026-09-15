@@ -554,6 +554,34 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
     declaração concorrente em empate de especificidade, depois desta folha de estilo global, e
     vence o empate por ordem). `mat-select` já encaminha o clique do rótulo via `aria-owns`, não
     por `<label for>` nativo — nenhum dos três elementos tem papel interativo legítimo próprio.
+  - **Diretiva de atributo do Material sem o módulo importado falha em silêncio, não em erro**
+    (achado real, `apps/web feat-019.2`): um standalone component que usa `mat-icon-button`/
+    `mat-button`/etc. no template sem importar `MatButtonModule` (ou o standalone directive
+    equivalente) no array `imports` do `@Component` **não gera erro de compilação nem de
+    runtime** — Angular trata `mat-icon-button` como um atributo estático comum, já que nenhuma
+    diretiva reivindica aquele seletor. O elemento (`<button mat-icon-button>`) continua
+    renderizando, só que como `<button>` HTML puro, com o chrome padrão do browser (fundo cinza,
+    borda `outset`) em vez do botão circular sem borda do Material — e como o chrome nativo segue
+    o `color-scheme` do sistema operacional/browser, não os tokens de tema do app, o sintoma
+    visível pode ser "a cor não respeita o tema", levando a investigar CSS que nunca foi a causa.
+    Só aparece ao inspecionar o elemento renderizado (classes `mat-mdc-*` ausentes) ou via
+    `getComputedStyle` — nenhum teste unitário (`jsdom`, sem CSS real do Material) pega. Checar
+    sempre que um botão/ícone do Material "não está estilizado direito": conferir primeiro se o
+    módulo está no array `imports` do componente, antes de investigar SCSS.
+  - **"Grid blowout": item de grid/flex com filho `overflow-x: auto` ainda estoura a página se o
+    próprio item não tiver `min-width: 0`** (achado real, `apps/web feat-025`, tabela de
+    `betting-houses` com uma coluna nova): `app-panel-layout` já tem `grid-template-columns: 1fr`
+    abaixo de 600px (mobile) e a tabela larga já estava dentro de um `.table-wrap { overflow-x:
+    auto }` (mesmo padrão de `history.scss`) — mesmo assim a página inteira estourava a largura
+    da viewport em mobile. Causa: itens de grid/flex usam `min-width: auto` por padrão, que
+    equivale ao tamanho de conteúdo mínimo dos descendentes — isso **ignora** `overflow` de
+    qualquer filho, porque o cálculo de tamanho do track do grid acontece antes/independente de
+    como o overflow vai ser renderizado visualmente. Sintoma: o `overflow-x: auto` "não funciona"
+    mesmo estando no lugar certo, porque o problema não é ali, é no ancestral (o item de grid)
+    que nunca encolhe abaixo do conteúdo. Corrigido com `min-width: 0` no `:host` de `app-panel`
+    (o item de grid real de `app-panel-layout`) — vale pra qualquer página que use `app-panel`
+    com conteúdo largo (tabela, código, etc.), não só `betting-houses`. Verificar sempre que um
+    `overflow-x: auto` num filho não parece surtir efeito dentro de um layout de grid/flex.
 - **Estilo**: SCSS por componente (`:host`), utilizando Angular Material. Tema (claro/escuro),
   paleta de cores e inventário de componentes visuais já decididos em [[DESIGN-SYSTEM]] — não
   escolher uma paleta alternativa por conta própria.
@@ -570,6 +598,16 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
     quando o Playwright de `feat-001.7` deu o primeiro browser real da sessão pra tirar
     screenshot. Verificar todo componente novo que participa de layout (não decorativo/inline)
     contra isso antes de assumir que `height: 100%`/`overflow: auto` no CSS "deveriam" funcionar.
+  - **Um pai forçando `width: 100%` no host de um componente não centraliza o conteúdo do
+    componente** (achado real, `apps/web feat-019.1`, `theme-toggle` no rodapé colapsado da
+    sidebar): `.side-nav__footer` (flex column) forçava `app-theme-toggle { width: 100%; }` pra
+    dar largura total ao componente quando expandido, mas o `:host { display: block }` do
+    próprio componente não tem nenhuma regra de centralização — um filho de tamanho fixo (o
+    `mat-icon-button`, ~40px) dentro de um bloco 100% de largura fica encostado na borda inicial
+    (esquerda), não centralizado, porque `width: 100%` só define o tamanho da caixa do host, não
+    como o conteúdo dele se posiciona dentro dela. Corrigido no componente, não no pai: `:host`
+    (ou um wrapper interno) precisa do próprio `display: flex; justify-content: center` sempre
+    que o componente for usado num contexto onde a largura do host pode exceder a do conteúdo.
 - **i18n**: `@jsverse/transloco`, três locales sempre em sincronia (`pt-BR`/`en-US`/`es`) — ver
   seção "Internacionalização (i18n)" acima, não hardcodar strings de UI.
 - **Cliente HTTP**: serviços Angular tipados por domínio (`AuthService`, `BetsService`,
