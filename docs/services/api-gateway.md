@@ -104,6 +104,20 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
    real no `BetEventEnvelope` — ver [[bets-service]] seção "Correlation id no envelope de evento
    (gap conhecido)".
 
+6. **Filtro global de CORS** (`feat-012`, achado real de 2026-09-11 — nenhuma nota do vault
+   cobria CORS antes, gap real desde que [[web]] existe, não só do ambiente local): `CorsConfig`
+   registra um `CorsFilter` (biblioteca do Spring) para **toda** rota, origem(ns) configurável(is)
+   via `CORS_ALLOWED_ORIGINS` (default `http://localhost:4200`, ver
+   [[OBSERVABILITY-AND-CONFIG]]), sem `allowCredentials` (token vai em `Authorization`, nunca
+   cookie — ver [[API-CONTRACTS]] seção "CORS"). Precisa rodar **antes** de `PasetoAuthenticationFilter`/
+   `ServiceKeyAuthenticationFilter` (item 1/4) — o preflight `OPTIONS` do navegador não carrega
+   `Authorization`/`X-Service-Key`, então se qualquer um dos dois rodar primeiro rejeita o
+   preflight com `401` antes do `CorsFilter` responder. **Gotcha real**: `@Order` direto no método
+   `@Bean` que retorna o `CorsFilter` **não** é suficiente para isso — só funciona registrando via
+   `FilterRegistrationBean<CorsFilter>` com `.setOrder(...)` explícito (ver [[CONVENTIONS]] seção
+   "Java" para o detalhe, evitar redescobrir em outro serviço que precise ordenar um `Filter` de
+   biblioteca).
+
 ## O que este serviço não faz
 
 - **Não roteia a criação de tenant**: o operador da plataforma chama a rota administrativa de

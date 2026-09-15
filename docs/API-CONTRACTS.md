@@ -341,6 +341,22 @@ o código-fonte do outro serviço.
   credencial de serviço aplicável a este endpoint. Ver [[telegram-integration]] seção "Vínculo
   de conta" e [[DECISIONS-LOG]].
 
+## CORS (chamadas de navegador)
+
+Achado real de `api-gateway feat-012` (2026-09-11, durante o primeiro teste local end-to-end dos
+6 serviços): nenhuma nota do vault fixava CORS antes — o gap existia desde que [[web]] passou a
+existir (`environment.apiGatewayUrl` sempre foi absoluto, cross-origin de verdade, ver
+[[OBSERVABILITY-AND-CONFIG]]), não só no ambiente local.
+
+- `api-gateway` responde `Access-Control-Allow-Origin` para toda rota (autenticada ou não,
+  inclusive preflight `OPTIONS` de rota protegida) — origem(ns) configurável(is) via
+  `CORS_ALLOWED_ORIGINS` (ver [[OBSERVABILITY-AND-CONFIG]]), default `http://localhost:4200`.
+- **Sem `Access-Control-Allow-Credentials`**: o token PASETO vai no header `Authorization`
+  (guardado em `localStorage` pelo [[web]], nunca cookie) — CORS credentials mode não se aplica.
+- `bets-service`/`stats-service`/`auth-service` não implementam CORS próprio — nunca são chamados
+  direto do navegador (ver "Confiança entre serviços" acima e "O que este serviço não faz" em
+  [[api-gateway]]), só pelo `api-gateway` ou servidor-a-servidor.
+
 ## Contratos de evento: `BetCreated` e `BetSettled`
 
 Dois eventos distintos, ambos produzidos por `bets-service` e consumidos por `stats-service`

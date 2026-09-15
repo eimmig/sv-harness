@@ -22,6 +22,12 @@ não decidir uma alternativa aqui. Harness de código em `apps/web/CLAUDE.md`.
 - RNF01 — responsividade (desktop, tablet, mobile).
 - RNF02 — usabilidade.
 
+Chama [[api-gateway]] **cross-origin** (`environment.apiGatewayUrl`/`environment.development.ts`
+absoluto, ver [[OBSERVABILITY-AND-CONFIG]] seção "Configuração de `apps/web`") — sem proxy `/api`
+no `nginx.conf` de produção nem no dev server. Depende do `api-gateway` responder CORS
+(`api-gateway feat-012`, achado real de 2026-09-11 — o gap existia desde sempre, só não tinha
+sido exercitado por um browser real até então) para o navegador não bloquear a chamada.
+
 ## Modelo de tenant (UI)
 
 Decisão de 2026-08-02 (ver [[DECISIONS-LOG]] "Modelo de tenant multiusuário") muda o que a UI

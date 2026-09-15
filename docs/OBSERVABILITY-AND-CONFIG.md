@@ -100,6 +100,11 @@ futura dos quatro serviços sem mudar o mecanismo (só o default deixa de ser `l
   > gerar uma independente lá, ou os tokens emitidos por `auth-service` ficam indecifráveis.
   > Perfil `test` de `auth-service` usa um valor hex fixo de 64 chars, mesmo padrão de
   > `ADMIN_API_KEY`.
+- CORS: env var `CORS_ALLOWED_ORIGINS` em `api-gateway` (`feat-012`, achado real de 2026-09-11 —
+  ver [[API-CONTRACTS]] seção "CORS"), lista de origens separada por vírgula, default
+  `http://localhost:4200` (`apps/web` via `ng serve`). Sobrescrever com o domínio real de
+  produção do `web` quando ele existir — nenhuma nota do vault fixa esse domínio ainda (mesmo
+  estágio de `feat-009`/`feat-011`, só cluster `kind` local).
 
 ### Configuração de `apps/web` (frontend)
 

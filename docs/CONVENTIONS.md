@@ -442,6 +442,19 @@ princípios que não se misturam (ver também [[API-CONTRACTS]] seção "Interna
      > não tinha o ajuste; `AdminApiKeyFilterTest` tinha, e mesmo assim CI falhou até corrigir as
      > duas juntas — confirmado forçando `-Dsurefire.runOrder=alphabetical` e
      > `reversealphabetical` localmente, os dois passam só com as duas classes corrigidas).
+- **`@Order` num `@Bean` que retorna um `Filter` de biblioteca (não `@Component` seu) não ordena
+  o registro do Filter no Spring Boot** (achado real, `api-gateway feat-012`, 2026-09-11): um
+  `@Component` com `@Order` na própria classe (ex.: `CorrelationIdFilter`, `api-gateway feat-006`)
+  funciona — o Boot registra `Filter` beans via `ServletContextInitializerBeans`, que só respeita
+  ordem via `Ordered`/`@Order` lido da **classe da instância**, não da metadata do método `@Bean`
+  que a criou. Um `CorsFilter` (classe do próprio Spring, sem `@Order` nela) anotado
+  `@Order(Ordered.HIGHEST_PRECEDENCE)` no método `@Bean` continuou rodando **depois** de filtros
+  sem ordem explícita (default `LOWEST_PRECEDENCE`) — só descoberto porque o teste de integração
+  (preflight `OPTIONS` real, contexto Spring inteiro) voltou `401` em vez de `200`. Correção:
+  envolver em `FilterRegistrationBean<T>` e chamar `.setOrder(...)` explícito — esse é o mecanismo
+  que o Boot realmente honra para ordenar um `Filter` que não é uma classe sua. Aplicável a
+  qualquer serviço Java deste projeto que precise ordenar um `Filter` de biblioteca (não um
+  `OncePerRequestFilter` próprio, que já é `@Component` normal).
 
 ### Frontend (apps/web)
 
