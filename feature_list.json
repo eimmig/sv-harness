@@ -271,8 +271,8 @@
       "dependencies": [
         "epic-022"
       ],
-      "status": "in-progress",
-      "evidence": "",
+      "status": "done",
+      "evidence": "Fechado em 2026-09-15 por apps/web/feat-019 (ver evidencia detalhada em apps/web/feature_list.json). Os 3 bugs relatados tinham causa raiz diferente da suspeita inicial do plan review: theme-toggle sem centralizacao propria no :host (width:100% do pai nao centraliza sozinho); AppSideNav nunca importava MatButtonModule (mat-icon-button virava atributo inerte, botao renderizava como <button> nativo); language-selector saia do DOM inteiramente quando colapsado (nao um problema de overflow/min-width). QA visual real (desktop+mobile, claro+escuro, expandido+colapsado) via screenshots contra ng serve, nao so leitura de codigo. Story SV-398, PRs #84-88, CI+SonarCloud verdes.",
       "harness": "apps/web/"
     },
     {
