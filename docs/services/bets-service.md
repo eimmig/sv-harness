@@ -115,6 +115,26 @@ criada (200, não 201), sem checar se o corpo bate com o original (simplificaç�
 (RF12) completam o ciclo mínimo — só `pending -> won|lost|void` é transição válida (422
 `invalid-status-transition` em qualquer outro caso, incluindo tentar voltar para `pending`).
 
+**`team1`/`team2` viraram `team1Id`/`team2Id` (UUID) em `CreateBetRequest`/`BetResponse` na
+`feat-017` (2026-09-15) — mudança incompatível deste contrato síncrono, achado do `Delivery
+Reviewer` daquela feature**: diferente do contrato de evento (`BetCreated`/`BetSettled`, mantido
+aditivo de propósito — ver `docs/API-CONTRACTS.md` "`TEAM` vira dimensão"), a API REST não tinha
+como preservar o campo antigo com o mesmo tipo (não dá pra aceitar tanto `string` livre quanto
+`uuid` no mesmo campo sem reintroduzir o texto livre que a decisão de `epic-024` queria eliminar).
+**`apps/web` (`register-bet.ts`, hoje 2 inputs de texto livre) ainda envia `team1`/`team2` como
+string** — com `FAIL_ON_UNKNOWN_PROPERTIES` no padrão do Jackson (nenhum override neste serviço),
+todo `POST /api/v1/bets` feito pela tela atual passa a devolver 400 assim que este serviço for
+implantado, até `apps/web feat-021` (já desbloqueada pela mesma decisão, ver seu `plan_review`)
+trocar os 2 campos de texto por selects de `team1Id`/`team2Id`. **Sequenciamento de deploy
+obrigatório**: não implantar `bets-service` `feat-017` num ambiente com usuários reais de
+`apps/web` antes de `apps/web feat-021` estar pronta para implantar junto (mesmo tipo de
+janela de incompatibilidade já aceito antes para a migração de `betType` de texto livre pra enum
+em `feat-014.2` — este projeto não tem tráfego de produção real ainda, mas o cuidado de ordem de
+deploy vale a partir do primeiro ambiente com usuário de verdade). `services/telegram-integration`
+**não** é afetado — `extraction.py` extrai `team1`/`team2` só para uso conversacional, nunca
+encaminha esses campos no payload de `POST /api/v1/bets` (comentário do próprio módulo: "resolving
+an extracted name against the tenant's catalog is feat-004's responsibility, not this module's").
+
 ## Liquidação de apostas e bankroll consolidado (`feat-005`)
 
 `PATCH /api/v1/bets/{id}/status` passou a exigir `X-User-Id` (401 `missing-caller-context`, mesmo
