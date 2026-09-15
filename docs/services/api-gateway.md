@@ -75,6 +75,14 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
    cláusulas `path()` na rota de `bets-service` (mesmo padrão de `feat-007`/`feat-008`, sem
    filtro novo: `X-User-Id`/`X-Tenant-Id`/`X-User-Role` já são injetados pelo filtro global,
    não por rota, então `PATCH /api/v1/settings` não precisou de tratamento especial).
+   **Gap aberto, mesmo tipo (2026-09-15)**: `bets-service feat-017` criou o catálogo `TEAM`
+   (`POST`/`GET /api/v1/teams`) mas **este serviço não teve nenhuma feature aberta na mesma
+   sessão para cobrir a rota** — ficou fora de escopo por "stay in scope" (sessão de
+   `bets-service` não edita `api-gateway`). Próxima sessão de `api-gateway` (ou de qualquer
+   serviço/tela que precise chamar `/api/v1/teams` através do Gateway, como `apps/web feat-021`
+   fará) precisa acrescentar `/api/v1/teams/**` a esta tabela antes de o endpoint ficar acessível
+   por aqui — mesmo padrão de `feat-007`/`feat-008`/`feat-013` acima, uma cláusula `path()` a
+   mais na rota de `bets-service`, sem filtro novo.
 
 4. **Credencial de serviço para [[telegram-integration]]**: o bot não tem um usuário logado com
    token PASETO — só sabe o `telegramUserId` de quem mandou a mensagem. Para esse caminho:

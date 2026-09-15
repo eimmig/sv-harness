@@ -1632,3 +1632,21 @@ nenhuma linha de produção mudou nesta feature):
 registradas no backlog granular de `bets-service` (`feat-017`) — este registro em
 `DECISIONS-LOG` é a "aprovação" que a description de `epic-024`/`feat-016` exigia antes de
 qualquer sessão futura (`stats-service feat-018`, `apps/web feat-021`) começar a codificar.
+
+**Correção, mesmo dia, achada pelo `Plan Reviewer` de `bets-service feat-017` antes de codificar**:
+o parágrafo acima sobre `BetCreatedPayload`/`BetSettledPayload` estava errado em dois pontos.
+Primeiro, a premissa — `stats-service` **já consome `team1`/`team2` do `BetCreated` em produção
+hoje** (`DimensionResolver.resolveTeam`, resolve `DIM_TEAM` por `(name, sportId)`), não é um
+consumo futuro que `feat-018` de lá "decidiria" ligar; trocar/renomear os campos teria quebrado
+esse consumidor em silêncio (campo ausente desserializa como `null`, `resolveTeam(null, ...)`
+retorna `null` sem erro nenhum — nenhum time novo seria mais registrado em `DIM_TEAM`, sem log de
+falha algum indicando o motivo). Segundo, o plano de contrato descrito (`team1Id`/`team1Name`
+substituindo `team1`/`team2`) era portanto uma mudança **incompatível** do payload — exigiria
+bump de `schemaVersion` pela própria regra da nota acima ("seria necessário se um payload já
+publicado precisasse mudar de formato depois de já estar em uso"), não a mudança aditiva que o
+parágrafo classificava. Implementação real corrigida (`bets-service feat-017`, ver
+`docs/API-CONTRACTS.md` "`TEAM` vira dimensão"): `BetCreated` **mantém** `team1`/`team2`
+(mesmo nome/tipo/semântica, só a fonte virou o catálogo) e ganha `team1Id`/`team2Id` como campos
+novos aditivos; `BetSettled` ganha `team1Id`/`team1Name`/`team2Id`/`team2Name` como dimensão nova
+(nunca teve `team1`/`team2` antes, nada a preservar lá). `schemaVersion` permanece `1` nos dois
+eventos. Nenhuma mudança foi exigida em `stats-service` para este commit.

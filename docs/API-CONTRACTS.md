@@ -403,6 +403,37 @@ mesmo commit — repositórios diferentes): `bets-service feat-010` popula os ca
 > `schemaVersion` seria necessário se um payload já publicado precisasse mudar de formato depois
 > de já estar em uso.
 
+**`TEAM` vira dimensão (2026-09-15, `bets-service feat-017`)**: `team1`/`team2` eram texto livre
+em `BET`, sem catálogo, então nunca entraram no mecanismo de denormalização acima — não tinham
+`id`, só o texto solto. `epic-024` (avaliação em `bets-service feat-016`, decisão registrada em
+`docs/DECISIONS-LOG.md` 2026-09-15) criou o catálogo `TEAM` escopado por esporte (chave natural
+`(name, sportId)`, mesmo desenho de `dim_team` em `stats-service`) e `feat-017` migrou
+`Bet.team1`/`team2` para `team1Id`/`team2Id` (`UUID`, nullable). **A mudança no payload dos dois
+eventos foi deliberadamente aditiva, não um bump de `schemaVersion`** — e aqui a diferença entre
+os dois eventos importa:
+- `BetCreated` **mantém** `team1`/`team2` (`string`, nullable) com o mesmo nome e semântica de
+  antes (nome do time) — só a fonte mudou, de texto livre para `Team.name` resolvido via
+  `team1Id`/`team2Id` no publicador. Isso não é o caso "payload já publicado precisa mudar de
+  formato" que a nota acima trata como exigindo bump: o campo continua existindo, com o mesmo
+  tipo e o mesmo significado — só passou a vir de um catálogo em vez de input livre. `stats-service
+  /DimensionResolver.resolveTeam` (implementado bem antes desta decisão, resolve `DIM_TEAM` por
+  `(name, sportId)`) continua funcionando sem nenhuma mudança — achado real: a avaliação que
+  motivou `feat-016`/`feat-017` partiu da premissa de que esse consumo ainda não existia em
+  produção ("stats-service decidirá consumir os campos quando `feat-018` for implementada"), mas
+  o mecanismo já estava ativo desde `stats-service feat-013` — o `Plan Reviewer` de `feat-017`
+  pegou a divergência antes de qualquer código quebrar o consumidor real (ver
+  `bets-service/feature_list.json` `feat-017` campo `plan_review`).
+- `BetCreated` também ganha `team1Id`/`team2Id` (`UUID`, nullable) como campos novos — aditivos,
+  mesmo padrão de opcionalidade de `tipsterId`.
+- `BetSettled` ganha `team1Id`/`team1Name`/`team2Id`/`team2Name` (nullable) como um par de
+  dimensão novo, seguindo o mesmo padrão de `tipsterId`/`tipsterName` (já presente nos dois
+  eventos) — não havia campo `team1`/`team2` antigo neste evento para preservar (`BetSettled`
+  nunca carregou os campos descritivos de `BET`, ver bullet acima "SEM os campos descritivos").
+- `stats-service feat-018` (avaliação de alinhar `DIM_TEAM` com o catálogo real de
+  `bets-service`, ainda não iniciada) decide se/quando passa a usar `team1Id`/`team2Id` em vez de
+  casar por `(name, sportId)` — os campos novos já estão disponíveis no schema desde já, sem
+  depender daquela feature para existir.
+
 Mudanças de payload em qualquer um dos dois atualizam o schema correspondente, os testes de
 contrato (ver [[TESTING]]) e este parágrafo no mesmo commit.
 

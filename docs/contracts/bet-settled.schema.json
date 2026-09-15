@@ -65,6 +65,14 @@
         "marketName": { "type": "string" },
         "tipsterId": { "type": ["string", "null"], "format": "uuid" },
         "tipsterName": { "type": ["string", "null"] },
+        "team1Id": {
+          "type": ["string", "null"],
+          "format": "uuid",
+          "description": "Dimensao aditiva desde 2026-09-15 (ver docs/DECISIONS-LOG.md) - mesmo padrao nullable de tipsterId/tipsterName, nao existia neste evento antes (BetSettled nunca carregou team1/team2)."
+        },
+        "team1Name": { "type": ["string", "null"] },
+        "team2Id": { "type": ["string", "null"], "format": "uuid" },
+        "team2Name": { "type": ["string", "null"] },
         "stake": {
           "type": "number",
           "exclusiveMinimum": 0,

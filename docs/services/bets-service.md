@@ -42,15 +42,21 @@ Ver [[DATA-MODEL]] para o ERD (Mermaid + PNG original do TCC1). Confirmado sem d
 
 - `BETTING_HOUSE` (id, name, initialBalance, createdAt) 1:N `TRANSACTION` (id, bettingHouseId FK,
   type, amount, createdAt) — depósitos/saques (RF13).
-- `BETTING_HOUSE` 1:N `BET`; `SPORT`, `LEAGUE`, `MARKET`, `TIPSTER` são catálogos 1:N `BET`.
+- `BETTING_HOUSE` 1:N `BET`; `SPORT`, `LEAGUE`, `MARKET`, `TIPSTER`, `TEAM` são catálogos 1:N
+  `BET` (`TEAM` com FK adicional pra `SPORT` — ver abaixo).
 - `BET` (id, bettingHouseId FK, sportId FK, leagueId FK, marketId FK, tipsterId FK,
   **createdByUserId** (uuid, de `X-User-Id` — trilha de auditoria, sem FK real entre bancos,
-  ver [[DECISIONS-LOG]] 2026-08-02), ticketNumber, team1, team2, description, betType, playType,
-  stake decimal, odd decimal, status, betDate). `status` armazena `pending`/`won`/`lost`/`void`
-  (inglês — ver [[API-CONTRACTS]] — corresponde a pendente/ganha/perdida/devolvida em RF12/RN06).
-  **`team1`/`team2` (texto livre hoje) viram `team1Id`/`team2Id` (FK pra um catálogo `TEAM` novo,
-  escopado por esporte) — decisão registrada em [[DECISIONS-LOG]] 2026-09-15, implementação em
-  `feat-017` (backlog, ainda não iniciada). `PLAYER` fica fora desta rodada (mesma decisão).
+  ver [[DECISIONS-LOG]] 2026-08-02), ticketNumber, team1Id FK (nullable), team2Id FK (nullable),
+  description, betType, playType, stake decimal, odd decimal, status, betDate). `status` armazena
+  `pending`/`won`/`lost`/`void` (inglês — ver [[API-CONTRACTS]] — corresponde a
+  pendente/ganha/perdida/devolvida em RF12/RN06).
+- `TEAM` (id, name, sportId FK, `UNIQUE(name, sportId)`) — catálogo próprio (não a
+  `CatalogJpaEntity` genérica de `SPORT`/`LEAGUE`/`MARKET`/`TIPSTER`, que não tem FK pra outro
+  catálogo), mesmo desenho de `dim_team` em [[stats-service]]. Rotas `POST`/`GET`
+  `/api/v1/teams` (mesmo padrão dos outros 4 catálogos, sem `PUT`/`DELETE`). `team1Id`/`team2Id`
+  de `BET` migraram de texto livre (`team1`/`team2` string) pra essa FK em `feat-017` — decisão
+  em [[DECISIONS-LOG]] 2026-09-15 (`epic-024`/`feat-016`), implementação fechada no mesmo dia.
+  `PLAYER` fica fora desta rodada (mesma decisão).
 - `BET` 1:1 `BET_RESULT` (id, betId FK, **settledByUserId** (uuid, de `X-User-Id` — pode ser
   diferente de `createdByUserId`), profit decimal, settledAt) — só existe quando a aposta é
   liquidada.
