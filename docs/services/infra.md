@@ -305,10 +305,24 @@ tools/kube_deploy_setup.py` — `ServiceAccount`/`Role`/`RoleBinding` criados no
 de 1 ano gerado, secret `KUBE_CONFIG` gravado nos 6 repositórios de aplicação (confirmado via
 `--check`). Ver `infra/session-handoff.md` para o passo a passo de acesso que funcionou.
 
-**Lado de cada repositório de aplicação**: job `deploy` (feature própria em cada um, `auth-service
-feat-016`, `bets-service feat-018`, `stats-service feat-019`, `api-gateway feat-014`,
-`telegram-integration feat-010`, `web feat-030`) fora deste harness — `bets-service feat-018` foi
-o primeiro a fechar (2026-09-15, `.github/workflows/ci.yml` daquele repositório).
+**Lado de cada repositório de aplicação, `epic-028` fechado por completo (2026-09-15, mesmo
+dia)**: job `deploy` — feature própria em cada um, fora deste harness — fechado nos 6 repositórios
+na mesma sessão, todos reaproveitando o mesmo plano já revisado no primeiro (Plan Reviewer, 2
+achados MINOR corrigidos: sem `azure/setup-kubectl` — `kubectl` já vem preinstalado no runner
+`ubuntu-latest`; `permissions: {}` explícito, já que o job não usa `GITHUB_TOKEN`): `bets-service
+feat-018` (primeiro), `stats-service feat-019`, `api-gateway feat-014`, `auth-service feat-016`,
+`telegram-integration feat-010` (primeiro repositório Python tocado pelo padrão — o job em si é
+agnóstico de stack), `web feat-030` (último, fecha `epic-028`). Guard provado em CI real nos 6
+(`deploy`/`build-and-push-image` corretamente `skipping` em evento de PR).
+
+**Disparo real do primeiro rollout contra produção, deliberadamente adiado nos 6**: nenhum dos 6
+repositórios promoveu `develop -> main` durante essa sessão para não forçar um deploy só para
+provar o job. `bets-service` tem razão concreta e documentada (`feat-017` quebra o contrato REST
+síncrono de `POST /api/v1/bets` até `apps/web feat-021` corrigir); os outros 5 adiaram porque
+promover `main` é decisão de release mais ampla, não exclusiva desta feature. **Quando a primeira
+promoção `develop -> main` de cada repositório acontecer**, registrar a confirmação real (log do
+GitHub Actions mostrando o `kubectl rollout restart` de verdade) nesta seção — ainda pendente para
+os 6.
 
 ## Onde fica
 

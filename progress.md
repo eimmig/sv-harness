@@ -2341,3 +2341,35 @@ disparos de `--sync-status`.
 `epic-028` continua `in-progress` — 4 dos 6 repositórios de aplicação ainda pendentes
 (`auth-service feat-016`, `api-gateway feat-014`, `telegram-integration feat-010`,
 `web feat-030`).
+
+## `epic-028` fechado por completo — os 6 repositórios de aplicação (2026-09-15, mesmo dia)
+
+Continuação direta das 2 entradas acima, mesma sessão, do jeito documentado em cada
+`progress.md` de serviço: `api-gateway feat-014` (terceiro), `auth-service feat-016` (quarto),
+`telegram-integration feat-010` (quinto — primeiro repositório Python tocado pelo padrão, o job
+`deploy` em si é agnóstico de stack) e `web feat-030` (sexto e último) fecharam na sequência,
+todos reaproveitando byte a byte o plano já revisado em `bets-service feat-018`. Nenhum achado
+novo específico de repositório em nenhuma das 4 instâncias — `Delivery Reviewer` condensado
+(Blue-only, sem subagente) em cada uma, verdicto PASS.
+
+**Correção de processo aplicada a partir de `api-gateway feat-014`**: os 2 achados registrados na
+entrada de `stats-service feat-019` acima (merge local em vez de PR real; pular o estado `Review`
+no board do Jira) não se repetiram nas 3 features seguintes — `story -> develop` sempre via PR
+real com CI+SonarCloud, e fechamento em 2 disparos separados de `--sync-status` (subtask done
+sozinha → `Review`; feature done em edição separada, depois do merge real → `Done`), confirmado
+funcionando nas 4 (`api-gateway`, `auth-service`, `telegram-integration`, `web` passaram todos por
+`Review` no board antes de `Done`).
+
+**Achado real, único desta rodada**: PR de fechamento de `telegram-integration` (#36) falhou uma
+vez em "Testes unitários e cobertura" com `docker.errors.APIError: 500 ... connection reset by
+peer` puxando a imagem `redis` do Docker Hub via testcontainers — falha transitória de rede do
+runner do GitHub Actions, não causada pela mudança (diff isolado ao workflow). `gh run rerun
+--failed` resolveu de primeira, confirmando a hipótese de flake antes de prosseguir.
+
+`epic-028` marcado `done` no `feature_list.json` da raiz. Disparo real do primeiro rollout contra
+produção adiado deliberadamente nos 6 repositórios (nenhuma promoção `develop -> main` nesta
+sessão) — `bets-service` por razão concreta (contrato REST quebrado até `apps/web feat-021`), os
+outros 5 porque promover `main` é decisão de release mais ampla que esta feature não precisa
+forçar. `docs/services/infra.md` "CD automático via CI" atualizado com o estado consolidado e o
+lembrete de registrar a confirmação real (log do Actions) na primeira promoção de cada
+repositório — ainda pendente para os 6.
