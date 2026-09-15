@@ -209,6 +209,24 @@ componente dedicado (`shared/team-manager`) e um link simples no `app-side-nav` 
 Cadastrar/Dashboard dos outros 5 — não existe `byTeam` em `GET /api/v1/statistics`, `stats-service
 feat-018` que alinharia `DIM_TEAM` ao catálogo real está `BLOCKED`).
 
+## Tela de vínculo da conta Telegram (`epic-027` da raiz, done)
+
+**Implementado em `web feat-027`** sem divergência do plano. `TelegramLinkApi.create()` (novo,
+`core/telegram-link-api.ts`) só faz `POST /api/v1/telegram-links` sem corpo — só envia
+`Authorization: Bearer` (`authInterceptor`), o Gateway resolve `X-User-Id`/`X-Tenant-Id` do
+token, mesmo padrão de `BettingHousesApi`/`SettingsApi`. Tela nova (`pages/telegram-link`, rota
+`/telegram-link`, `authGuard`) reaproveita `submitForm` (`core/api-request.ts`): um botão único
+gera/regenera o código de 8 caracteres, mostra `code` + `expiresAt` formatado (`formatDateTime`,
+locale ativo) e erro RFC 7807 em caso de falha — sem estado de carregamento dedicado (o botão já
+desabilita via `submitting()`, mesmo padrão de `betting-houses`). Entrada nova em
+`app-side-nav`'s `secondaryLinks` (ícone `telegram`, sem par de Dashboard — não é um catálogo).
+
+O residual aceito no plan review (comportamento de gerar um 2º código com um já pendente —
+substitui vs. `409`) não exigiu decisão de frontend: a tela sempre substitui o código exibido
+pela resposta do último `POST` bem-sucedido e mostra o detail RFC 7807 em caso de `409`/`429` —
+comportamento correto nos dois cenários possíveis do backend, sem acoplamento a qual deles é o
+real.
+
 ## Navegação lateral (sidebar), animações no shell e no login (`epic-022` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-11). Fecha uma

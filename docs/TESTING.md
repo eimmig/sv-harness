@@ -183,6 +183,13 @@ código" em `docs/CONVENTIONS.md`).
   dentro da aba pra um teste Playwright (navegador real, sem esse problema) — é o mesmo racional
   de "unit test só quando isola lógica, E2E pra comportamento observável pelo usuário" já usado
   no resto da suíte.
+- **`page.route` prioriza o handler registrado por último (LIFO)** (achado real de `feat-027.3`,
+  num script de QA visual ad-hoc — a suíte automatizada nunca bateu nisso porque cada spec só
+  registra 1 handler por padrão de URL): se um mock genérico (`**/api/**`) e um específico
+  (`**/api/v1/telegram-links`) casam a mesma requisição, o registrado **depois** é quem intercepta
+  primeiro. Registrar o genérico primeiro e o específico depois — a ordem inversa faz o específico
+  nunca disparar, mesmo que `route.continue()` pareça "passar adiante" (só repassa pro handler
+  registrado antes dele, não direto pra rede).
 - **`mat-menu` (e qualquer overlay do CDK) precisa de limpeza explícita em teste unitário**
   (achado real de `feat-016.5`, primeiro uso de overlay do CDK na suíte): o conteúdo do menu
   renderiza num painel anexado a `document.body`, fora do `nativeElement` do fixture — o teardown

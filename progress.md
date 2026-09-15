@@ -2431,3 +2431,19 @@ atualizadas e prontas pra `docker pull` manual no servidor - só a automação d
 via CI que não funciona, e o rollout continua manual (túnel SSH) enquanto isso não mudar.
 
 `docs/services/infra.md` "CD automático via CI" atualizado com a confirmação nos 6 repositórios.
+
+## `epic-027` — `apps/web feat-027` fechada (tela de vínculo Telegram); epic segue `in-progress` (2026-09-15, mesmo dia)
+
+Continuação do "continua a implementação" padrão da sessão. `epic-027` cobre 2 features do
+harness `apps/web` (`feat-026` e `feat-027`, ver sua `description`) — só `feat-027` foi trabalhada
+agora; `feat-026` segue `REVISE` (decisão pendente de quem é dono do campo `byBetType` em
+`core/statistics-api.ts`: a parte 2 de `feat-026` ou `feat-029`/`epic-021`, que hoje tem um
+comentário explícito dizendo o contrário). Por isso `epic-027` **não** fecha nesta sessão, mesmo
+com `feat-027` `done` — falta `feat-026` para completá-lo.
+
+`feat-027` sem desvio do `Plan Reviewer` (já `READY` de sessão anterior): `TelegramLinkApi` +
+tela `pages/telegram-link` (rota `/telegram-link`, entrada em `app-side-nav`), reaproveitando
+`submitForm`/`Panel`/`PanelLayout` já existentes. `ng test` 201/201, Playwright 50/50 (suíte
+inteira), QA visual real (desktop/mobile, claro/escuro) sem achado. 1 achado real de SonarCloud no
+gate pesado (mesma classe já vista em `feat-028`: `typescript:S2699`, teste sem assertion
+reconhecida) corrigido antes do merge. Detalhe completo em `apps/web/progress.md`.

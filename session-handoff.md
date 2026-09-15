@@ -8,65 +8,64 @@
 ## Objetivo atual
 
 Os 9 epics originais do TCC 1 e a segunda rodada (`epic-011..022`) estão `done`. Terceira rodada
-em andamento: `epic-023`/`epic-025`/`epic-026`/**`epic-028`** fechados; `epic-024`
+em andamento: `epic-020`/`epic-023`/`epic-025`/`epic-026`/`epic-028` fechados. `epic-024`
 (times/jogadores) `in-progress` — `bets-service` (`feat-016`+`feat-017`) e `apps/web`
 (`feat-020`+`feat-021`) fechados; ainda cobre `stats-service feat-018` (`BLOCKED` pelo próprio
 Plan Reviewer) e `apps/web feat-022..024` (date pickers, ícone do seletor de idioma, espaçamento
 de cadastro), nenhum tocado ainda — não fechar o epic sem revisitar esse escopo mais amplo.
+`epic-027` `in-progress` — `apps/web feat-027` (tela de vínculo Telegram) fechada; falta
+`feat-026` (mesmo epic) para completá-lo, hoje `REVISE` (ver abaixo).
 
 **`epic-028` (CD automático via CI) fechado no `feature_list.json` — mas o mecanismo real não
 funciona ainda**: os 6 repositórios de aplicação ganharam o job `deploy`, e `infra/feat-007`
-distribuiu o `KUBE_CONFIG`, mas o primeiro disparo real (`bets-service`, PR #70) **falhou**:
-`kubectl rollout restart` não consegue alcançar o cluster a partir de um runner hospedado do
-GitHub Actions — o `KUBE_CONFIG` tem `server: https://127.0.0.1:6443` (o túnel SSH local do
-usuário no momento em que a credencial foi gerada), não um endereço real. **Confirmado idêntico
-nos outros 5 repositórios** depois (usuário perguntou se havia imagem atualizada de todos os
-serviços pra `docker pull` manual — não havia, promovidos todos os 6 `develop -> main`):
-`build-and-push-image` verde nos 6 (imagens `:latest` atualizadas e prontas), `deploy` falha do
-mesmo jeito nos 6. Sem dano a nenhum cluster (o comando nunca conecta em nenhuma tentativa). Ver
-`docs/services/infra.md` "CD automático via CI" para o achado completo e as 3 opções de correção.
-**Perguntado ao usuário explicitamente como prosseguir — respondeu "deixar como está por agora"**:
-nenhuma mudança de rede/infraestrutura será tentada até ele decidir; rollout continua manual (túnel
-SSH) como sempre foi antes de `epic-028` existir.
+distribuiu o `KUBE_CONFIG`, mas `kubectl rollout restart` não consegue alcançar o cluster a
+partir de um runner hospedado do GitHub Actions — o `KUBE_CONFIG` tem
+`server: https://127.0.0.1:6443` (o túnel SSH local do usuário no momento em que a credencial foi
+gerada), não um endereço real. Confirmado idêntico nos 6 repositórios. Sem dano a nenhum cluster
+(o comando nunca conecta). Ver `docs/services/infra.md` "CD automático via CI" para o achado
+completo e as 3 opções de correção. **Perguntado ao usuário explicitamente como prosseguir —
+respondeu "deixar como está por agora"**: nenhuma mudança de rede/infraestrutura será tentada até
+ele decidir; rollout continua manual (túnel SSH). As 6 imagens `:latest` no GHCR estão
+atualizadas (todos os 6 repositórios promovidos `develop -> main` nesta sessão).
 
-Epics `not-started` elegíveis (dependências satisfeitas): `epic-020`/`epic-027` (`apps/web`, só
-um por vez — WIP 1 por harness). `epic-021` (`apps/web`) ainda depende de `epic-027`.
+Epics `not-started` elegíveis (dependências satisfeitas): nenhum novo além do que já está
+`in-progress` (`epic-024`/`epic-027`) — WIP 1 por harness já ocupado em `apps/web` por
+`epic-027`.
 
 ## Concluído nesta sessão (2026-09-15)
 
-- [x] **`epic-028` fechado no JSON** — 6 features em 6 repositórios, cada uma sua própria
-      story/subtasks/PRs, CI+SonarCloud reais verdes. Ver `progress.md` da raiz e de cada serviço.
-- [x] **A pedido explícito do usuário, depois de `epic-028` fechar** ("corrija a quebra de
-      `bets-service`/`apps/web` primeiro, depois dê deploy em tudo"): `api-gateway feat-015`
-      (rota `/api/v1/teams`, achado de `bets-service feat-017`) e `apps/web feat-020`+`feat-021`
-      fecharam — o segundo corrige de verdade a quebra de `POST /api/v1/bets` (tela nova
-      `shared/team-manager` + `register-bet` usando `team1Id`/`team2Id`). `Delivery Reviewer`
-      completo (não condensado) rodou nessa feature por ser mudança de negócio real.
-- [x] **Os 6 repositórios de aplicação promovidos `develop -> main`** (`bets-service` PR #70 pra
-      provar o job `deploy` pela primeira vez; os outros 5 — `stats-service`/`api-gateway`/
-      `auth-service`/`telegram-integration`/`web` — a pedido do usuário, que perguntou se havia
-      imagem atualizada de todos os serviços pra puxar manualmente no servidor). Achado real de
-      infraestrutura confirmado idêntico nos 6, não de código: ver acima e
-      `services/bets-service/progress.md` para o log de erro completo e a causa raiz. **As 6
-      imagens `:latest` no GHCR estão atualizadas e prontas para `docker pull` no servidor** — só
-      a automação do `rollout restart` via CI que não funciona ainda.
-- [x] 2 achados de processo (merge local em vez de PR; pular estado `Review` no Jira) cometidos
-      nas 2 primeiras features de `epic-028` e corrigidos a partir da terceira — documentados nos
-      `progress.md` de `bets-service`/`stats-service`.
-- [x] 1 flake de infraestrutura em `telegram-integration` (Docker Hub, resolvido com rerun).
+- [x] `epic-028` fechado no JSON (CD automático, 6 repositórios) — achado real de infraestrutura
+      documentado acima, decisão de rede deixada como está a pedido do usuário.
+- [x] `api-gateway feat-015` + `apps/web feat-020`+`feat-021` fecharam a pedido explícito do
+      usuário — corrigiram a quebra real de `POST /api/v1/bets` antes de qualquer deploy em massa.
+- [x] Os 6 repositórios de aplicação promovidos `develop -> main`, confirmando a mesma falha de
+      rede em todos e publicando imagem `:latest` fresca em todos.
+- [x] `apps/web feat-028` fechada — fecha `epic-020` da raiz (grade mensal de drawdown no
+      dashboard). Achados reais corrigidos: bug de design (2 campos de mês batched atrás de
+      Aplicar), regressão pré-existente de `feat-021` no e2e (só apareceu rodando a suíte
+      completa), bug de responsividade mobile, 2 achados de SonarCloud.
+- [x] **`apps/web feat-027` fechada** — tela de vínculo da conta Telegram (`TelegramLinkApi` +
+      `pages/telegram-link`, rota `/telegram-link`, entrada em `app-side-nav`). Sem desvio do
+      plano. `epic-027` **não** fecha ainda — falta `feat-026` (mesmo epic), ver abaixo.
 
 ## Bloqueios / Riscos
 
 - **Bloqueio de rede conhecido, usuário decidiu deixar como está por agora**: o CD automático de
   `epic-028` não funciona a partir de runners hospedados do GitHub Actions (ver acima). Sem ação
   pendente — não repetir a pergunta nem tentar corrigir sozinho a menos que o usuário peça.
-- As 6 imagens `:latest` estão atualizadas no GHCR (verificado nesta sessão) — o rollout em
-  produção é manual (túnel SSH + `kubectl`) até o usuário decidir mudar isso.
+- **`apps/web feat-026` é `REVISE`, decisão de dono pendente**: `plan_review` daquela feature
+  aponta que `core/statistics-api.ts` (`BetMetrics`) tem um comentário explícito dizendo
+  "byBetType stays out of scope (epic-021 consumes it)" — implementar a parte 2 de `feat-026`
+  sem revisar isso cria 2 features competindo pelo mesmo campo. Decidir antes de codificar se
+  `feat-026` passa a ser dona de `byBetType` ou se essa parte deve sair de `feat-026` (ficando só
+  para `feat-029`/`epic-021`). Se for uma decisão de design real (não só "quem primeiro"),
+  perguntar ao usuário em vez de decidir sozinho.
 
 ## Próxima sessão — por onde começar
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. `epic-020`/`epic-027` (`apps/web`, só um `in-progress` por vez) elegíveis agora.
+2. `epic-027` (`apps/web`) segue elegível para continuar — falta só `feat-026`, mas primeiro
+   resolver a decisão de ownership de `byBetType` acima (reler o `plan_review` completo).
 3. `epic-024` continua aberto — `stats-service feat-018` `BLOCKED` (reler `plan_review` antes de
    popular subtasks); `apps/web feat-022..024` ainda `not-started`.
 4. Backlog dos 6 repositórios de `epic-028` está esgotado — nenhum tem feature elegível até surgir
