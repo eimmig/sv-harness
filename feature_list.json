@@ -284,7 +284,7 @@
         "epic-011",
         "epic-012"
       ],
-      "status": "not-started",
+      "status": "in-progress",
       "evidence": "",
       "harness": "services/bets-service/"
     },
