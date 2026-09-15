@@ -19,11 +19,15 @@ funciona ainda**: os 6 repositórios de aplicação ganharam o job `deploy`, e `
 distribuiu o `KUBE_CONFIG`, mas o primeiro disparo real (`bets-service`, PR #70) **falhou**:
 `kubectl rollout restart` não consegue alcançar o cluster a partir de um runner hospedado do
 GitHub Actions — o `KUBE_CONFIG` tem `server: https://127.0.0.1:6443` (o túnel SSH local do
-usuário no momento em que a credencial foi gerada), não um endereço real. Sem dano ao cluster
-(o comando nunca conectou). Ver `docs/services/infra.md` "CD automático via CI" para o achado
-completo e as 3 opções de correção — nenhuma decidida, é decisão de topologia de rede do usuário.
-**As promoções `develop -> main` dos outros 5 repositórios de `epic-028` foram pausadas de
-propósito** — mesma falha esperada, mesmo secret.
+usuário no momento em que a credencial foi gerada), não um endereço real. **Confirmado idêntico
+nos outros 5 repositórios** depois (usuário perguntou se havia imagem atualizada de todos os
+serviços pra `docker pull` manual — não havia, promovidos todos os 6 `develop -> main`):
+`build-and-push-image` verde nos 6 (imagens `:latest` atualizadas e prontas), `deploy` falha do
+mesmo jeito nos 6. Sem dano a nenhum cluster (o comando nunca conecta em nenhuma tentativa). Ver
+`docs/services/infra.md` "CD automático via CI" para o achado completo e as 3 opções de correção.
+**Perguntado ao usuário explicitamente como prosseguir — respondeu "deixar como está por agora"**:
+nenhuma mudança de rede/infraestrutura será tentada até ele decidir; rollout continua manual (túnel
+SSH) como sempre foi antes de `epic-028` existir.
 
 Epics `not-started` elegíveis (dependências satisfeitas): `epic-020`/`epic-027` (`apps/web`, só
 um por vez — WIP 1 por harness). `epic-021` (`apps/web`) ainda depende de `epic-027`.
@@ -38,9 +42,14 @@ um por vez — WIP 1 por harness). `epic-021` (`apps/web`) ainda depende de `epi
       fecharam — o segundo corrige de verdade a quebra de `POST /api/v1/bets` (tela nova
       `shared/team-manager` + `register-bet` usando `team1Id`/`team2Id`). `Delivery Reviewer`
       completo (não condensado) rodou nessa feature por ser mudança de negócio real.
-- [x] **`bets-service develop -> main` promovido (PR #70) para provar o job `deploy` — achado real
-      de infraestrutura, não de código**: ver acima e `services/bets-service/progress.md` para o
-      log de erro completo e a causa raiz.
+- [x] **Os 6 repositórios de aplicação promovidos `develop -> main`** (`bets-service` PR #70 pra
+      provar o job `deploy` pela primeira vez; os outros 5 — `stats-service`/`api-gateway`/
+      `auth-service`/`telegram-integration`/`web` — a pedido do usuário, que perguntou se havia
+      imagem atualizada de todos os serviços pra puxar manualmente no servidor). Achado real de
+      infraestrutura confirmado idêntico nos 6, não de código: ver acima e
+      `services/bets-service/progress.md` para o log de erro completo e a causa raiz. **As 6
+      imagens `:latest` no GHCR estão atualizadas e prontas para `docker pull` no servidor** — só
+      a automação do `rollout restart` via CI que não funciona ainda.
 - [x] 2 achados de processo (merge local em vez de PR; pular estado `Review` no Jira) cometidos
       nas 2 primeiras features de `epic-028` e corrigidos a partir da terceira — documentados nos
       `progress.md` de `bets-service`/`stats-service`.
@@ -48,23 +57,19 @@ um por vez — WIP 1 por harness). `epic-021` (`apps/web`) ainda depende de `epi
 
 ## Bloqueios / Riscos
 
-- **Bloqueio real, aguardando decisão do usuário**: o CD automático de `epic-028` não funciona a
-  partir de runners hospedados do GitHub Actions (ver acima). Precisa de uma decisão de rede antes
-  de qualquer outro repositório promover `develop -> main` esperando que o `deploy` funcione de
-  verdade — do contrário, os outros 5 vão repetir a mesma falha sem necessidade.
-- Rollout manual (túnel SSH + `kubectl`, mesmo padrão de antes de `epic-028` existir) continua
-  funcionando normalmente enquanto isso não for resolvido.
+- **Bloqueio de rede conhecido, usuário decidiu deixar como está por agora**: o CD automático de
+  `epic-028` não funciona a partir de runners hospedados do GitHub Actions (ver acima). Sem ação
+  pendente — não repetir a pergunta nem tentar corrigir sozinho a menos que o usuário peça.
+- As 6 imagens `:latest` estão atualizadas no GHCR (verificado nesta sessão) — o rollout em
+  produção é manual (túnel SSH + `kubectl`) até o usuário decidir mudar isso.
 
 ## Próxima sessão — por onde começar
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. **Não promover `develop -> main` dos outros 5 repositórios de `epic-028`
-   (`stats-service`/`api-gateway`/`auth-service`/`telegram-integration`/`web`) esperando que o
-   `deploy` funcione** até o usuário decidir o caminho de rede (`docs/services/infra.md` lista 3
-   opções). Promover por outro motivo (release normal) continua seguro — só o `kubectl rollout
-   restart` vai falhar do mesmo jeito, sem dano ao cluster.
-3. `epic-020`/`epic-027` (`apps/web`, só um `in-progress` por vez) elegíveis agora.
-4. `epic-024` continua aberto — `stats-service feat-018` `BLOCKED` (reler `plan_review` antes de
+2. `epic-020`/`epic-027` (`apps/web`, só um `in-progress` por vez) elegíveis agora.
+3. `epic-024` continua aberto — `stats-service feat-018` `BLOCKED` (reler `plan_review` antes de
    popular subtasks); `apps/web feat-022..024` ainda `not-started`.
-5. Backlog dos 6 repositórios de `epic-028` está esgotado — nenhum tem feature elegível até surgir
-   escopo novo (ou até a correção de rede virar uma feature própria em `infra/`).
+4. Backlog dos 6 repositórios de `epic-028` está esgotado — nenhum tem feature elegível até surgir
+   escopo novo.
+5. Se o usuário quiser rodar o rollout manual em produção agora (imagens já atualizadas): mesmo
+   padrão de sempre, túnel SSH + `kubectl rollout restart deployment/<serviço>` por repositório.

@@ -2408,3 +2408,26 @@ mesmo secret `KUBE_CONFIG`, mesma falha esperada. `epic-028` permanece `done` no
 `feature_list.json` (o trabalho de implementação está completo e correto - o job existe, o guard
 funciona, o código está certo), mas o mecanismo de deploy automático em si ainda não funciona de
 ponta a ponta até essa decisão de rede ser tomada.
+
+## Usuário pergunta se há imagem atualizada pra pull manual - confirmação nos outros 5 repositórios (2026-09-15, mesmo dia)
+
+Usuário perguntou, no meio da sessão, se todos os 6 serviços já tinham imagem atualizada pronta
+pra `docker pull` no servidor. Resposta honesta: não - só `bets-service` tinha (`main` só 1 commit
+atrás de `develop`, o commit de docs); os outros 5 estavam 10-70 commits atrás. Promovido
+`develop -> main` nos 5 (`stats-service`/`api-gateway`/`auth-service`/`telegram-integration`/
+`web`) especificamente pra publicar imagem fresca via `build-and-push-image` - não pra tentar de
+novo o `deploy` sabendo que ia falhar.
+
+Resultado: `pipeline` e `build-and-push-image` verdes nos 5 (confirmado via `gh run view --json
+jobs` em cada run real de push pra `main`); `deploy` falhou nos 5, exatamente com o mesmo erro de
+`bets-service` (`connection refused` em `127.0.0.1:6443`) - confirma que a causa raiz é o
+`KUBE_CONFIG` em si, não algo específico daquele repositório. Sem dano a nenhum cluster em nenhuma
+das 6 tentativas (o comando nunca chega a conectar).
+
+Perguntado explicitamente ao usuário como prosseguir com a decisão de rede pendente (3 opções já
+documentadas em `docs/services/infra.md`) - resposta: **"deixar como está por agora"** (opção
+recomendada). Nenhuma mudança de rede/infraestrutura tentada. As 6 imagens `:latest` no GHCR estão
+atualizadas e prontas pra `docker pull` manual no servidor - só a automação do `rollout restart`
+via CI que não funciona, e o rollout continua manual (túnel SSH) enquanto isso não mudar.
+
+`docs/services/infra.md` "CD automático via CI" atualizado com a confirmação nos 6 repositórios.
