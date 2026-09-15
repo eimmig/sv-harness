@@ -122,7 +122,9 @@ apostas, ou área de usuário) é decisão de plan review daquela feature, não 
 > atualizado desde `feat-006`, apesar do backend (`stats-service epic-014`) já expor
 > `wonCount`/`lostCount`/`voidCount`/`preCount`/`liveCount`/`avgOdd` há várias sessões — gap real
 > fechado aqui, escopo restrito só aos 6 campos que os cards desta feature consomem
-> (`byBetType`/`byLeague`/`byTipster` ficam para quando `epic-019`/`epic-021` precisarem deles).
+> (`byLeague`/`byTipster` ficam para quando `epic-019` precisar deles; `byBetType` acabou
+> consumido mais tarde por `feat-026`, não por `epic-021` como esta nota previa originalmente —
+> ver seção "Paridade betType/byBetType" abaixo).
 
 ## Tela "Visão geral" pós-login (`epic-021` da raiz, planejado)
 
@@ -140,6 +142,34 @@ aninhados lá). Cards: Lucro Total, Pré/Live (`byBetType` novo, `epic-014`), Lu
 filtro de período). Decisão de UX **não fechada nesta sessão** (fica pro plan review): se esta
 tela substitui o redirect pós-login atual (hoje vai pra `/dashboard`, `feat-002`) ou é só um link
 novo na nav.
+
+> **Atualização 2026-09-15**: `byBetType` (citado acima como dependência desta tela) foi tipado e
+> consumido por `feat-026` antes desta feature existir de fato (decisão do usuário, ver seção
+> "Paridade betType/byBetType" abaixo) — quando esta tela for implementada, ela só reusa
+> `StatisticsDashboard.byBetType` já pronto, sem precisar adicioná-lo.
+
+## Paridade betType/byBetType (`epic-027` da raiz, `apps/web feat-026`, done)
+
+Achado de auditoria (2026-09-12): `register-bet` ainda enviava `betType` como texto livre, embora
+`bets-service feat-014.2` já tivesse restringido o campo a um enum `PRE`/`LIVE` (serializado
+minúsculo, `pre`/`live`) — requests com outros valores nunca eram rejeitados na tela porque o
+`CreateBetRequest` do backend aceita `betType` opcional/nulo (`@JsonProperty` só valida o formato
+quando o campo vem preenchido). Trocado por `mat-select` com 3 opções (`pre`/`live`/vazio =
+"não classificado"), mesmo padrão de outros selects do formulário.
+
+**Decisão de ownership de `byBetType`** (registrada no `plan_review` de `feat-026`, decidida pelo
+usuário via pergunta direta, 2026-09-15): `core/statistics-api.ts` (`BetMetrics`) tinha um
+comentário explícito e pré-existente reservando `byBetType` para `epic-021` ("Visão geral", ver
+seção acima) — implementar a tipagem em `feat-026` sem revisar isso criaria 2 features competindo
+pelo mesmo campo. Optou-se por `feat-026` ser a dona: tipa `byBetType: SegmentedBetMetrics[]` em
+`StatisticsDashboard` (mesmo formato dos outros 5 segmentos) e expõe uma tela própria — quando
+`epic-021`/`feat-029` for implementada, ela só reusa o campo já tipado.
+
+**Sem componente novo**: `shared/catalog-dashboard` (já genérico, lê `data()[segment()]`) ganhou
+`'byBetType'` no union `CatalogSegment` e uma 6ª rota (`/bet-type-dashboard`, `catalogDashboard.
+betTypeNameLabel`) — mesmo padrão dos outros 5 segmentos (`epic-019`), só que sem par de
+"Cadastrar" no menu (não é um catálogo gerenciável, é um agrupamento fixo de 2 buckets). Entrada
+de nav ficou junto aos outros links de estatística (`secondaryLinks`), não no grupo de recursos.
 
 ## Dashboard — grade de gráficos mensais de drawdown (`epic-020` da raiz, done)
 

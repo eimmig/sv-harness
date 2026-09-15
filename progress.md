@@ -2447,3 +2447,34 @@ tela `pages/telegram-link` (rota `/telegram-link`, entrada em `app-side-nav`), r
 inteira), QA visual real (desktop/mobile, claro/escuro) sem achado. 1 achado real de SonarCloud no
 gate pesado (mesma classe já vista em `feat-028`: `typescript:S2699`, teste sem assertion
 reconhecida) corrigido antes do merge. Detalhe completo em `apps/web/progress.md`.
+
+## `epic-027` fechado por completo — `feat-026` decide ownership de `byBetType` e fecha (2026-09-15, mesmo dia)
+
+Continuação direta da entrada anterior, mesma sessão. Perguntado ao usuário via `AskUserQuestion`
+(a decisão de design real que o `Plan Reviewer` tinha deixado em aberto): quem deve tipar/consumir
+`byBetType` primeiro, `feat-026` (parte 2, já no plano original) ou `feat-029`/`epic-021` (que
+tinha o comentário reservando o campo)? Resposta: **`feat-026` tipa e exibe** (opção recomendada —
+menos retrabalho, campo já nasce visível mais cedo). Decisão registrada nos `plan_review` de
+`feat-026` e `feat-029` (`apps/web/feature_list.json`).
+
+`feat-026.1`: `register-bet`'s `betType` trocado de texto livre pra `mat-select` PRE/LIVE, alinhado
+ao enum `BetType` do `bets-service` (já existia há várias sessões, nunca acompanhado pelo
+frontend). `feat-026.2`: `byBetType: SegmentedBetMetrics[]` tipado em `StatisticsDashboard`,
+comentário de out-of-scope removido; reaproveita `shared/catalog-dashboard` (já genérico, só mais
+uma chave em `CatalogSegment` + rota `/bet-type-dashboard`), sem componente novo. `ng test`
+203/203, Playwright 52/52 (suíte inteira), QA visual real sem achado.
+
+**`epic-027` fechado por completo** (`feat-027` + `feat-026` `done`). Isso libera `epic-021`
+(`web` — tela "Visão geral" pós-login): suas 6 dependências (`epic-016`/`014`/`013`/`006`/`026`
+api-gateway/`027`) estão todas `done` agora — `epic-021` passa a ser o próximo epic elegível do
+harness `apps/web`. Sua única feature granular hoje (`feat-029`) segue `BLOCKED` no próprio
+`plan_review`, mas por um motivo bem mais estreito que antes: as 2 dependências cross-feature
+(ownership de `byBetType`, roteamento de bankroll/settings no `api-gateway`) já resolveram: falta
+só a decisão de UX explicitamente registrada como não-bloqueante no plano ("esta tela substitui o
+redirect pós-login atual ou é só um link novo na nav") — decisão real de produto (muda o fluxo de
+login de todo usuário), levada ao usuário via `AskUserQuestion` antes de começar a implementar:
+**usuário escolheu substituir o redirect pós-login** — login passa a levar direto pra esta tela
+nova em vez de `/dashboard`, que vira só mais um item de nav (mesmo tratamento das outras 6 telas
+desta rodada). Decisão registrada no `plan_review` de `feat-029` e no `detail`/`checklist` de
+`feat-029.3` (a subtask que implementa essa navegação). `epic-021` marcado `in-progress` na raiz —
+`feat-029` (plan_review `READY`) é a próxima feature a implementar em `apps/web`.

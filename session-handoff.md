@@ -8,13 +8,25 @@
 ## Objetivo atual
 
 Os 9 epics originais do TCC 1 e a segunda rodada (`epic-011..022`) estão `done`. Terceira rodada
-em andamento: `epic-020`/`epic-023`/`epic-025`/`epic-026`/`epic-028` fechados. `epic-024`
-(times/jogadores) `in-progress` — `bets-service` (`feat-016`+`feat-017`) e `apps/web`
-(`feat-020`+`feat-021`) fechados; ainda cobre `stats-service feat-018` (`BLOCKED` pelo próprio
-Plan Reviewer) e `apps/web feat-022..024` (date pickers, ícone do seletor de idioma, espaçamento
-de cadastro), nenhum tocado ainda — não fechar o epic sem revisitar esse escopo mais amplo.
-`epic-027` `in-progress` — `apps/web feat-027` (tela de vínculo Telegram) fechada; falta
-`feat-026` (mesmo epic) para completá-lo, hoje `REVISE` (ver abaixo).
+em andamento: `epic-020`/`epic-023`/`epic-025`/`epic-026`(api-gateway)/`epic-027`/`epic-028`
+fechados. `epic-024` (times/jogadores) `in-progress` — `bets-service` (`feat-016`+`feat-017`) e
+`apps/web` (`feat-020`+`feat-021`) fechados; ainda cobre `stats-service feat-018` (`BLOCKED` pelo
+próprio Plan Reviewer) e `apps/web feat-022..024` (date pickers, ícone do seletor de idioma,
+espaçamento de cadastro), nenhum tocado ainda — não fechar o epic sem revisitar esse escopo mais
+amplo.
+
+**`epic-027` fechado por completo nesta sessão** (`apps/web feat-027` + `feat-026`, ambas `done`).
+Decisão de design real levada ao usuário via `AskUserQuestion` antes de codificar `feat-026`:
+`core/statistics-api.ts` tinha um comentário reservando `byBetType` para `epic-021`, mas
+`feat-026` também precisava dele — usuário decidiu que `feat-026` é a dona (opção recomendada).
+
+**`epic-021` (web — tela "Visão geral" pós-login) marcado `in-progress`**: suas 6 dependências
+(`epic-016`/`014`/`013`/`006`/`026`-api-gateway/`027`) estão todas `done`. Decisão de UX (substitui
+redirect pós-login vs. link novo na nav) levada ao usuário via `AskUserQuestion` — **escolheu
+substituir o redirect pós-login**: login passa a levar direto pra esta tela nova em vez de
+`/dashboard`, que vira só mais um item de nav. Decisão registrada no `plan_review` de `feat-029`
+(agora `READY`) e no `detail`/`checklist` de `feat-029.3`. Próximo passo: implementar `feat-029`
+em `apps/web` (4 subtasks já planejadas pelo Plan Reviewer).
 
 **`epic-028` (CD automático via CI) fechado no `feature_list.json` — mas o mecanismo real não
 funciona ainda**: os 6 repositórios de aplicação ganharam o job `deploy`, e `infra/feat-007`
@@ -28,10 +40,6 @@ respondeu "deixar como está por agora"**: nenhuma mudança de rede/infraestrutu
 ele decidir; rollout continua manual (túnel SSH). As 6 imagens `:latest` no GHCR estão
 atualizadas (todos os 6 repositórios promovidos `develop -> main` nesta sessão).
 
-Epics `not-started` elegíveis (dependências satisfeitas): nenhum novo além do que já está
-`in-progress` (`epic-024`/`epic-027`) — WIP 1 por harness já ocupado em `apps/web` por
-`epic-027`.
-
 ## Concluído nesta sessão (2026-09-15)
 
 - [x] `epic-028` fechado no JSON (CD automático, 6 repositórios) — achado real de infraestrutura
@@ -41,31 +49,29 @@ Epics `not-started` elegíveis (dependências satisfeitas): nenhum novo além do
 - [x] Os 6 repositórios de aplicação promovidos `develop -> main`, confirmando a mesma falha de
       rede em todos e publicando imagem `:latest` fresca em todos.
 - [x] `apps/web feat-028` fechada — fecha `epic-020` da raiz (grade mensal de drawdown no
-      dashboard). Achados reais corrigidos: bug de design (2 campos de mês batched atrás de
-      Aplicar), regressão pré-existente de `feat-021` no e2e (só apareceu rodando a suíte
-      completa), bug de responsividade mobile, 2 achados de SonarCloud.
-- [x] **`apps/web feat-027` fechada** — tela de vínculo da conta Telegram (`TelegramLinkApi` +
-      `pages/telegram-link`, rota `/telegram-link`, entrada em `app-side-nav`). Sem desvio do
-      plano. `epic-027` **não** fecha ainda — falta `feat-026` (mesmo epic), ver abaixo.
+      dashboard). Achados reais corrigidos: bug de design, regressão pré-existente de `feat-021`
+      no e2e, bug de responsividade mobile, 2 achados de SonarCloud.
+- [x] **`apps/web feat-027` + `feat-026` fechadas — fecham `epic-027` da raiz por completo**:
+      tela de vínculo Telegram, `betType` alinhado a `mat-select` PRE/LIVE e `byBetType` tipado
+      e exibido num dashboard novo. Ver `progress.md` para o detalhe completo, inclusive a
+      decisão de ownership levada ao usuário.
 
 ## Bloqueios / Riscos
 
 - **Bloqueio de rede conhecido, usuário decidiu deixar como está por agora**: o CD automático de
   `epic-028` não funciona a partir de runners hospedados do GitHub Actions (ver acima). Sem ação
   pendente — não repetir a pergunta nem tentar corrigir sozinho a menos que o usuário peça.
-- **`apps/web feat-026` é `REVISE`, decisão de dono pendente**: `plan_review` daquela feature
-  aponta que `core/statistics-api.ts` (`BetMetrics`) tem um comentário explícito dizendo
-  "byBetType stays out of scope (epic-021 consumes it)" — implementar a parte 2 de `feat-026`
-  sem revisar isso cria 2 features competindo pelo mesmo campo. Decidir antes de codificar se
-  `feat-026` passa a ser dona de `byBetType` ou se essa parte deve sair de `feat-026` (ficando só
-  para `feat-029`/`epic-021`). Se for uma decisão de design real (não só "quem primeiro"),
-  perguntar ao usuário em vez de decidir sozinho.
+Nenhum bloqueio conhecido no momento.
 
 ## Próxima sessão — por onde começar
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. `epic-027` (`apps/web`) segue elegível para continuar — falta só `feat-026`, mas primeiro
-   resolver a decisão de ownership de `byBetType` acima (reler o `plan_review` completo).
+2. `epic-021` (`apps/web`) está `in-progress` — implementar `feat-029` (`plan_review` `READY`, 4
+   subtasks já planejadas: `feat-029.1` data mais antiga/saldo inicial, `feat-029.2` cards
+   vitalícios, `feat-029.3` tabela mensal + troca do redirect pós-login pra esta tela nova (decisão
+   já tomada, ver acima), `feat-029.4` testes/QA/vault). `epic-024` continua `in-progress` em
+   harness diferente (`services/bets-service/`) — sem conflito de WIP, mas ainda assim só 1
+   feature `in-progress` por vez dentro do `feature_list.json` de `apps/web`.
 3. `epic-024` continua aberto — `stats-service feat-018` `BLOCKED` (reler `plan_review` antes de
    popular subtasks); `apps/web feat-022..024` ainda `not-started`.
 4. Backlog dos 6 repositórios de `epic-028` está esgotado — nenhum tem feature elegível até surgir
