@@ -2244,3 +2244,20 @@ tocado ainda). Não fechar `epic-024` até esse escopo mais amplo ser resolvido 
 
 `services/bets-service` sem feature elegível agora — único item do backlog (`feat-018`, CD)
 depende de `infra/feat-007`, ainda `not-started`.
+
+## `infra/feat-007` (`epic-028`) reivindicada, parcial — bloqueio de autorização de produção (2026-09-15)
+
+Mesma sessão, continuou pro próximo epic elegível depois de `bets-service feat-017`. Autorou
+`k8s/ci-deployer-rbac.yaml` (`ServiceAccount` restrito) e `tools/kube_deploy_setup.py` (script de
+distribuição de `KUBE_CONFIG` nos 6 repos, mesmo padrão de `tools/sonar_setup.py`) — `Plan
+Reviewer` corrigiu o mecanismo de token pra TokenRequest API (não `Secret` estática legada,
+desencorajada pelo Kubernetes desde 1.24). **Achado real de ambiente**: a tentativa de checar
+conectividade com o servidor de produção (`ssh eduardo@192.168.2.123`, endereço já documentado em
+`infra/session-handoff.md` de sessão anterior) foi bloqueada pelo classificador de auto-mode do
+Claude Code ("Production Reads" — nega acesso a produção sem autorização explícita do usuário
+nesta sessão). Comportamento esperado, não um bug a contornar — registrado aqui porque é uma
+categoria de impedimento que vai se repetir em qualquer sessão futura sem essa autorização, para
+`feat-007.3` desta feature e para qualquer trabalho futuro que precise tocar o k3s real
+diretamente (fora do fluxo normal de `kubectl apply` documentado, que sempre foi feito pelo
+usuário ou com autorização explícita dele na sessão). `feature/SV-418` empurrada pro GitHub, não
+mergeada — feature não completa. Ver `infra/progress.md`/`session-handoff.md` para o detalhe.
