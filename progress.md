@@ -2279,3 +2279,37 @@ description também lista o job `deploy` em cada um dos 6 repositórios de aplic
 feat-016`, `bets-service feat-018`, `stats-service feat-019`, `api-gateway feat-014`,
 `telegram-integration feat-010`, `web feat-030`), nenhum implementado ainda — agora todos
 desbloqueados (o secret `KUBE_CONFIG` que cada um precisa já existe).
+
+## `bets-service feat-018` fechada — primeiro dos 6 repositórios de `epic-028` a fechar o job `deploy` (2026-09-15, mesmo dia)
+
+Continuação direta da entrada acima, mesma sessão. `Plan Reviewer` corrigiu 2 achados MINOR antes
+de codificar (remover a action de terceiro `azure/setup-kubectl` — `kubectl` já vem preinstalado
+no runner `ubuntu-latest`, confirmado contra `actions/runner-images`; adicionar `permissions: {}`
+explícito, já que o job não usa `GITHUB_TOKEN` e o repositório tem `default_workflow_permissions`
+em `write`). `Delivery Reviewer` PASS, `Test Suite Auditor` PASS/N/A (sem oráculo de teste
+significativo pra `kubectl rollout restart` — a prova real é a execução em CI). Story SV-423,
+PRs #67/#68/#69, CI+SonarCloud verdes, merge `feature/SV-423 -> develop` concluído.
+
+**Decisão real, não só ferramental**: o primeiro disparo de verdade do job (contra o cluster de
+produção) foi deliberadamente **adiado**, não forçado. `main` daquele repositório estava 35
+commits atrás de `develop`, incluindo `feat-017` (quebra já documentada do contrato REST síncrono
+de `POST /api/v1/bets` pra quem ainda envia `team1`/`team2` como texto livre — só `apps/web
+feat-021`, ainda `not-started`, corrige). Promover `develop -> main` agora só pra observar o job
+`deploy` rodar de verdade forçaria essa quebra em produção sem necessidade — o guard do job já foi
+provado (roda `skipping` corretamente em evento de PR, nunca fora de `main`), e a falta de disparo
+real foi classificada como risco residual aceitável, não bloqueante, pelo `Delivery Reviewer`. Ver
+`services/bets-service/session-handoff.md` pra quando essa promoção finalmente acontecer (quando
+`apps/web feat-021` destravar) — a confirmação real (log do Actions) deve ser registrada em
+`docs/services/infra.md` nessa ocasião, não deixada como lacuna silenciosa.
+
+Achado de documentação corrigido no mesmo commit lógico: `docs/services/infra.md` seção "CD
+automático via CI" ainda dizia "em andamento" e "secret `KUBE_CONFIG` ainda não existe em nenhum
+dos 6 repositórios" — desatualizado desde que `infra/feat-007` fechou (entrada acima). Corrigido
+pra refletir o estado real (feito pelo usuário) e para citar `bets-service feat-018` como o
+primeiro dos 6 repositórios de aplicação a fechar.
+
+`epic-028` continua `in-progress` — 5 dos 6 repositórios de aplicação ainda pendentes
+(`auth-service feat-016`, `stats-service feat-019`, `api-gateway feat-014`,
+`telegram-integration feat-010`, `web feat-030`), cada um elegível agora (nenhum outro epic
+`in-progress` naqueles harnesses) e podendo ser trabalhado em paralelo, uma sessão por
+repositório.

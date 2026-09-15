@@ -275,7 +275,7 @@ manuais originais). `k8s/auth-service.yaml` ganhou `BETS_SERVICE_URL=http://bets
 (erro de binding). Aplicado e verificado no k3s de produção: `kubectl apply` + `rollout restart`
 + 1 chamada admin real confirmando `downstreamProvisioningFailures: []`.
 
-### CD automático via CI, ServiceAccount restrito (`infra/feat-007`, 2026-09-15, em andamento)
+### CD automático via CI, ServiceAccount restrito (`infra/feat-007`, 2026-09-15, fechada)
 
 `epic-028` da raiz: decisão do usuário — `kubectl rollout restart` via CI em vez de GitOps
 completo (ArgoCD/Flux, desproporcional a um cluster de ambiente único, mesmo racional já usado
@@ -295,13 +295,20 @@ expiração e é revogável deletando o `ServiceAccount`. Adotado `kubectl creat
 estática — sem rotação automática, precisa rodar `tools/kube_deploy_setup.py` de novo antes do
 token expirar.
 
-**Bloqueio de ambiente, não de plano**: a sessão que autorou isto não tinha conectividade real com
-o k3s de produção (`kubectl` apontando pra um `kind` local morto) — `k8s/ci-deployer-rbac.yaml` e
-`tools/kube_deploy_setup.py` foram escritos e revisados, mas **não aplicados nem verificados**
-contra o cluster real, e o secret `KUBE_CONFIG` ainda não existe em nenhum dos 6 repositórios.
-Próxima sessão com acesso real: `python tools/kube_deploy_setup.py --check` confere o estado
-atual, sem argumento aplica/gera/distribui. Ver `infra/CLAUDE.md` seção "Verificação — CD
-automático" pro passo a passo completo.
+**Bloqueio de ambiente, não de plano, resolvido pelo usuário**: a sessão que autorou o manifest e
+o script não tinha conectividade real com o k3s de produção — `k8s/ci-deployer-rbac.yaml` e
+`tools/kube_deploy_setup.py` foram escritos e revisados, mas não puderam ser aplicados nesse
+momento. O próprio classificador de auto-mode do Claude Code bloqueou até uma checagem SSH de
+leitura numa sessão seguinte (categoria "Production Reads"), mesmo com autorização explícita do
+usuário no chat. **O usuário rodou pessoalmente**: túnel SSH + `scp` do kubeconfig + `python
+tools/kube_deploy_setup.py` — `ServiceAccount`/`Role`/`RoleBinding` criados no cluster real, token
+de 1 ano gerado, secret `KUBE_CONFIG` gravado nos 6 repositórios de aplicação (confirmado via
+`--check`). Ver `infra/session-handoff.md` para o passo a passo de acesso que funcionou.
+
+**Lado de cada repositório de aplicação**: job `deploy` (feature própria em cada um, `auth-service
+feat-016`, `bets-service feat-018`, `stats-service feat-019`, `api-gateway feat-014`,
+`telegram-integration feat-010`, `web feat-030`) fora deste harness — `bets-service feat-018` foi
+o primeiro a fechar (2026-09-15, `.github/workflows/ci.yml` daquele repositório).
 
 ## Onde fica
 
