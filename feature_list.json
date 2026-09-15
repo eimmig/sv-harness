@@ -297,8 +297,8 @@
         "epic-013",
         "epic-006"
       ],
-      "status": "in-progress",
-      "evidence": "",
+      "status": "done",
+      "evidence": "Fechado em 2026-09-15 por apps/web/feat-025 (ver evidencia detalhada em apps/web/feature_list.json). Investigacao antes de codificar reduziu o escopo real: formulario de deposito/retirada e saldo consolidado ja existiam completos (History/Dashboard) - nao duplicados. Entregue: ponte de navegacao (acao 'Movimentar saldo' em betting-houses -> /history?bettingHouseId=<id>, abre na aba certa com a casa pre-selecionada) + prova via e2e (navegacao SPA real) que o saldo por casa ja re-sincroniza sozinho. Achado real corrigido: bug de grid blowout em shared/panel (min-width:0 faltando), exposto pela coluna nova, corrigido no componente compartilhado. Story SV-403, PRs #89-92, CI+SonarCloud verdes (1 iteracao por gate de cobertura new_coverage, corrigida com teste unitario).",
       "harness": "apps/web/"
     },
     {
