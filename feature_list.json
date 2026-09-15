@@ -230,10 +230,11 @@
       "dependencies": [
         "epic-016",
         "epic-013",
-        "epic-006"
+        "epic-006",
+        "epic-026"
       ],
       "status": "not-started",
-      "evidence": "",
+      "evidence": "Backlog granular criado em 2026-09-15 (Plan Reviewer): apps/web/feature_list.json feat-028, READY WITH CONCERNS. Dependencia epic-026 acrescentada nesta sessao - BankrollApi/SettingsApi do frontend so funcionam ponta a ponta depois de api-gateway feat-013 (epic-026) rotear bankroll/settings, gap nao listado antes.",
       "harness": "apps/web/"
     },
     {
@@ -244,10 +245,12 @@
         "epic-016",
         "epic-014",
         "epic-013",
-        "epic-006"
+        "epic-006",
+        "epic-026",
+        "epic-027"
       ],
       "status": "not-started",
-      "evidence": "",
+      "evidence": "Backlog granular criado em 2026-09-15 (Plan Reviewer): apps/web/feature_list.json feat-029, BLOCKED. Depende de web feat-026 (epic-027) decidir quem tipa byBetType em statistics-api.ts (comentario pre-existente no codigo ja reservava o campo pra esta tela) e de api-gateway feat-013 (epic-026) rotear bankroll/settings - nenhuma das 2 dependencias estava listada antes.",
       "harness": "apps/web/"
     },
     {
