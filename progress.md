@@ -2313,3 +2313,31 @@ primeiro dos 6 repositórios de aplicação a fechar.
 `telegram-integration feat-010`, `web feat-030`), cada um elegível agora (nenhum outro epic
 `in-progress` naqueles harnesses) e podendo ser trabalhado em paralelo, uma sessão por
 repositório.
+
+## `stats-service feat-019` fechada — segundo dos 6 repositórios de `epic-028` (2026-09-15, mesmo dia)
+
+Continuação direta da entrada acima, mesma sessão. Reaproveitou byte a byte o padrão já revisado
+em `bets-service feat-018` (mesmo `Plan Reviewer`, mesmas 2 correções MINOR já aplicadas) — única
+diferença real o nome do `Deployment` (`stats-service`), confirmado contra
+`infra/k8s/stats-service.yaml` e `infra/k8s/ci-deployer-rbac.yaml` antes de codificar. `Delivery
+Reviewer`: PASS (revisão condensada, reaplicação idêntica de padrão já auditado, sem achado).
+Story SV-426, PRs #59/#60/#61, CI+SonarCloud verdes. Mesma decisão de `bets-service feat-018` de
+**adiar deliberadamente** o primeiro disparo real do job (`main` ~20 commits atrás de `develop`,
+promover agora seria decisão de release mais ampla, não desta feature).
+
+**2 achados de processo nesta sessão**, documentados em `services/stats-service/progress.md` para
+os 4 repositórios restantes não repetirem: (1) tentei mesclar `story -> develop` com
+`git merge --no-ff` local em vez de PR real — revertido antes de empurrar
+(`git reset --hard origin/develop`, seguro, nada perdido) e refeito via `gh pr create`/
+`gh pr merge`; o gate pesado sempre passa por PR real com CI+SonarCloud, nunca merge local direto.
+(2) em **ambos** `bets-service feat-018` e `stats-service feat-019`, a última subtask e a feature
+inteira foram marcadas `done` na mesma edição do `feature_list.json` antes de um único
+`--sync-status` — pula o estado `Review` no board do Jira (vai direto `In Progress -> Done`),
+exatamente o erro que `CLAUDE.md` da raiz já documenta ter acontecido antes em `auth-service
+feat-002`. Não refeito retroativamente (estado final `Done` correto, só a rastreabilidade
+intermediária ficou incompleta) — os próximos 4 fechamentos de `epic-028` devem separar em 2
+disparos de `--sync-status`.
+
+`epic-028` continua `in-progress` — 4 dos 6 repositórios de aplicação ainda pendentes
+(`auth-service feat-016`, `api-gateway feat-014`, `telegram-integration feat-010`,
+`web feat-030`).
