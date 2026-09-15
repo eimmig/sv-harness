@@ -2261,3 +2261,21 @@ categoria de impedimento que vai se repetir em qualquer sessão futura sem essa 
 diretamente (fora do fluxo normal de `kubectl apply` documentado, que sempre foi feito pelo
 usuário ou com autorização explícita dele na sessão). `feature/SV-418` empurrada pro GitHub, não
 mergeada — feature não completa. Ver `infra/progress.md`/`session-handoff.md` para o detalhe.
+
+## `infra/feat-007` fechada — usuário aplicou pessoalmente (2026-09-15, mesmo dia)
+
+Mesmo bloqueio de cima confirmado de novo mesmo depois do usuário autorizar explicitamente no
+chat — classificador de auto-mode recusa `Production Reads` por configuração, não por decisão
+caso a caso dentro da conversa. Usuário rodou os comandos ele mesmo: túnel SSH local (`ssh -L
+6443:127.0.0.1:6443 eduardo@192.168.2.123` — o kubeconfig do k3s tem `server:
+https://127.0.0.1:6443`, trocar pelo IP direto quebra o certificado TLS) + kubeconfig copiado via
+`scp` + `python tools/kube_deploy_setup.py` desta máquina. Resultado real: `ServiceAccount`/
+`Role`/`RoleBinding` criados no cluster de produção, token de 1 ano gerado, secret `KUBE_CONFIG`
+gravado nos 6 repositórios de aplicação (confirmado por `--check` antes e depois). Sessão fechou
+os 4 subtasks + a feature com essa evidência, PR #6 merged em `develop` do `infra`.
+
+`epic-028` continua `in-progress` — o lado de `infra/` (harness do epic) está `done`, mas a
+description também lista o job `deploy` em cada um dos 6 repositórios de aplicação (`auth-service
+feat-016`, `bets-service feat-018`, `stats-service feat-019`, `api-gateway feat-014`,
+`telegram-integration feat-010`, `web feat-030`), nenhum implementado ainda — agora todos
+desbloqueados (o secret `KUBE_CONFIG` que cada um precisa já existe).
