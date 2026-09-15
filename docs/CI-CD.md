@@ -350,6 +350,16 @@ passo 5 (Sonar) por falta de credencial — comportamento esperado, não um bug 
 > vez disso, os passos 2–5 são pulados por **guarda de arquivo-marcador** enquanto o repositório
 > não tem projeto — ver a seção seguinte.
 
+**Secret adicional por repositório, mesmo padrão (`KUBE_CONFIG`, `infra/feat-007`, `epic-028`)**:
+os 6 repositórios de aplicação (não `infra/`) também precisam do secret `KUBE_CONFIG` — usado
+pelo job `deploy` (`kubectl rollout restart`, feature própria em cada repositório) contra o
+`ServiceAccount` `ci-deployer` restrito (`infra/k8s/ci-deployer-rbac.yaml`). Distribuído por
+`tools/kube_deploy_setup.py` (mesmo padrão de `tools/sonar_setup.py`, mas a credencial não vem de
+um `.env` local — é gerada na hora a partir do cluster real via `kubectl create token`). **Ainda
+pendente**: precisa rodar numa sessão com `kubectl` apontando pro k3s de produção (ver
+`docs/services/infra.md` seção "CD automático via CI, ServiceAccount restrito" para o estado
+atual e o comando exato).
+
 ## Guarda por arquivo-marcador: CI verde em repositório sem código
 
 Cada passo dos workflows dos 6 repositórios de aplicação roda apenas quando o projeto daquele

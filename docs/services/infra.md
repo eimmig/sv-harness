@@ -275,6 +275,34 @@ manuais originais). `k8s/auth-service.yaml` ganhou `BETS_SERVICE_URL=http://bets
 (erro de binding). Aplicado e verificado no k3s de produção: `kubectl apply` + `rollout restart`
 + 1 chamada admin real confirmando `downstreamProvisioningFailures: []`.
 
+### CD automático via CI, ServiceAccount restrito (`infra/feat-007`, 2026-09-15, em andamento)
+
+`epic-028` da raiz: decisão do usuário — `kubectl rollout restart` via CI em vez de GitOps
+completo (ArgoCD/Flux, desproporcional a um cluster de ambiente único, mesmo racional já usado
+pra descartar Helm em `feat-004`). `k8s/ci-deployer-rbac.yaml` (`ServiceAccount ci-deployer` +
+`Role`/`RoleBinding` restritos a `get`/`patch`/`update` em `Deployment`, escopados por
+`resourceNames` aos 6 Deployments de aplicação — nunca `ClusterRole`, nunca `Secret`) e
+`tools/kube_deploy_setup.py` (raiz — aplica o manifest, gera o token e distribui o secret
+`KUBE_CONFIG` nos 6 repositórios via `gh`, mesmo padrão de `tools/sonar_setup.py`).
+
+**Achado do `Plan Reviewer`, antes de escrever qualquer coisa**: a description original do épico
+pedia "token de longa duração do ServiceAccount" sem especificar o mecanismo — a documentação
+oficial do Kubernetes desencoraja a forma legada (`Secret` manual tipo
+`kubernetes.io/service-account-token`, nunca expira sozinho) desde a 1.24; a recomendação atual
+pra cliente externo ao cluster (CI) é a TokenRequest API (`kubectl create token <sa>
+--duration=<N>`), que ainda aceita duração longa (default deste script: `8760h`/1 ano) mas tem
+expiração e é revogável deletando o `ServiceAccount`. Adotado `kubectl create token`, não `Secret`
+estática — sem rotação automática, precisa rodar `tools/kube_deploy_setup.py` de novo antes do
+token expirar.
+
+**Bloqueio de ambiente, não de plano**: a sessão que autorou isto não tinha conectividade real com
+o k3s de produção (`kubectl` apontando pra um `kind` local morto) — `k8s/ci-deployer-rbac.yaml` e
+`tools/kube_deploy_setup.py` foram escritos e revisados, mas **não aplicados nem verificados**
+contra o cluster real, e o secret `KUBE_CONFIG` ainda não existe em nenhum dos 6 repositórios.
+Próxima sessão com acesso real: `python tools/kube_deploy_setup.py --check` confere o estado
+atual, sem argumento aplica/gera/distribui. Ver `infra/CLAUDE.md` seção "Verificação — CD
+automático" pro passo a passo completo.
+
 ## Onde fica
 
 `infra/docker-compose.yml` (criado em `feat-001`, 2026-08-03), mais:
