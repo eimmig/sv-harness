@@ -2373,3 +2373,38 @@ outros 5 porque promover `main` é decisão de release mais ampla que esta featu
 forçar. `docs/services/infra.md` "CD automático via CI" atualizado com o estado consolidado e o
 lembrete de registrar a confirmação real (log do Actions) na primeira promoção de cada
 repositório — ainda pendente para os 6.
+
+## Correção da quebra de `bets-service`/`apps/web` + primeiro disparo real do `deploy` — achado de infraestrutura (2026-09-15, mesmo dia)
+
+A pedido explícito do usuário ("dar deploy em tudo" foi respondido com o risco documentado acima
+- `bets-service` quebraria `POST /api/v1/bets` do formulário web - e o usuário pediu "corrija isso
+primeiro, vá implementando o que falta até ter uma versão estável" antes de prosseguir com o
+deploy em massa): `api-gateway feat-015` (rota `/api/v1/teams`, achado real deixado em aberto por
+`bets-service feat-017`) e `apps/web feat-020` (rótulo "Data do evento", pré-requisito trivial de
+`feat-021`) fecharam primeiro, depois `apps/web feat-021` corrigiu de fato a quebra: tela nova
+`shared/team-manager` (catálogo de times vinculado a esporte, componente dedicado - `TEAM` não é
+estruturalmente idêntico aos 4 catálogos de `shared/catalog-manager`) + `register-bet` trocando os
+2 inputs de texto livre por selects `team1Id`/`team2Id`. `Delivery Reviewer` rodado via skill
+completa (não a versão condensada usada nas features mecânicas de `epic-028`) - mudança de negócio
+real, verificação independente confirmou o contrato batendo exatamente contra
+`CreateBetRequest.java` e zero referência residual a `team1`/`team2` texto livre. Detalhe completo
+em `apps/web/progress.md`.
+
+Com a quebra resolvida, promovido `bets-service develop -> main` (PR #70) de propósito para provar
+o job `deploy` de `epic-028` rodando de verdade pela primeira vez. `build-and-push-image` funcionou
+(imagem nova no GHCR); `kubectl rollout restart` **falhou**: `connection refused` em
+`127.0.0.1:6443`. **Achado real de infraestrutura, não de código**: o `KUBE_CONFIG` distribuído por
+`infra/feat-007` capturou o `server:` do túnel SSH local que o usuário tinha aberto no momento de
+gerar a credencial - um runner hospedado do GitHub Actions não tem esse túnel, então
+`127.0.0.1:6443` ali é loopback pra si mesmo. Sem dano ao cluster (o comando nunca conectou, o
+`Deployment` em produção continua com a imagem antiga). Detalhe completo, incluindo os 3 caminhos
+possíveis de correção (regenerar certificado TLS do k3s com SAN alcançável + expor a porta; runner
+self-hosted na rede do usuário; túnel/relay tipo Tailscale - nenhum decidido, decisão de topologia
+de rede do usuário), em `docs/services/infra.md` "CD automático via CI" e
+`services/bets-service/progress.md`.
+
+**Promoções `develop -> main` dos outros 5 repositórios de `epic-028` pausadas de propósito** -
+mesmo secret `KUBE_CONFIG`, mesma falha esperada. `epic-028` permanece `done` no
+`feature_list.json` (o trabalho de implementação está completo e correto - o job existe, o guard
+funciona, o código está certo), mas o mecanismo de deploy automático em si ainda não funciona de
+ponta a ponta até essa decisão de rede ser tomada.
