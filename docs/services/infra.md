@@ -335,19 +335,29 @@ ver `infra/session-handoff.md`), não o endereço real do k3s. Um runner hospeda
 (nada escutando), daí "connection refused", não um erro de credencial/RBAC. **Isso não é um bug
 de código para corrigir no `ci.yml`** — o job está correto, o `KUBE_CONFIG` distribuído é que não
 serve para o ambiente que o consome (só era válido para a máquina que tinha o túnel aberto no
-momento da geração). Falha idêntica esperada nos outros 5 repositórios (mesmo secret gerado na
-mesma sessão) — **promoções `develop -> main` dos outros 5 pausadas até essa decisão de rede**,
-não repetido de propósito.
+momento da geração).
 
-**Nenhum dano ao cluster**: `kubectl rollout restart` nunca chegou a se conectar, então nunca
-enviou o patch — o `Deployment bets-service` em produção continua rodando a imagem antiga, sem
-interrupção. Só a imagem nova ficou publicada no GHCR sem ser puxada ainda.
+**Confirmado nos outros 5 repositórios (mesmo dia, mesma sessão)**: a pedido do usuário (perguntou
+se havia imagem atualizada de todos os serviços pra puxar manualmente no servidor — não havia,
+`main` de 5 deles estava 10–70 commits atrás de `develop`), promovido `develop -> main` também em
+`stats-service`/`api-gateway`/`auth-service`/`telegram-integration`/`web`. Resultado idêntico nos
+6: `pipeline` e `build-and-push-image` verdes (imagem nova publicada em todos), `deploy` falha do
+mesmo jeito (`connection refused` em `127.0.0.1:6443`) — confirma que a causa raiz é o
+`KUBE_CONFIG`, não algo específico de `bets-service`. **As 6 imagens `:latest` no GHCR estão
+atualizadas e prontas pra `docker pull` manual no servidor** — só a automação do `rollout restart`
+via CI que não funciona.
 
-**Decisão pendente do usuário** (bloqueio real de arquitetura de rede, mesma categoria dos
-bloqueios de acesso de produção já documentados nesta sessão): o certificado TLS do k3s só é
-válido para `127.0.0.1`/`localhost` (mesma limitação já documentada acima para acesso manual) —
-trocar só o endereço no `KUBE_CONFIG` pelo IP da LAN (`192.168.2.123`) sem regenerar o certificado
-quebraria a validação TLS. Três caminhos possíveis, nenhum decidido:
+**Nenhum dano ao cluster em nenhum dos 6**: `kubectl rollout restart` nunca chegou a se conectar
+em nenhuma tentativa, então nunca enviou o patch — todos os `Deployment`s em produção continuam
+rodando a imagem anterior, sem interrupção, até alguém rodar o restart manual (túnel SSH,
+mesmo padrão de sempre).
+
+**Decisão pendente do usuário, perguntada explicitamente e respondida "deixar como está por
+agora"** (bloqueio real de arquitetura de rede, mesma categoria dos bloqueios de acesso de
+produção já documentados nesta sessão): o certificado TLS do k3s só é válido para
+`127.0.0.1`/`localhost` (mesma limitação já documentada acima para acesso manual) — trocar só o
+endereço no `KUBE_CONFIG` pelo IP da LAN (`192.168.2.123`) sem regenerar o certificado quebraria a
+validação TLS. Três caminhos possíveis, nenhum escolhido ainda:
 1. Regenerar o certificado do servidor k3s com `--tls-san <endereço alcançável>` e expor a porta
    6443 pra fora da rede local (VPN/firewall/DDNS) — runners hospedados do GitHub Actions rodam na
    nuvem, precisam alcançar o servidor pela internet.
@@ -359,7 +369,9 @@ quebraria a validação TLS. Três caminhos possíveis, nenhum decidido:
 
 Nenhuma AÇÃO de rede/infraestrutura foi tentada por esta sessão — decisão de topologia de rede e
 exposição do cluster do usuário, mesma categoria de decisão que o classificador de auto-mode já
-recusou tomar sozinho antes nesta sessão (ver "Bloqueio de ambiente" acima).
+recusou tomar sozinho antes nesta sessão (ver "Bloqueio de ambiente" acima). Rollout manual (túnel
+SSH + `kubectl rollout restart`/`apply`) continua sendo o caminho pra colocar as imagens novas em
+produção enquanto essa decisão não for tomada.
 
 ## Onde fica
 
