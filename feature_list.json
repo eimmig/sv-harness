@@ -233,8 +233,8 @@
         "epic-006",
         "epic-026"
       ],
-      "status": "not-started",
-      "evidence": "Backlog granular criado em 2026-09-15 (Plan Reviewer): apps/web/feature_list.json feat-028, READY WITH CONCERNS. Dependencia epic-026 acrescentada nesta sessao - BankrollApi/SettingsApi do frontend so funcionam ponta a ponta depois de api-gateway feat-013 (epic-026) rotear bankroll/settings, gap nao listado antes.",
+      "status": "done",
+      "evidence": "Fechado em 2026-09-15 (mesmo dia da criacao do backlog granular) por apps/web/feat-028 (ver evidencia detalhada em apps/web/feature_list.json). Grade dinamica de mini-graficos de drawdown mensal implementada exatamente conforme a formula de docs/STATISTICS.md (saldoAtual, nao saldoFinal - decisao sutil confirmada linha a linha no Delivery Reviewer). Filtro de range de meses batched atras de um botao Aplicar (achado real de design corrigido durante os proprios testes - reagir a cada campo isoladamente disparava requests sobrepostos). QA visual real (screenshots Playwright desktop/mobile x claro/escuro) achou e corrigiu um bug real de responsividade mobile. Rodar a suite e2e completa (nao so o arquivo tocado) achou e corrigiu uma regressao real pre-existente de apps/web feat-021 (ja em produção) em register-bet.spec.ts. Delivery Reviewer (skill completa): PASS. ./init.sh (196 testes, 90%+ cobertura) e suite e2e completa (47 testes) verdes.",
       "harness": "apps/web/"
     },
     {

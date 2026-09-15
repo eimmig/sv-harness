@@ -141,22 +141,37 @@ filtro de período). Decisão de UX **não fechada nesta sessão** (fica pro pla
 tela substitui o redirect pós-login atual (hoje vai pra `/dashboard`, `feat-002`) ou é só um link
 novo na nav.
 
-## Dashboard — grade de gráficos mensais de drawdown (`epic-020` da raiz, planejado)
+## Dashboard — grade de gráficos mensais de drawdown (`epic-020` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10, referência: print
 de planilha pessoal — grade de mini-gráficos de linha, um por mês). Seção/aba nova dentro do
-dashboard consolidado (`epic-006`/`epic-015`), não página separada. **Revisado 2026-09-10, mesma
-sessão**: filtro de 2 date pickers (início/fim), não mais navegação por ano fixo com setas —
-quantidade de mini-gráficos **dinâmica** (1 por mês do intervalo). Intervalo trava em fronteira
-de mês: `from` = dia 01 do mês do picker inicial, `to` = último dia do mês do picker final
-(30/31 conforme o mês) — independente do filtro de período com presets de `epic-015`. Uma
-chamada a `GET /api/v1/statistics/daily` (`epic-016`) cobrindo o intervalo inteiro; cliente
-agrupa por mês e calcula a curva acumulada em unidades (ver [[STATISTICS]] "Grade de gráficos
-mensais de drawdown" para a fórmula — reset só na virada de mês, dia sem aposta carrega o valor
-anterior). Zero backend novo. Grade com N mini-gráficos (`ngx-echarts`, mesmo padrão de
-`shared/monthly-profit-chart` de `feat-006`, layout acomodando contagem variável) via 1
-componente parametrizado por mês, reaproveitado N vezes — mesmo precedente de `feat-008`/
-`epic-019` para não reincidir no achado de duplicação do SonarCloud.
+dashboard consolidado (`epic-006`/`epic-015`), não página separada — quarta aba do
+`mat-tab-group` já existente (ao lado de Por esporte/mercado/casa de apostas). Filtro de 2
+`<input type="month">` (início/fim), **não** o `shared/period-preset-filter` reaproveitado em
+outras telas — granularidade de mês, filtro dedicado desta seção. Intervalo trava em fronteira
+de mês por construção (`<input type="month">` não tem componente de dia): `from` = dia 01 do mês
+inicial, `to` = último dia do mês final. Uma chamada a `GET /api/v1/statistics/daily`
+(`epic-016`) cobrindo o intervalo inteiro; cliente agrupa por mês e calcula a curva acumulada em
+unidades (ver [[STATISTICS]] "Grade de gráficos mensais de drawdown" para a fórmula — usa
+`saldoAtual`/`GET /api/v1/bankroll/balance` sem `at`, não `saldoFinal` do período como
+`period-report-metrics.ts`; reset só na virada de mês, dia sem aposta carrega o valor anterior).
+Zero backend novo. Grade CSS `auto-fit` com N mini-gráficos (`shared/monthly-drawdown-chart`,
+`ngx-echarts`, mesmo padrão de `shared/monthly-profit-chart` de `feat-006`) via 1 componente
+parametrizado por mês, reaproveitado N vezes — mesmo precedente de `feat-008`/`epic-019` para não
+reincidir no achado de duplicação do SonarCloud. Módulo puro de cálculo
+(`monthly-drawdown-metrics.ts`) co-localizado em `shared/` (não em `pages/dashboard/`) para não
+inverter a dependência — um componente `shared/` nunca deveria depender de um módulo de
+`pages/`.
+
+**Implementado em `web feat-028`**: os 2 campos de mês ficam batched atrás de um botão "Aplicar"
+explícito (mesmo padrão do `filterForm` de 5 selects do próprio `dashboard.ts`) — achado real de
+design encontrado durante os próprios testes: reagir a cada campo independentemente disparava 2
+requisições sobrepostas quando os dois mudavam, com risco da resposta desatualizada resolver por
+último. QA visual real (screenshots Playwright desktop/mobile × claro/escuro) achou e corrigiu um
+bug de responsividade mobile (filtro não quebrava linha, cortando os rótulos). Rodar a suíte e2e
+completa (não só o arquivo tocado) revelou e corrigiu uma regressão real pré-existente de
+`feat-021` (`e2e/register-bet.spec.ts` nunca ganhou o mock do catálogo de times que aquela
+feature acrescentou ao `forkJoin` do formulário) — ver [[TESTING]] para o padrão de falha geral.
 
 ## Menu por cadastro — Cadastrar + Dashboard (`epic-019` da raiz, done)
 

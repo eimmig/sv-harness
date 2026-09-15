@@ -114,6 +114,22 @@ código" em `docs/CONVENTIONS.md`).
   quebrar o resto da página. Lição: ao mockar um endpoint novo em Playwright, conferir a forma
   exata da resposta em `docs/API-CONTRACTS.md` antes de reaproveitar um helper de mock existente
   — dois endpoints "parecidos" (ambos devolvem `{id,name}`) podem ter envelopes diferentes.
+- **Um `forkJoin` novo dentro de uma página já existente precisa de mock de rota Playwright pra
+  CADA chamada, ou a página inteira trava, não só o campo novo** (achado real, `apps/web
+  feat-028` QA visual, rodando a suíte e2e inteira em vez de só o arquivo tocado): `feat-021`
+  acrescentou `teamsApi(this.http).list()` ao `forkJoin` de `register-bet.ts` (catálogo de
+  times, mesmo padrão dos outros 4), mas `e2e/register-bet.spec.ts` nunca ganhou a rota
+  `**/api/v1/teams*` correspondente — sem ela, a requisição real nunca resolve, `forkJoin` nunca
+  completa, e **nenhum** dos campos do formulário fica interativo (não só o de time), porque
+  `Observable.subscribe`/`loadInto` só popula `options()` quando todas as chamadas do bundle
+  terminam. Sintoma enganoso: o teste falha com "element was detached from the DOM, retrying" no
+  PRIMEIRO select clicado (`register-bet-betting-house`), nada relacionado a times no erro —
+  passou despercebido porque o arquivo de teste tocado (`register-bet.spec.ts`, unitário, usa
+  `HttpTestingController`) já tinha o mock certo desde `feat-021`; só o e2e (`page.route`,
+  arquivo irmão, mock duplicado por design) ficou pra trás. Lição: ao adicionar uma chamada nova a
+  um `forkJoin` já existente, atualizar o mock e2e da mesma página no mesmo commit, não só o
+  unitário — e rodar a suíte e2e completa (`npx playwright test`, não só o arquivo da feature
+  tocada) antes de fechar qualquer feature que mexa num `forkJoin` compartilhado.
 - **Fixture com data fixa perto de `new Date()` real vira teste dependente do dia em que roda**
   (achado real, `apps/web feat-019.4`, encontrado rodando o `init.sh` da raiz, não relacionado à
   feature em si): `period-report.spec.ts` (unitário) e `e2e/period-report.spec.ts` tinham uma
