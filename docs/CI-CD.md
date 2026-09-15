@@ -310,8 +310,9 @@ uploaded", com a issue/hotspot real = zero em qualquer consulta feita depois. Gu
 `sonar.qualitygate.wait` (passo 5) e o script de zero-issue (passo 6) em **qualquer push direto**
 (`github.event_name == 'push'`), não só push pra `develop` - o ponto de bloqueio real sempre foi
 a PR (que roda em modo "pull request" do Sonar, comparando contra a branch de origem, não uma
-branch nomeada - não sofre desse problema). Replicar essa correção em `bets-service`/`web` quando
-esses dois ganharem o job de build+push de imagem (ainda pendente).
+branch nomeada - não sofre desse problema). **`bets-service` (`feat-015`) e `web` (`feat-013`)
+já aplicaram essa correção proativamente desde o primeiro commit do job**, quando ganharam
+build+push de imagem em 2026-09-10/11 - sem repetir o ciclo de descoberta.
 
 ## Setup pendente (uma vez por repositório, quando cada um for criado)
 
@@ -481,8 +482,10 @@ IP) — não confunda isso com repositório privado ou com falha de pipeline.
 Job adicional (não um dos 6 passos numerados acima — roda em paralelo, não dentro do job
 `pipeline`), acrescentado em 2026-09-10 aos 4 primeiros repositórios de aplicação que já tinham
 Dockerfile (`api-gateway`, `auth-service`, `stats-service`, `telegram-integration` — ver
-`feat-011`/`feat-014`/`feat-014`/`feat-009` de cada um; `bets-service` e `web` ainda pendentes)
-para viabilizar deploy fora do cluster kind local: `docker/setup-buildx-action` +
+`feat-011`/`feat-014`/`feat-014`/`feat-009` de cada um) para viabilizar deploy fora do cluster
+kind local. **`bets-service` (`feat-013`/`feat-015`) e `web` (`feat-013`) fecharam o mesmo job em
+2026-09-10/11** — os 6 repositórios de aplicação publicam imagem no GHCR a cada push estável em
+`main`, nenhum pendente. `docker/setup-buildx-action` +
 `docker/login-action` (registry `ghcr.io`, `github.actor`/`secrets.GITHUB_TOKEN`) +
 `docker/build-push-action`, tags `<sha>` e `latest`, `needs: pipeline` e
 `if: github.event_name == 'push' && github.ref_name == 'main'` — só builda depois que a pipeline

@@ -48,6 +48,9 @@ Ver [[DATA-MODEL]] para o ERD (Mermaid + PNG original do TCC1). Confirmado sem d
   ver [[DECISIONS-LOG]] 2026-08-02), ticketNumber, team1, team2, description, betType, playType,
   stake decimal, odd decimal, status, betDate). `status` armazena `pending`/`won`/`lost`/`void`
   (inglês — ver [[API-CONTRACTS]] — corresponde a pendente/ganha/perdida/devolvida em RF12/RN06).
+  **`team1`/`team2` (texto livre hoje) viram `team1Id`/`team2Id` (FK pra um catálogo `TEAM` novo,
+  escopado por esporte) — decisão registrada em [[DECISIONS-LOG]] 2026-09-15, implementação em
+  `feat-017` (backlog, ainda não iniciada). `PLAYER` fica fora desta rodada (mesma decisão).
 - `BET` 1:1 `BET_RESULT` (id, betId FK, **settledByUserId** (uuid, de `X-User-Id` — pode ser
   diferente de `createdByUserId`), profit decimal, settledAt) — só existe quando a aposta é
   liquidada.

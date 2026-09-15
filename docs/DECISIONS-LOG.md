@@ -1563,3 +1563,72 @@ cirúrgica em cada, não reabre o épico inteiro):
 - Precedente reaproveitável: qualquer rota futura de qualquer serviço (exceto `auth-service`, que
   já tem acesso direto) que precisar de uma checagem `role = admin` usa `X-User-Role` em vez de
   inventar um mecanismo novo.
+
+## 2026-09-15 — TEAM vira catálogo escopado por esporte em bets-service; PLAYER fica fora desta rodada
+
+`epic-024` (raiz, pedido do usuário em 2026-09-12) pediu a avaliação de como evoluir
+`team1`/`team2` — hoje `varchar` livre em [[bets-service]] (`Bet`/`BetJpaEntity`/
+`CreateBetRequest`/`BetResponse`/`BetCreatedPayload`/`BetSettledPayload`, sem catálogo, sem
+validação de existência) — para acomodar o caso concreto trazido pelo usuário: a organização
+Furia tem time em CS e em LoL, e o modelo não pode tratá-la como um único "time" sem contexto
+esportivo. `bets-service feat-016` (avaliação, sem código de produção — decisão registrada aqui
+antes de qualquer implementação) concluiu duas decisões separadas.
+
+**Decisão 1 — TEAM é uma entidade nova em `bets-service`, chave natural `(name, sportId)`,
+mesma chave já provada em produção por [[stats-service]]**: `stats-service` já resolveu
+exatamente este problema em `epic-011`/`epic-014` — `dim_team` nasceu só com `name` único
+(migration `V20260910120000`), e uma sessão seguinte corrigiu para `(name, sport_id)` porque
+"o mesmo nome de time pode existir em esportes diferentes" (migration
+`V20260910130000`, decisão do usuário na época). Isso resolve o caso Furia diretamente: "Furia"
+em CS e "Furia" em LoL são duas linhas de `TEAM`, diferenciadas por `sportId`, nunca a mesma
+entidade. `bets-service feat-016` trata isso como precedente forte, não redecide do zero — seria
+uma segunda decisão divergente sobre o mesmo problema se escolhesse outra chave. Diferença: hoje
+nenhum catálogo de `bets-service` (`SPORT`/`LEAGUE`/`MARKET`/`TIPSTER`, todos via
+`CatalogJpaEntity`) é escopado por outro catálogo — `LEAGUE` é global, sem `sportId`. `TEAM` é o
+primeiro catálogo deste serviço que precisa da relação (`sport_id NOT NULL REFERENCES sport`),
+não cabe na base `CatalogJpaEntity` genérica sem extensão.
+
+**Decisão 2 — PLAYER fica fora desta rodada, registrado como extensão futura, não uma omissão
+silenciosa** (decisão delegada ao agente pelo usuário, 2026-09-15, junto com a confirmação da
+Decisão 1): nenhum RF em `docs/REQUIREMENTS.md` menciona aposta ou estatística no nível de
+jogador; `BET` hoje não tem nenhuma referência a atleta individual; e o problema concreto que
+motivou `epic-024` (Furia CS vs. LoL) é inteiramente sobre `TEAM`/`SPORT`, não sobre jogadores.
+Introduzir `PLAYER` agora exigiria decidir de imediato vínculo `TEAM_PLAYER` (histórico? janela de
+transferência? só cadastro atual?) sem nenhum consumidor pedindo isso — YAGNI. Fica como extensão
+documentada: se um RF futuro precisar de aposta/estatística por jogador, a base já existe
+(`TEAM` com chave por esporte) para pendurar `PLAYER` em cima sem redesenhar `TEAM`.
+
+**Plano de contratos e migração** (produzido por `feat-016.3`, escopo de implementação futura —
+nenhuma linha de produção mudou nesta feature):
+- Nova tabela `team(id, name, sport_id NOT NULL REFERENCES sport(id))`,
+  `UNIQUE(name, sport_id)` — mesmo desenho de `dim_team` em `stats-service`, adaptado para FK
+  real (bets-service tem a tabela `sport` local, stats-service só tem `dim_sport` denormalizada).
+- `Bet.team1`/`team2` (`String`) viram `team1Id`/`team2Id` (`UUID`, nullable — mesma
+  opcionalidade de hoje, `Bet` nunca exigiu os dois preenchidos). Sem backfill de dado antigo:
+  mesmo precedente de `stats-service` (`dim_team` "nunca usada em tenant real" na migration
+  `V20260910130000`) — `team1`/`team2` como texto livre nunca teve garantia de bater com um nome
+  de catálogo, não há mapeamento automático seguro de string livre para `team.id`; tenants de
+  teste existentes recadastram os times que quiserem referenciar.
+- `CreateBetRequest`/`BetResponse` trocam `team1`/`team2` (`String`) por `team1Id`/`team2Id`
+  (`UUID`, nullable) — mesmo padrão já usado por `sportId`/`leagueId`/`marketId`/`tipsterId`.
+- `BetCreatedPayload`/`BetSettledPayload`: **não é um mecanismo novo** — `TEAM` só passa a seguir
+  o padrão de denormalização que `bettingHouseId`/`sportId`/`leagueId`/`marketId`/`tipsterId` já
+  usam desde `bets-service feat-010`/`docs/API-CONTRACTS.md` "Nomes das dimensões
+  denormalizados": o payload ganha `team1Id`/`team1Name`/`team2Id`/`team2Name` (nullable, mesma
+  opcionalidade de `tipsterId`/`tipsterName` hoje), e `BetDimensionNames` ganha `team1Name`/
+  `team2Name` resolvidos por `resolveDimensionNames` junto dos outros 5. `stats-service` continua
+  resolvendo `DIM_TEAM` por nome (mecanismo que já existe, comentado na própria migration
+  `V20260910120000`) — nenhuma mudança exigida no consumidor além de ler os campos novos do
+  schema quando `stats-service feat-018` (ainda não iniciada) decidir consumi-los.
+- `docs/contracts/*.schema.json` e este parágrafo em `docs/API-CONTRACTS.md` mudam no mesmo
+  commit da implementação futura, não nesta feature de avaliação.
+- Frontend (`apps/web feat-021`, hoje `BLOCKED` no `plan_review` esperando exatamente esta
+  decisão): pode prosseguir agora — tela de cadastro de `TEAM` nova (padrão `catalog-manager`,
+  mesmo precedente de sport/league/market/tipster), com campo obrigatório de esporte; formulário
+  de registro de aposta troca os 2 inputs de texto livre por 2 selects de `TEAM` (escopados pelo
+  esporte já escolhido no mesmo formulário).
+
+**Trabalho de implementação real (schema, contratos, telas) fica para features futuras**,
+registradas no backlog granular de `bets-service` (`feat-017`) — este registro em
+`DECISIONS-LOG` é a "aprovação" que a description de `epic-024`/`feat-016` exigia antes de
+qualquer sessão futura (`stats-service feat-018`, `apps/web feat-021`) começar a codificar.

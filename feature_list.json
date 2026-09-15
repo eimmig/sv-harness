@@ -325,6 +325,17 @@
       "status": "not-started",
       "evidence": "",
       "harness": "apps/web/"
+    },
+    {
+      "id": "epic-028",
+      "name": "CD automatico: kubectl rollout restart via CI (sem ArgoCD/Flux)",
+      "description": "Escopo novo, decisao do usuario em 2026-09-15 (ver docs/CI-CD.md 'Build e push de imagem Docker pro GHCR'): hoje o job build-and-push-image (epic-010) publica a imagem nova no GHCR a cada push em main, mas nada no cluster k3s de producao puxa essa imagem automaticamente - o kubectl rollout restart e sempre manual (ver infra/feat-006 como precedente do comando). Avaliado ArgoCD/Flux (GitOps completo) e descartado pelo usuario por desproporcional a um cluster de ambiente unico com baixa frequencia de deploy - mesmo racional ja usado pra descartar Helm em infra/feat-004 ('~10 componentes fixos de um unico ambiente nao justificam templating'). Escopo: infra/ provisiona um ServiceAccount de CI com RBAC restrito (kubectl rollout restart nos 6 Deployments, sem acesso amplo de cluster-admin) e gera o kubeconfig correspondente para distribuir como secret KUBE_CONFIG nos 6 repositorios de aplicacao (decisao e credencial vivem no harness infra/, mesmo precedente de epic-010 para o Dockerfile-per-repo). Cada um dos 6 repositorios de aplicacao (auth-service, bets-service, stats-service, api-gateway, telegram-integration, web) ganha feature propria adicionando um job novo 'deploy' no ci.yml (needs: build-and-push-image, if restrito a push em main), rodando kubectl rollout restart deployment/<servico> -n <namespace> contra o KUBE_CONFIG daquele repositorio - nao precisa reaplicar manifest (imagem referenciada por tag :latest, o restart e o suficiente pra repuxar a imagem nova). Backlog granular em infra/feature_list.json (feat-007) e, por repositorio, em services/auth-service/feature_list.json (feat-016), services/bets-service/feature_list.json (feat-018), services/stats-service/feature_list.json (feat-019), services/api-gateway/feature_list.json (feat-014), services/telegram-integration/feature_list.json (feat-010) e apps/web/feature_list.json (feat-030).",
+      "dependencies": [
+        "epic-010"
+      ],
+      "status": "not-started",
+      "evidence": "",
+      "harness": "infra/"
     }
   ]
 }
