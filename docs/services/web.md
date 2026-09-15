@@ -185,6 +185,15 @@ não 5 telas quase idênticas.
 > `isResourceActive()` pra destacar o gatilho ativo, já que o botão-gatilho de um `mat-menu` não é
 > ele mesmo um `routerLink` (`routerLinkActive` sozinho não o alcança).
 
+**6º catálogo, sem par de Dashboard (`web feat-021`, `epic-024` da raiz, 2026-09-15)**: `TEAM`
+(bets-service feat-016/017) quebra o padrão "5 recursos, 1 componente parametrizado" acima —
+tem FK `sportId` obrigatória, então não é estruturalmente idêntico a sports/leagues/markets/
+tipsters/betting-houses. Em vez de forçar um 5º/6º caso condicional em `shared/catalog-manager`
+(risco de regressão nas 4 telas já estáveis por um resource com forma diferente), ganhou um
+componente dedicado (`shared/team-manager`) e um link simples no `app-side-nav` (sem o `mat-menu`
+Cadastrar/Dashboard dos outros 5 — não existe `byTeam` em `GET /api/v1/statistics`, `stats-service
+feat-018` que alinharia `DIM_TEAM` ao catálogo real está `BLOCKED`).
+
 ## Navegação lateral (sidebar), animações no shell e no login (`epic-022` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-11). Fecha uma
