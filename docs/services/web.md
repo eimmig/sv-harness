@@ -185,6 +185,44 @@ não 5 telas quase idênticas.
 > `isResourceActive()` pra destacar o gatilho ativo, já que o botão-gatilho de um `mat-menu` não é
 > ele mesmo um `routerLink` (`routerLinkActive` sozinho não o alcança).
 
+## Navegação lateral (sidebar), animações no shell e no login (`epic-022` da raiz, done)
+
+Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-11). Fecha uma
+divergência real: `docs/DESIGN-SYSTEM.md` item 1 do inventário sempre especificou nav lateral,
+mas a implementação real (desde `feat-002`) ficou como nav horizontal no topo — nunca corrigido
+até esta feature. `app-side-nav` substitui `app-nav`: colapsável (ícone+texto expandido / só
+ícone retraído, alternado manualmente, estado persistido como `Theme`/`Language`), submenus de
+catálogo continuam `mat-menu` popup (mesmo comportamento de `epic-019`, só a barra host muda de
+orientação). Tela de login perdeu o header duplo (barra de idioma/tema sempre visível + nav
+horizontal quando autenticado) — idioma/tema viram controles flutuantes no canto inferior
+esquerdo, sem barra, só na tela de login (não autenticado); nos demais estados, idioma/tema vivem
+no rodapé do `app-side-nav`.
+
+Motion pass (pedido do usuário, "bastante animações, bem fluido", orientado pela skill
+`impeccable` — `.claude/skills/impeccable`, `docs/DESIGN-SYSTEM.md`/`docs/AGENT-SKILLS.md`
+continuam a fonte normativa de paleta/layout, a skill só orienta motion/polish):
+`withViewTransitions()` no router, transição de collapse/expand do sidebar, e uma animação
+autoral no card de login (`app-login-border-trace`) — um traço verde sai do ponto central
+superior em 2 direções, percorre cada lado, se encontra no ponto central inferior, e retrai de
+volta, em loop enquanto a tela de login está visível. Implementado com 2 paths SVG
+espelho-simétricos (garante comprimento igual sem medir) dimensionados via `ResizeObserver`, não
+um tamanho fixo. Toda animação nova respeita `prefers-reduced-motion` (mesmo padrão já usado no
+splash: pula direto pro estado final em vez de pausar uma animação em andamento).
+
+**Achados reais de QA visual** (screenshots reais contra o dev server, não só leitura de código):
+(1) o painel de opções do seletor de idioma (`mat-select`) herdava a largura do *trigger* atual,
+que encolhe pro idioma selecionado no momento — um idioma curto ("English") selecionado deixava o
+painel estreito demais pro idioma mais longo ("Português"), cortando o texto; corrigido com
+`min-width` no trigger, mantendo `mat-select`/`mat-option` intactos (evita quebrar os e2e que
+localizam opções por `role="option"`). (2) a coluna expandida do sidebar (232px) comia quase a
+tela inteira abaixo de ~600px, quebrando a regra "mobile = coluna única" (RNF01) que o resto do
+app já seguia — corrigido com default retraído abaixo desse breakpoint quando o usuário não
+escolheu explicitamente. (3) achado durante a implementação, não da QA visual: o rótulo flutuado
+de um `mat-select`/`mat-form-field` (`label.mdc-floating-label`) mantinha `pointer-events: all`
+nesta versão do Material em vez do `none` que o MDC normalmente daria — a coluna mais estreita do
+formulário de registro de aposta (efeito colateral do sidebar reduzir o espaço disponível) expôs
+esse bug latente, corrigido globalmente (ver `docs/CONVENTIONS.md`).
+
 ## Página "Relatório do período" (`epic-017` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10, referência: print

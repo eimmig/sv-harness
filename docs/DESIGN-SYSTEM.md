@@ -252,6 +252,21 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
 1. **Shell/nav lateral de ícones** — coluna fixa estreita, logo StakeVault no topo (ver seção
    "Identidade visual" abaixo), botões de ícone empilhados (ícone ativo = cor `--color-brand`),
    ícone "mais" no rodapé.
+
+   > **Implementado em `web feat-018`** (2026-09-11) — divergência real corrigida: da `feat-002`
+   > até aqui a implementação era uma nav horizontal no topo, nunca a nav lateral que este item
+   > sempre especificou. `app-side-nav` (substitui `app-nav`): colapsável (ícone+texto expandido
+   > / só ícone retraído, alternado manualmente, estado persistido como `Theme`/`Language`),
+   > logo+wordmark no topo (`logo-mark-{tema}.svg`, só o mark quando retraído), ícone ativo em
+   > `--color-brand` conforme especificado. Sem o ícone "mais" no rodapé do mockup original — o
+   > rodapé tem conteúdo real (idioma/tema/sair) em vez de um menu "more" genérico, decisão
+   > tomada no plan review por já ter conteúdo suficiente sem precisar de overflow. **Achado
+   > real de QA** (screenshots reais, não só leitura de código): a coluna expandida (232px) comia
+   > quase a tela inteira abaixo de ~600px, quebrando a regra "mobile = coluna única" (RNF01)
+   > que o resto do app já seguia — corrigido com default retraído abaixo desse breakpoint quando
+   > o usuário não escolheu explicitamente (mesmo padrão de `Theme` seguir `prefers-color-scheme`
+   > até uma escolha explícita). O seletor de idioma some do rodapé quando retraído (não cabe nos
+   > 72px da coluna) — usuário expande a nav pra trocar de idioma.
 2. **Card/painel base** (`app-panel`) — container `--color-surface`, raio grande, cabeçalho
    opcional (título + botões de ícone circulares no canto), rolagem interna própria. É a unidade
    básica do "Layout em painéis" descrito acima, não só um card decorativo.
