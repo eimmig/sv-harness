@@ -309,8 +309,8 @@
         "epic-013",
         "epic-008"
       ],
-      "status": "not-started",
-      "evidence": "",
+      "status": "done",
+      "evidence": "Fechado em 2026-09-15 por services/api-gateway/feat-013 (ver evidencia detalhada em services/api-gateway/feature_list.json). RouteConfig.betsServiceRoute ganhou path(/api/v1/bankroll/**) e path(/api/v1/settings/**), mesmo padrao de feat-007/008 (sports/leagues/markets/tipsters) - sem filtro novo, identidade continua injetada pelo filtro global. GatewayRoutingIntegrationTest estendido (58 testes, 0 falha). Story SV-394, PRs #38/#39/#40 (subtasks) + #41 (story->develop), CI+SonarCloud verdes. Desbloqueia epic-020/epic-021 da raiz.",
       "harness": "services/api-gateway/"
     },
     {
