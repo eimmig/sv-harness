@@ -3,53 +3,48 @@
 > Estado atual, não histórico. O diário cronológico é o `progress.md` — este arquivo é reescrito
 > a cada sessão para responder "o que a próxima sessão precisa saber agora".
 
-**Última atualização:** 2026-09-11
+**Última atualização:** 2026-09-15
 
 ## Objetivo atual
 
-Os 9 epics originais do TCC 1 estão `done`. Segunda rodada de escopo novo (`epic-011..021`)
-sobre estatísticas de decisão pré-aposta, dashboard consolidado e telas analíticas por cadastro.
-`epic-011..014` fechados. Próximos epics elegíveis: `epic-016`/`epic-018` (`stats-service`, ambos
-só dependem de `epic-004`, `done` — respeitar WIP máximo 1 por harness, não iniciar os dois ao
-mesmo tempo). `epic-015`/`epic-017`/`epic-019`/`epic-020`/`epic-021` (`apps/web`) ainda dependem
-de epics não fechados (`epic-013` já done, mas `epic-015` também depende de `epic-014` — agora
-liberado).
+Os 9 epics originais do TCC 1 e a segunda rodada (`epic-011..022`) estão `done`. Terceira rodada
+em andamento: `epic-023`/`epic-025` fechados (fora deste arquivo, ver `progress.md` "Lacuna de
+registro"); `epic-024` (times/jogadores) `in-progress` — `bets-service` (`feat-016`+`feat-017`)
+fechado, mas a description do epic também cobre `stats-service feat-018` e `apps/web
+feat-020..024` (label "Data do evento", date pickers, ícone do seletor de idioma, espaçamento de
+cadastro), nenhum tocado ainda — não fechar o epic sem revisitar esse escopo mais amplo.
 
-## Concluído nesta sessão (2026-09-11)
+Epics elegíveis agora (dependências satisfeitas, `not-started`): `epic-020`/`epic-027`
+(`apps/web`, só um por vez — WIP 1 por harness) e `epic-028` (`infra/`, ServiceAccount de CI +
+kubeconfig pra deploy automático — desbloqueia `feat-018` em todos os 6 repositórios de
+aplicação, incluindo `bets-service`). `epic-021` (`apps/web`) ainda depende de `epic-027`.
 
-- [x] **`epic-014` fechado** (`stats-service feat-015`, 4 subtasks, story SV-343) — `GET
-      /api/v1/statistics` ganha `wonCount`/`lostCount`/`voidCount`/`preCount`/`liveCount`/
-      `avgOdd` em todos os agregados existentes, mais 6º segmento `byBetType` (2 buckets fixos
-      PRE/LIVE). `FACT_BET.betType` persistido (insert-only em `BetCreated`, preservado no
-      upsert de `BetSettled`). Plan Reviewer (READY WITH CONCERNS, 3 MAJOR corrigidos: parâmetro
-      tipado em comparação de enum JPQL, getter no tipo real do enum na projeção de `byBetType`,
-      mudança de tipo `dimensionId` UUID→String com escopo de teste explícito) +
-      `Delivery Reviewer`/`Test Suite Auditor`/`Persistence Auditor` (todos PASS, 1 achado real
-      de doc drift corrigido — `docs/API-CONTRACTS.md` não mostrava `preCount`/`liveCount` no
-      exemplo de `byBetType`). Ver `services/stats-service/progress.md` para o detalhe completo.
+## Concluído nesta sessão (2026-09-15)
+
+- [x] **`bets-service feat-017` fechado** (catálogo `TEAM` + migração de `Bet.team1`/`team2`
+      pra `team1Id`/`team2Id`) — continuação de `epic-024`. `Plan Reviewer` corrigiu um BLOCKER
+      real antes de codificar (plano original quebraria consumo já em produção de
+      `stats-service`); `Delivery Reviewer` achou um segundo risco real (contrato REST síncrono
+      não pôde ficar aditivo, `apps/web` vai quebrar até `feat-021` de lá corrigir — documentado,
+      não bloqueante). Ver `services/bets-service/progress.md` para o detalhe completo.
+- [x] Limpeza de estado: uma sessão anterior tinha deixado trabalho de `epic-028` (mirror do
+      backlog `feat-018`/`feat-019`/`feat-016`/`feat-014`/`feat-010`/`feat-030`/`feat-007` nos 7
+      repositórios) não commitado — commitado no início desta sessão antes de continuar.
 
 ## Bloqueios / Riscos
 
-Nenhum bloqueio novo. **Atenção, herdado de sessão anterior**: `services/bets-service` pode ainda
-ter um `git stash` pendente (`feat-015` daquele serviço, build/push de imagem Docker pro GHCR) —
-checar `git stash list` antes de iniciar qualquer feature nova ali.
+Nenhum bloqueio novo. `services/bets-service` sem feature elegível até `infra/feat-007`
+(`epic-028`) fechar.
 
 ## Próxima sessão — por onde começar
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. Epics elegíveis: `epic-016`/`epic-018` (`stats-service`, respeitar WIP máximo 1 — só um
-   `in-progress` por harness) e `epic-015` (`apps/web`, agora com `epic-013`+`epic-014` satisfeitas
-   — falta só decidir se `apps/web` tem WIP livre). `epic-017`/`epic-019`/`epic-020`/`epic-021`
-   (`apps/web`) ainda não elegíveis (dependem de epics acima).
-3. Em `services/bets-service`, checar `git stash list` antes de iniciar qualquer feature nova.
-4. Padrão reaproveitável desta sessão: quando uma comparação de enum aparece numa query JPQL,
-   sempre via `@Param` tipado (`BetStatus`/`BetType`), nunca literal de string solto
-   (`f.status = 'LOST'`) — literal arrisca o `AttributeConverter` (`@Converter(autoApply=true)`)
-   não ser aplicado de forma garantida pelo Hibernate. Ver `docs/services/stats-service.md`.
-5. Padrão reaproveitável (sessão anterior, continua valendo): extrair lógica de gráfico/sinal de
-   cor compartilhada *antes* de duplicar entre telas — o gate do SonarCloud de `sv-frontend`
-   (`new_duplicated_lines_density ≤ 3%`) pega duplicação real entre componentes parecidos.
-6. Outro padrão reaproveitável (sessão anterior): quando uma feature precisa de autorização por
-   role num serviço sem tabela `USER`, o modelo é claim no PASETO + header injetado pelo
-   `api-gateway` (`X-User-Role`, lowercase `admin`/`member`) — ver `docs/DECISIONS-LOG.md` "Claim
-   role no PASETO".
+2. Epics elegíveis: `epic-020`/`epic-027` (`apps/web`, só um `in-progress` por vez) e `epic-028`
+   (`infra/`) — nenhum epic `in-progress` nesses dois harnesses agora, os dois podem começar em
+   paralelo (sessões diferentes) sem conflito de WIP.
+3. `epic-024` continua aberto — reavaliar se o escopo de `apps/web`/`stats-service` daquele epic
+   deveria virar features novas nos respectivos backlogs antes de mais alguém assumir.
+4. Padrão reaproveitável desta sessão: ao trocar um campo de texto livre por FK num contrato de
+   evento já em produção (`BetCreated`/`BetSettled`), checar se o consumidor real já lê esse campo
+   (não assumir "ainda não conectado" sem checar o código) — mudança aditiva (manter o campo
+   antigo, acrescentar o novo) é sempre mais segura que renomear quando há dúvida.

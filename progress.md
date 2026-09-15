@@ -2213,3 +2213,34 @@ nesse harness (WIP 1 por serviço).
 
 Com esse fechamento, `epic-020` e `epic-021` continuam os únicos elegíveis restantes em
 `apps/web` — mesma situação de antes, WIP-1 por serviço ainda vale.
+
+## Lacuna de registro (2026-09-11 a 2026-09-15): epics fechados sem entrada aqui
+
+Sessões entre 2026-09-11 e 2026-09-15 fecharam `epic-023` (sidebar UX), `epic-025` (web bankroll
+movements) e abriram `epic-026`/`epic-027`/`epic-028` no `feature_list.json` da raiz, além de
+reivindicar `epic-024` (times/jogadores) — nenhuma atualizou este arquivo. Ver `git log` da raiz
+e o `feature_list.json` atual para o estado real; este parágrafo só marca a lacuna pra não ser
+confundida com "nada aconteceu" por uma sessão futura lendo só até aqui.
+
+## `bets-service feat-017` fechada — catálogo TEAM + migração de team1/team2 (2026-09-15)
+
+Continuação de `epic-024` (times/jogadores, reivindicado em sessão anterior — `bets-service
+feat-016`, avaliação/decisão, já fechada antes desta sessão). Esta sessão implementou a decisão:
+catálogo `TEAM` escopado por esporte (`POST`/`GET /api/v1/teams`) e migração de `Bet.team1`/
+`team2` (texto livre) para `team1Id`/`team2Id` (FK). `Plan Reviewer` corrigiu um BLOCKER real
+antes de codificar (plano original quebraria `stats-service/DimensionResolver.resolveTeam`, que
+já consome `team1`/`team2` em produção — a decisão registrada em `DECISIONS-LOG` 2026-09-15
+assumia o contrário); `Delivery Reviewer` (self-conduzido) achou um segundo risco real não
+coberto pelo plano: o contrato REST síncrono (`POST /api/v1/bets`) não pôde ficar aditivo como o
+de evento, e `apps/web` (ainda não atualizado, `feat-021` de lá) vai receber 400 até corrigir —
+documentado como nota de ordem de deploy. Detalhe completo em
+`services/bets-service/progress.md` e no campo `evidence` de `feat-017`.
+
+`epic-024` continua `in-progress` — o `harness` declarado é só `services/bets-service/`, mas a
+description do epic também cobre `stats-service feat-018` (ainda `not-started`, antes `BLOCKED`
+no `plan_review`, desbloqueado por esta sessão) e `apps/web feat-020..024` (rótulo "Data do
+evento", date pickers, ícone do seletor de idioma, espaçamento de telas de cadastro — nenhum
+tocado ainda). Não fechar `epic-024` até esse escopo mais amplo ser resolvido ou reavaliado.
+
+`services/bets-service` sem feature elegível agora — único item do backlog (`feat-018`, CD)
+depende de `infra/feat-007`, ainda `not-started`.
