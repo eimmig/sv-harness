@@ -10,10 +10,9 @@
 Os 9 epics originais do TCC 1 e a segunda rodada (`epic-011..022`) estão `done`. Terceira rodada
 em andamento: `epic-020`/`epic-021`/`epic-023`/`epic-025`/`epic-026`(api-gateway)/`epic-027`/
 `epic-028` fechados. `epic-024` (times/jogadores) `in-progress` — `bets-service`
-(`feat-016`+`feat-017`), `api-gateway feat-015` e `apps/web` (`feat-020`/`feat-021`/`feat-023`)
-fechados; ainda cobre `stats-service feat-018` (`BLOCKED` pelo próprio Plan Reviewer) e `apps/web
-feat-022` (`REVISE`, date picker)/`feat-024` (`READY`, espaçamento de cadastro). **É o único epic
-aberto no momento.**
+(`feat-016`+`feat-017`), `api-gateway feat-015` e `apps/web` (`feat-020`/`feat-021`/`feat-023`/
+`feat-024`) fechados; ainda cobre `stats-service feat-018` (`BLOCKED` pelo próprio Plan Reviewer)
+e `apps/web feat-022` (`REVISE`, date picker). **É o único epic aberto no momento.**
 
 **`epic-021` e `epic-027` fechados por completo nesta sessão** (`apps/web feat-029` e
 `feat-027`+`feat-026`). 2 decisões de design/UX reais levadas ao usuário via `AskUserQuestion`

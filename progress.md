@@ -2536,4 +2536,32 @@ em `node_modules/@esbuild/win32-x64/esbuild.exe`, corrompendo parcialmente `node
 determine executable to run`). Perguntado ao usuário antes de encerrar o processo (PID
 identificado via `Get-NetTCPConnection -LocalPort 4300`) — autorizado, processo encerrado,
 `npm ci` refeito, `./init.sh` voltou a passar. Lição: encerrar processos de dev server em
-background (`ng serve`, etc.) ao final do uso, não deixar rodando entre features/subtasks.
+background (`ng serve`, etc.) ao final do uso, não deixar rodando entre features/subtasks. O
+mesmo processo (via `TaskStop`, não `Get-NetTCPConnection`/`Stop-Process`) reapareceu 2x nesta
+mesma sessão continuada: `TaskStop` encerra o wrapper do shell que a harness rastreia, mas não o
+processo `node` filho do `ng serve` no Windows — ele sobrevive desanexado, ainda segurando a
+porta. `Stop-Process -Id <pid> -Force` direto (via `Get-Process node`) é o jeito confiável de
+matar de verdade; `TaskStop` sozinho não basta pra este padrão `nohup ng serve &` no Windows.
+
+## `apps/web feat-024` fechada + varredura de comentários nos 8 repositórios (2026-09-16)
+
+Retomando a sessão anterior: **`apps/web feat-024`** (espaçamento e formulário das telas de
+cadastro) fechada por completo — `shared/catalog-manager` e `shared/team-manager` tinham `:host`
+sem padding lateral e formulário em `flex-direction: row`, espremendo o campo Nome em viewports
+estreitos. Corrigido nas 6 telas de formulário (5 cadastros + `/teams`). `Delivery Reviewer`/
+`Test Suite Auditor` rodados no gate pesado acharam 2 gaps reais, ambos corrigidos na própria
+`feature/SV-470` antes do merge: cobertura Playwright faltando em `/teams`, e a asserção original
+de "gap até a sidebar" (bounding-box) não provava de fato o fix de padding — trocada por leitura
+direta de `getComputedStyle(host).paddingLeft`, validada por mutação. Detalhe completo em
+`apps/web/progress.md`. `epic-024` segue `in-progress` — resta só `apps/web feat-022` (`REVISE`)
+e `stats-service feat-018` (`BLOCKED`).
+
+**Varredura de comentários nos 8 repositórios** (pedido explícito do usuário, reincidência de
+feedback já registrado em memória — ver `feedback_code_comments.md`): comentários narrativos tipo
+`// Real bug (feat-X): ...`/`// Achado real: ...` removidos de código-fonte (TS/SCSS em
+`apps/web`, Java em `stats-service`/`bets-service`, Python em `telegram-integration`, YAML de CI
+em `apps/web`/`telegram-integration`, docstring de script em `tools/kube_deploy_setup.py`) — esse
+tipo de conteúdo (racional de decisão, achado de bug, histórico) agora vai só pra mensagem de
+commit, Jira ou nota do vault, nunca mais em comentário de código-fonte. Cada repositório recebeu
+seu próprio commit direto (sem cerimônia de DoD, processo combinado com o usuário pra esta tarefa
+específica). `auth-service`/`api-gateway`/`infra` já estavam limpos.
