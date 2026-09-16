@@ -280,6 +280,22 @@ Duas mudanças de schema que este endpoint pressupõe, sobre o modelo de `feat-0
   FACT_BET` ganha `team1Id`/`team2Id` (nullable); filtro por `teamId` casa contra qualquer um dos
   dois. **Atualizado no dia seguinte (`feat-013`)**: a chave natural passou de `name` sozinho
   para `(name, sportId)` composta — ver seção "Times escopados por esporte" abaixo.
+  **Atualizado de novo (`feat-018`, 2026-09-16, `epic-024`)**: desde que `bets-service feat-017`
+  introduziu um catálogo `TEAM` real, `BetCreated` ganhou `team1Id`/`team2Id` (aditivo, nullable)
+  e `BetSettled` ganhou `team1Id`/`team1Name`/`team2Id`/`team2Name` (novo, nunca existiu antes).
+  `DimensionResolver.resolveTeam(UUID id, String name, UUID sportId)` passou a considerar o id do
+  evento, mas com **precedência da chave natural**: `(name, sportId)` é buscada primeiro — se já
+  existir, o id já gravado vence (mesmo que diferente do id do evento), só criando linha nova com
+  o id do evento quando o time é visto pela primeira vez aqui. Isso evita violar
+  `uq_dim_team_name_sport` quando um time resolvido localmente antes desta mudança (id gerado por
+  este serviço, `epic-011`) reaparece com o id real do catálogo — sem essa precedência, a segunda
+  tentativa de `INSERT` colidiria com a linha antiga (mensagem "envenenada" permanente, esgotando
+  as 3 tentativas do `spring-retry` de `feat-010` e morta-letrando sem se recuperar sozinha,
+  diferente do residual P2 abaixo que se auto-recupera). **Assimetria resultante, aceita e
+  documentada, não corrigida por backfill** (mesmo precedente de `V20260910130000` — catálogo
+  nunca usado em tenant real): `DIM_TEAM.id` só passa a coincidir com o catálogo real de
+  `bets-service` para times vistos pela primeira vez depois desta feature; times antigos mantêm o
+  id local para sempre.
 - **`odd` persistida em `FACT_BET`** (nullable): já trafegava em `BetCreated`/`BetSettled`
   (`odd`, campo obrigatório do evento) mas nunca era gravada — sem requisito anterior que
   precisasse. `DimensionResolver` e os *listeners* de evento (`feat-001.9`/`feat-002`/`feat-003`)
