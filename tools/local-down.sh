@@ -6,9 +6,9 @@ set -uo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PID_FILE="$ROOT_DIR/tools/.local-run/pids"
 
-if [ -f "$PID_FILE" ]; then
+if [[ -f "$PID_FILE" ]]; then
   while IFS=: read -r name pid; do
-    [ -z "${pid:-}" ] && continue
+    [[ -z "${pid:-}" ]] && continue
     if kill -0 "$pid" 2>/dev/null; then
       kill "$pid" 2>/dev/null && echo "parado: $name (pid $pid)"
     fi

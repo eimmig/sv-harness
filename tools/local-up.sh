@@ -20,7 +20,7 @@ mkdir -p "$LOG_DIR"
 : > "$PID_FILE"
 
 # --- 1. infra/.env: cria a partir do example se faltar, garante segredos extras ---
-if [ ! -f "$INFRA_DIR/.env" ]; then
+if [[ ! -f "$INFRA_DIR/.env" ]]; then
   cp "$INFRA_DIR/.env.example" "$INFRA_DIR/.env"
   echo "criei infra/.env a partir do .env.example (senhas default - troque se for compartilhar o ambiente)"
 fi
@@ -52,9 +52,9 @@ echo "== infra: aguardando containers healthy =="
 for svc in postgres-auth postgres-bets postgres-stats rabbitmq redis; do
   container="stakevault-infra-${svc}-1"
   tries=0
-  until [ "$(docker inspect -f '{{.State.Health.Status}}' "$container" 2>/dev/null)" = "healthy" ]; do
+  until [[ "$(docker inspect -f '{{.State.Health.Status}}' "$container" 2>/dev/null)" = "healthy" ]]; do
     tries=$((tries + 1))
-    if [ "$tries" -gt 60 ]; then
+    if [[ "$tries" -gt 60 ]]; then
       echo "FALHOU: $svc nao ficou healthy em 2min - ver 'docker logs $container'"
       exit 1
     fi
@@ -95,24 +95,24 @@ echo "api-gateway:$!" >> "$PID_FILE"
 
 # --- 5. build + start do telegram-integration ---
 echo "== telegram-integration: build (uv sync) =="
-(cd "$ROOT_DIR/services/telegram-integration" && uv sync)
+(cd "$ROOT_DIR/services/telegram-integration" && uv sync --no-build)
 echo "== telegram-integration: start na porta 8000 =="
 (
   cd "$ROOT_DIR/services/telegram-integration"
   REDIS_PASSWORD="$REDIS_PASSWORD" SERVICE_KEY="$SERVICE_KEY" \
-  uv run telegram-integration > "$LOG_DIR/telegram-integration.log" 2>&1 &
+  uv run --no-build telegram-integration > "$LOG_DIR/telegram-integration.log" 2>&1 &
   echo "telegram-integration:$!" >> "$PID_FILE"
 )
 
 # --- 6. build + start do web (ng serve) ---
-if [ ! -d "$ROOT_DIR/apps/web/node_modules" ]; then
+if [[ ! -d "$ROOT_DIR/apps/web/node_modules" ]]; then
   echo "== web: npm ci =="
-  (cd "$ROOT_DIR/apps/web" && npm ci)
+  (cd "$ROOT_DIR/apps/web" && npm ci --ignore-scripts)
 fi
 echo "== web: start na porta 4200 =="
 (
   cd "$ROOT_DIR/apps/web"
-  npx ng serve > "$LOG_DIR/web.log" 2>&1 &
+  npx --ignore-scripts ng serve > "$LOG_DIR/web.log" 2>&1 &
   echo "web:$!" >> "$PID_FILE"
 )
 

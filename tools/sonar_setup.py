@@ -130,10 +130,33 @@ def github_token() -> str:
     sys.exit("ERRO: sem GH_TOKEN e sem credencial armazenada para github.com.")
 
 
-def main() -> None:
+def fix_console_encoding() -> None:
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
+
+
+def report_repo_status(folder: str, repo: str, token: str) -> None:
+    slug = f"eimmig/{repo}"
+    secrets = gh(["secret", "list", "--repo", slug], token).stdout
+    variables = gh(["variable", "list", "--repo", slug], token).stdout
+    print(f"{folder:34s} SONAR_TOKEN={'sim' if 'SONAR_TOKEN' in secrets else 'NAO':3s}  "
+          f"SONAR_ORGANIZATION={'sim' if 'SONAR_ORGANIZATION' in variables else 'NAO'}")
+
+
+def distribute_to_repo(folder: str, repo: str, token: str, env: dict[str, str]) -> None:
+    slug = f"eimmig/{repo}"
+    one = gh(["secret", "set", "SONAR_TOKEN", "--repo", slug,
+              "--body", env["SONAR_TOKEN"]], token)
+    two = gh(["variable", "set", "SONAR_ORGANIZATION", "--repo", slug,
+              "--body", env["SONAR_ORGANIZATION"]], token)
+    status = "ok" if one.returncode == 0 and two.returncode == 0 else "FALHOU"
+    detail = "" if status == "ok" else f"  {(one.stderr or two.stderr).strip()[:120]}"
+    print(f"{folder:34s} secret + variable: {status}{detail}")
+
+
+def main() -> None:
+    fix_console_encoding()
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true",
@@ -155,21 +178,10 @@ def main() -> None:
     token = github_token()
     print()
     for folder, repo in REPOS.items():
-        slug = f"eimmig/{repo}"
         if args.check:
-            secrets = gh(["secret", "list", "--repo", slug], token).stdout
-            variables = gh(["variable", "list", "--repo", slug], token).stdout
-            print(f"{folder:34s} SONAR_TOKEN={'sim' if 'SONAR_TOKEN' in secrets else 'NAO':3s}  "
-                  f"SONAR_ORGANIZATION={'sim' if 'SONAR_ORGANIZATION' in variables else 'NAO'}")
-            continue
-
-        one = gh(["secret", "set", "SONAR_TOKEN", "--repo", slug,
-                  "--body", env["SONAR_TOKEN"]], token)
-        two = gh(["variable", "set", "SONAR_ORGANIZATION", "--repo", slug,
-                  "--body", env["SONAR_ORGANIZATION"]], token)
-        status = "ok" if one.returncode == 0 and two.returncode == 0 else "FALHOU"
-        detail = "" if status == "ok" else f"  {(one.stderr or two.stderr).strip()[:120]}"
-        print(f"{folder:34s} secret + variable: {status}{detail}")
+            report_repo_status(folder, repo, token)
+        else:
+            distribute_to_repo(folder, repo, token, env)
 
 
 if __name__ == "__main__":

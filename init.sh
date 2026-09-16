@@ -45,7 +45,7 @@ echo "   See docs/CI-CD.md. Each harness is its own repo — workflow lives insi
 echo "   and only runs once that repo exists on GitHub (+ SonarCloud, for application services)."
 for svc_path in "infra" "services/api-gateway" "services/auth-service" "services/bets-service" \
                 "services/stats-service" "services/telegram-integration" "apps/web"; do
-  if [ -f "$svc_path/.github/workflows/ci.yml" ]; then
+  if [[ -f "$svc_path/.github/workflows/ci.yml" ]]; then
     echo "OK   $svc_path/.github/workflows/ci.yml present"
   else
     echo "MISS $svc_path/.github/workflows/ci.yml not created yet"
@@ -56,11 +56,11 @@ echo ""
 echo "== Sub-harness status (informational — does not affect this script's exit code) =="
 for svc_path in "infra" "services/api-gateway" "services/auth-service" "services/bets-service" \
                 "services/stats-service" "services/telegram-integration" "apps/web"; do
-  if [ ! -d "$svc_path" ]; then
+  if [[ ! -d "$svc_path" ]]; then
     echo "----  $svc_path not created yet"
     continue
   fi
-  if [ ! -f "$svc_path/init.sh" ]; then
+  if [[ ! -f "$svc_path/init.sh" ]]; then
     echo "WARN $svc_path exists but has no init.sh (harness incomplete)"
     continue
   fi
@@ -74,7 +74,7 @@ for svc_path in "infra" "services/api-gateway" "services/auth-service" "services
 done
 
 echo ""
-if [ "$fail" -ne 0 ]; then
+if [[ "$fail" -ne 0 ]]; then
   echo "Missing required shared tooling above. Install it before starting epic-001."
   exit 1
 fi

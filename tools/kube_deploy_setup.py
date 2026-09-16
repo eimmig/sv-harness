@@ -34,6 +34,7 @@ import argparse
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -41,6 +42,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 RBAC_MANIFEST = ROOT / "infra" / "k8s" / "ci-deployer-rbac.yaml"
 SERVICE_ACCOUNT = "ci-deployer"
 DEFAULT_DURATION = "8760h"
+DURATION_RE = re.compile(r"^\d+[hms]$")
 
 # pasta local -> repositorio GitHub. Mesma lista de tools/sonar_setup.py (os 6 de
 # aplicacao) - `infra` fica de fora: nao tem job de deploy proprio, so provisiona o
@@ -81,6 +83,8 @@ def apply_rbac() -> None:
 
 
 def mint_token(duration: str) -> str:
+    if not DURATION_RE.match(duration):
+        sys.exit(f"ERRO: --duration invalido '{duration}' (esperado ex.: 8760h, 30m, 45s).")
     result = kubectl(["create", "token", SERVICE_ACCOUNT, "--duration", duration])
     if result.returncode != 0:
         sys.exit(f"ERRO ao gerar token pro ServiceAccount '{SERVICE_ACCOUNT}':\n{result.stderr.strip()}")
@@ -149,10 +153,34 @@ def github_token() -> str:
     sys.exit("ERRO: sem GH_TOKEN e sem credencial armazenada para github.com.")
 
 
-def main() -> None:
+def fix_console_encoding() -> None:
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
+
+
+def report_check(token_gh: str) -> None:
+    sa = kubectl(["get", "serviceaccount", SERVICE_ACCOUNT])
+    print(f"ServiceAccount '{SERVICE_ACCOUNT}': {'OK' if sa.returncode == 0 else 'FALTA (rode sem --check)'}")
+    print()
+    for folder, repo in REPOS.items():
+        slug = f"eimmig/{repo}"
+        secrets = gh(["secret", "list", "--repo", slug], token_gh).stdout
+        print(f"{folder:34s} KUBE_CONFIG={'sim' if 'KUBE_CONFIG' in secrets else 'NAO'}")
+
+
+def distribute_kubeconfig(token_gh: str, kubeconfig: str) -> None:
+    print()
+    for folder, repo in REPOS.items():
+        slug = f"eimmig/{repo}"
+        result = gh(["secret", "set", "KUBE_CONFIG", "--repo", slug, "--body", kubeconfig], token_gh)
+        status = "ok" if result.returncode == 0 else "FALHOU"
+        detail = "" if status == "ok" else f"  {result.stderr.strip()[:120]}"
+        print(f"{folder:34s} KUBE_CONFIG: {status}{detail}")
+
+
+def main() -> None:
+    fix_console_encoding()
 
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--check", action="store_true",
@@ -168,13 +196,7 @@ def main() -> None:
     token_gh = github_token()
 
     if args.check:
-        sa = kubectl(["get", "serviceaccount", SERVICE_ACCOUNT])
-        print(f"ServiceAccount '{SERVICE_ACCOUNT}': {'OK' if sa.returncode == 0 else 'FALTA (rode sem --check)'}")
-        print()
-        for folder, repo in REPOS.items():
-            slug = f"eimmig/{repo}"
-            secrets = gh(["secret", "list", "--repo", slug], token_gh).stdout
-            print(f"{folder:34s} KUBE_CONFIG={'sim' if 'KUBE_CONFIG' in secrets else 'NAO'}")
+        report_check(token_gh)
         return
 
     apply_rbac()
@@ -182,13 +204,7 @@ def main() -> None:
     server, ca_data = current_cluster_info()
     kubeconfig = build_kubeconfig(server, ca_data, sa_token)
 
-    print()
-    for folder, repo in REPOS.items():
-        slug = f"eimmig/{repo}"
-        result = gh(["secret", "set", "KUBE_CONFIG", "--repo", slug, "--body", kubeconfig], token_gh)
-        status = "ok" if result.returncode == 0 else "FALHOU"
-        detail = "" if status == "ok" else f"  {result.stderr.strip()[:120]}"
-        print(f"{folder:34s} KUBE_CONFIG: {status}{detail}")
+    distribute_kubeconfig(token_gh, kubeconfig)
 
     print(f"\nToken valido por {args.duration} a partir de agora - rode este script de novo antes de expirar.")
 

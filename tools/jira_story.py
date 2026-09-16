@@ -35,6 +35,7 @@ import io
 import json
 import os
 import pathlib
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -46,6 +47,16 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 ENV_FILE = ROOT / "tools" / ".jira.env"
 REQUIRED_ENV = ("JIRA_URL", "JIRA_EMAIL", "JIRA_API_TOKEN", "JIRA_PROJECT")
 ISSUE_API = "/rest/api/3/issue"
+ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9]*-[0-9]+$")
+
+
+def validate_issue_key(key: str) -> str:
+    """Chave de issue vem do campo `jira` do feature_list.json — arquivo editavel,
+    tratado como entrada nao confiavel antes de virar path de URL (evita path/argument
+    injection contra a API do Jira, ver docs/CI-CD.md)."""
+    if not ISSUE_KEY_RE.match(key):
+        sys.exit(f"ERRO: chave de issue invalida '{key}' (esperado formato tipo SV-12).")
+    return key
 
 
 def load_env() -> dict[str, str]:
@@ -221,6 +232,7 @@ def subtask_status(feature: dict, subtask: dict) -> str:
 
 def transition_issue(env, key: str, target: str) -> str:
     """Move uma issue para `target`. Devolve o que aconteceu, para o log."""
+    key = validate_issue_key(key)
     current = jira_get(env, f"/rest/api/3/issue/{key}?fields=status")["fields"]["status"]["name"]
     if current == target:
         return f"ja em {target}"
@@ -257,7 +269,7 @@ def post_evidence(env, harness: str, feature: dict) -> str:
     if empty:
         return "sem evidence preenchida — nada publicado"
 
-    key = feature["jira"]
+    key = validate_issue_key(feature["jira"])
     marker = tpl.evidence_marker(harness, feature)
     existing = jira_get(env, f"/rest/api/3/issue/{key}/comment?maxResults=100")
     for comment in existing.get("comments", []):
@@ -308,6 +320,7 @@ def rewrite_issues(env, feature, subtasks, story_payload, subtask_payload, path,
     only = ("summary", "description")
 
     def put(key: str, fields: dict) -> None:
+        key = validate_issue_key(key)
         jira_request(env, "PUT", f"/rest/api/3/issue/{key}", {"fields": {k: fields[k] for k in only}})
 
     put(story_key, story_payload["fields"])
@@ -336,12 +349,68 @@ def rewrite_issues(env, feature, subtasks, story_payload, subtask_payload, path,
         print(f"Linhas do CHANGELOG.md acrescentadas para {len(new_entries)} subtarefa(s) nova(s)")
 
 
-def main() -> None:
-    # O console do Windows abre em cp1252 e quebra ao imprimir acento vindo do
-    # feature_list.json (que e UTF-8). Vale para o dry-run e para os resumos.
+def fix_console_encoding() -> None:
+    """O console do Windows abre em cp1252 e quebra ao imprimir acento vindo do
+    feature_list.json (que e UTF-8). Vale para o dry-run e para os resumos."""
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
+
+
+def print_dry_run(story_payload: dict, subtasks: list[dict], subtask_payload) -> None:
+    print(json.dumps(story_payload, indent=2, ensure_ascii=False))
+    for subtask in subtasks:
+        print(json.dumps(subtask_payload(subtask, "<CHAVE-DA-STORY>"), indent=2, ensure_ascii=False))
+    print(
+        f"\n(dry-run: nada enviado — 1 story + {len(subtasks)} subtarefas)",
+        file=sys.stderr,
+    )
+
+
+def create_story_and_subtasks(
+    env, harness: str, feature: dict, subtasks: list[dict],
+    story_payload: dict, subtask_payload, path: pathlib.Path, data: dict,
+) -> None:
+    created = jira_request(env, "POST", ISSUE_API, story_payload)
+    story_key = created["key"]
+    feature["jira"] = story_key
+    save(path, data)  # grava antes das subtarefas: se uma falhar, a story nao vira orfa
+
+    for subtask in subtasks:
+        result = jira_request(
+            env, "POST", ISSUE_API, subtask_payload(subtask, story_key)
+        )
+        subtask["jira"] = result["key"]
+        save(path, data)
+
+    base = env["JIRA_URL"].rstrip("/")
+    entries = [(story_key, feature["name"])] + [
+        (subtask["jira"], subtask["name"]) for subtask in subtasks
+    ]
+    append_changelog_lines(harness, base, entries)
+
+    print(f"Story criada: {story_key}  {base}/browse/{story_key}")
+    for subtask in subtasks:
+        print(f"  {subtask['jira']:10s} {subtask['id']}  {subtask['name'][:60]}")
+    print(f"\nChaves gravadas em {path.relative_to(ROOT)} :: {feature['id']}")
+    print(f"Linhas do CHANGELOG.md acrescentadas em {harness}/CHANGELOG.md")
+    print()
+    print(f"Proximo passo, dentro de {harness}/:")
+    print("  git checkout develop")
+    print(f"  git checkout -b feature/{story_key}          # branch da story")
+    first = subtasks[0]["jira"] if subtasks else "<chave-da-subtarefa>"
+    print(f"  git checkout -b subtask/{first}         # a partir da branch da story")
+    print()
+    print("  # ao terminar a subtarefa (init.sh NAO e exigido aqui):")
+    print(f"  git checkout feature/{story_key} && git merge --no-ff subtask/{first}")
+    print()
+    print("  # ao terminar a feature inteira, na branch da story:")
+    print("  #   todas as subtasks done + CHANGELOG.md + init.sh + Delivery Reviewer")
+    print(f"  git checkout develop && git merge --no-ff feature/{story_key}")
+
+
+def main() -> None:
+    fix_console_encoding()
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--harness", required=True, help="ex.: infra, services/auth-service")
@@ -411,13 +480,7 @@ def main() -> None:
         }
 
     if args.dry_run:
-        print(json.dumps(story_payload, indent=2, ensure_ascii=False))
-        for subtask in subtasks:
-            print(json.dumps(subtask_payload(subtask, "<CHAVE-DA-STORY>"), indent=2, ensure_ascii=False))
-        print(
-            f"\n(dry-run: nada enviado — 1 story + {len(subtasks)} subtarefas)",
-            file=sys.stderr,
-        )
+        print_dry_run(story_payload, subtasks, subtask_payload)
         return
 
     if args.update:
@@ -427,42 +490,7 @@ def main() -> None:
     if mirroring:
         return
 
-    created = jira_request(env, "POST", ISSUE_API, story_payload)
-    story_key = created["key"]
-    feature["jira"] = story_key
-    save(path, data)  # grava antes das subtarefas: se uma falhar, a story nao vira orfa
-
-    for subtask in subtasks:
-        result = jira_request(
-            env, "POST", "/rest/api/3/issue", subtask_payload(subtask, story_key)
-        )
-        subtask["jira"] = result["key"]
-        save(path, data)
-
-    base = env["JIRA_URL"].rstrip("/")
-    entries = [(story_key, feature["name"])] + [
-        (subtask["jira"], subtask["name"]) for subtask in subtasks
-    ]
-    append_changelog_lines(args.harness, base, entries)
-
-    print(f"Story criada: {story_key}  {base}/browse/{story_key}")
-    for subtask in subtasks:
-        print(f"  {subtask['jira']:10s} {subtask['id']}  {subtask['name'][:60]}")
-    print(f"\nChaves gravadas em {path.relative_to(ROOT)} :: {feature['id']}")
-    print(f"Linhas do CHANGELOG.md acrescentadas em {args.harness}/CHANGELOG.md")
-    print()
-    print(f"Proximo passo, dentro de {args.harness}/:")
-    print("  git checkout develop")
-    print(f"  git checkout -b feature/{story_key}          # branch da story")
-    first = subtasks[0]["jira"] if subtasks else "<chave-da-subtarefa>"
-    print(f"  git checkout -b subtask/{first}         # a partir da branch da story")
-    print()
-    print("  # ao terminar a subtarefa (init.sh NAO e exigido aqui):")
-    print(f"  git checkout feature/{story_key} && git merge --no-ff subtask/{first}")
-    print()
-    print("  # ao terminar a feature inteira, na branch da story:")
-    print("  #   todas as subtasks done + CHANGELOG.md + init.sh + Delivery Reviewer")
-    print(f"  git checkout develop && git merge --no-ff feature/{story_key}")
+    create_story_and_subtasks(env, args.harness, feature, subtasks, story_payload, subtask_payload, path, data)
 
 
 if __name__ == "__main__":
