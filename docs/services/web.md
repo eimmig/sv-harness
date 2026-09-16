@@ -66,6 +66,28 @@ citadas explicitamente no escopo do TCC:
 7. Manter o lócus de controle com o usuário.
 8. Reduzir a carga de memória de curto prazo.
 
+## Date picker: mat-datepicker + mat-timepicker (`apps/web feat-022`, `epic-024` da raiz)
+
+Todos os campos de data do app (`period-preset-filter` — compartilhado por dashboard/
+period-report/catalog-dashboard —, `history`, `search-statistics`, `register-bet`) usam
+`mat-datepicker` (`provideNativeDateAdapter()`, sem `moment`/`date-fns`/`luxon` — mesma filosofia
+`Intl` de `core/date-format.ts`). `MAT_DATE_LOCALE` sozinho é um DI token estático; como o app
+troca idioma em runtime (`core/language.ts`, `Language.current`), `App` (`app.ts`) registra
+`effect(() => dateAdapter.setLocale(language.current()))` no construtor — reaproveita o signal já
+existente em vez de escutar `transloco.langChanges$` direto.
+
+**Gotcha real, achado lendo o código-fonte do Material instalado (não só os `.d.ts`)**: o merge
+de data/hora entre `mat-datepicker` e `mat-timepicker` é **assimétrico por design do próprio
+Material**, não um comportamento configurável — `MatTimepickerInput._assignUserSelection`
+preserva a data ao trocar a hora (lê o valor atual antes de aplicar `setTime`), mas
+`MatDatepickerInputBase._registerModel` só repassa a seleção do calendário direto, sem merge, e
+`NativeDateAdapter._createDateWithOverflow` zera a hora pra meia-noite. Ligar os dois num único
+valor compartilhado (`FormControl` único ou variável comum) faria trocar a data resetar
+silenciosamente a hora já escolhida. `register-bet` (`betDate`, único campo data+hora do app)
+usa **2 `FormControl` independentes** (`betDateOnly`/`betTimeOnly`, nunca compartilham valor) —
+combinados via `setHours`/`setMinutes` só no limite do submit (mesmo princípio de conversão no
+limite já usado nos filtros abaixo). Reaproveitar este padrão se outro campo data+hora aparecer.
+
 ## Dashboards e filtros (RN08)
 
 Filtros por período, casa de apostas, esporte, liga, mercado e tipster devem recalcular as
