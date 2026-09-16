@@ -295,7 +295,13 @@ Duas mudanças de schema que este endpoint pressupõe, sobre o modelo de `feat-0
   documentada, não corrigida por backfill** (mesmo precedente de `V20260910130000` — catálogo
   nunca usado em tenant real): `DIM_TEAM.id` só passa a coincidir com o catálogo real de
   `bets-service` para times vistos pela primeira vez depois desta feature; times antigos mantêm o
-  id local para sempre.
+  id local para sempre. `BetSettledEvent.team1()`/`team2()` (`String`, nunca populados por nenhum
+  publicador real — `BetSettled` nunca carregou `team1`/`team2` antes desta mudança) foram
+  substituídos pelos campos reais `team1Id`/`team1Name`/`team2Id`/`team2Name`; `processSettled`
+  resolve/grava a dimensão quando o evento os traz (cobre `BetSettled` chegando antes do
+  `BetCreated` correspondente) e **preserva** o `team1Id`/`team2Id` já gravado quando o evento não
+  traz (mesmo padrão de `dateId`/`betType` acima) — liquidar uma aposta nunca apaga o time já
+  resolvido no *insert*.
 - **`odd` persistida em `FACT_BET`** (nullable): já trafegava em `BetCreated`/`BetSettled`
   (`odd`, campo obrigatório do evento) mas nunca era gravada — sem requisito anterior que
   precisasse. `DimensionResolver` e os *listeners* de evento (`feat-001.9`/`feat-002`/`feat-003`)
