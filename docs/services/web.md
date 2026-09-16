@@ -126,27 +126,36 @@ apostas, ou área de usuário) é decisão de plan review daquela feature, não 
 > consumido mais tarde por `feat-026`, não por `epic-021` como esta nota previa originalmente —
 > ver seção "Paridade betType/byBetType" abaixo).
 
-## Tela "Visão geral" pós-login (`epic-021` da raiz, planejado)
+## Tela "Visão geral" pós-login (`epic-021` da raiz, `apps/web feat-029`, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10, referência: print
-de planilha pessoal). Tela nova, distinta das outras 5 desta rodada — visão de **vida inteira do
+de planilha pessoal). Tela nova, distinta das outras 6 desta rodada — visão de **vida inteira do
 tenant**, a única desta rodada **sem filtro de período** (por definição: "todo o período do
-tenant"). Curva de lucro acumulado em unidades **contínua, nunca reseta** (diferente da grade de
-`epic-020`, que reseta por mês) desde a primeira aposta liquidada do tenant. Tabela mensal
-(Jan–Dez do ano corrente): saldo Começo/Final (derivado client-side de 1 única chamada a
-`GET /api/v1/bankroll/balance` + o próprio lucro diário já buscado para a curva, sem 1 chamada
-por mês — ver [[STATISTICS]]), entradas/vitórias/perdas, odd média, taxa de acerto, ROI,
-profit em R$/unidades — tudo já vem de `monthly[]` (`feat-006` + campos novos de `epic-014`, já
-aninhados lá). Cards: Lucro Total, Pré/Live (`byBetType` novo, `epic-014`), Lucro Médio Mensal
-(`lucroTotalUnidades / 12`, fórmula nova) e ROI (reaproveita `roiMedioDiario` de `epic-017`, sem
-filtro de período). Decisão de UX **não fechada nesta sessão** (fica pro plan review): se esta
-tela substitui o redirect pós-login atual (hoje vai pra `/dashboard`, `feat-002`) ou é só um link
-novo na nav.
+tenant"), rota `/overview`. **Login redireciona pra cá em vez de `/dashboard`** (decisão do
+usuário, `AskUserQuestion`, 2026-09-15) — `/dashboard` continua existindo, só deixou de ser a
+landing page, virou item normal de `app-side-nav` (primeiro da lista, junto com "Visão geral").
 
-> **Atualização 2026-09-15**: `byBetType` (citado acima como dependência desta tela) foi tipado e
-> consumido por `feat-026` antes desta feature existir de fato (decisão do usuário, ver seção
-> "Paridade betType/byBetType" abaixo) — quando esta tela for implementada, ela só reusa
-> `StatisticsDashboard.byBetType` já pronto, sem precisar adicioná-lo.
+Implementado sem desvio do plano. Curva de lucro acumulado em unidades **contínua, nunca reseta**
+(diferente da grade de `epic-020`, que reseta por mês) desde a primeira aposta liquidada do
+tenant — `buildLifetimeCurve` (`pages/overview/overview-metrics.ts`), só o último valor
+(`lucroTotalUnidades`) é exibido (a curva completa, ponto a ponto num gráfico, não fazia parte do
+escopo desta rodada de features, só o card de total). "Início do histórico": sem endpoint
+dedicado, usa o primeiro item do array esparso e ordenado por data de
+`GET /api/v1/statistics/daily` sem `from`/`to` como proxy (`resolveEarliestDate`) — decisão já
+prevista no plan review, confirmada na implementação. Saldo Começo/Final por mês derivado
+client-side de uma única chamada a `GET /api/v1/bankroll/balance?at=<data mais antiga>` (pulada
+inteiramente para um tenant sem histórico) + o próprio lucro diário já buscado para a curva, sem
+1 chamada por mês (`buildMonthlyBalances`) — ver [[STATISTICS]].
+
+**Achado real, diverge do que a descrição do epic assumia**: `monthly` de
+`GET /api/v1/statistics` **não** vem pré-filtrado pelo ano corrente quando a chamada é feita sem
+`from`/`to` — `aggregateByMonth` (`stats-service`) agrupa por `(year, month)` sobre o histórico
+inteiro do tenant, sem nenhuma restrição de data. A tabela mensal desta tela (Jan–Dez do ano
+corrente) filtra `monthly` pelo ano no cliente (`buildMonthlyTable`) antes de casar cada mês com
+seu `BetMetrics` — sem esse filtro, Janeiro de dois anos diferentes se misturariam na mesma linha.
+Cards: Lucro Total (U), Pré/Live (U) (`byBetType`, tipado por `feat-026` — ver seção abaixo, esta
+tela só reusa o campo), Lucro Médio Mensal (U) = `lucroTotalUnidades / 12` e ROI (`roiMedioDiario`,
+extraído de `period-report-metrics.ts` para reuso em vez de duplicar a fórmula).
 
 ## Paridade betType/byBetType (`epic-027` da raiz, `apps/web feat-026`, done)
 

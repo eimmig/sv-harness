@@ -70,6 +70,12 @@ e [[CONVENTIONS]] para arquitetura/código.
   Sem nenhum dos 7 filtros, a resposta vem do cache-aside de `feat-005` (RNF03, meta < 300 ms com
   cache quente); qualquer filtro presente bypassa o cache (as chaves só cobrem a vista sem filtro
   nenhum por tenant) e calcula direto contra `FACT_BET` — ver [[stats-service]].
+  **`monthly` NÃO é escopado ao ano corrente quando a chamada não tem `from`/`to`** (achado real,
+  `apps/web feat-029`, 2026-09-15): `aggregateByMonth` agrupa por `(year, month)` sobre o
+  histórico inteiro do tenant, sem nenhuma restrição de data — sem filtro, a resposta pode conter
+  o mesmo número de mês (`month`) repetido para anos diferentes. Um consumidor que precise de
+  "os 12 meses do ano corrente" (como a tela "Visão geral", abaixo) precisa filtrar `monthly` por
+  `year` no cliente antes de indexar por `month`.
 - **`overall` de `GET /api/v1/statistics` ganha campos novos** (`stats-service`, `epic-014` da
   raiz, extensão do dashboard consolidado, 2026-09-10): `wonCount`/`lostCount`/`voidCount`
   (contagens brutas — `winRate` já existente continua sendo a fração), `preCount`/`liveCount`

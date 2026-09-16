@@ -2478,3 +2478,32 @@ nova em vez de `/dashboard`, que vira só mais um item de nav (mesmo tratamento 
 desta rodada). Decisão registrada no `plan_review` de `feat-029` e no `detail`/`checklist` de
 `feat-029.3` (a subtask que implementa essa navegação). `epic-021` marcado `in-progress` na raiz —
 `feat-029` (plan_review `READY`) é a próxima feature a implementar em `apps/web`.
+
+## `epic-021` fechado por completo — `feat-029` implementada (2026-09-15, mesmo dia)
+
+Continuação direta da entrada anterior, mesma sessão. `feat-029` ("Visão geral" pós-login)
+implementada em 4 subtasks sem desvio do `Plan Reviewer`: curva de lucro acumulado vitalícia
+(card único com o total, sem gráfico ponto a ponto nesta rodada), 4 cards (Lucro Total, Pré/Live,
+Lucro Médio Mensal, ROI) e tabela mensal Jan-Dez do ano corrente. Login passa a redirecionar pra
+`/overview` em vez de `/dashboard` (decisão do usuário, registrada acima) — `/dashboard` continua
+existindo como item normal de nav.
+
+**Achado real, diverge da descrição do próprio epic**: `aggregateByMonth` (`stats-service`) não
+escopa `monthly` de `GET /api/v1/statistics` ao ano corrente quando a chamada não tem
+`from`/`to` — agrupa `(year, month)` sobre o histórico inteiro do tenant. A tabela mensal filtra
+por ano no cliente antes de casar cada mês com seu `BetMetrics` (sem isso, Janeiro de anos
+diferentes se misturaria). Documentado em `docs/API-CONTRACTS.md` e `docs/services/web.md`.
+
+**Achado real de teste, só em CI**: 2 specs novos (`telegram-link`, `overview`) sobrescreviam
+`navigator.language` sem restaurar no `afterEach`, diferente de todo outro spec do app que já faz
+isso — a sobrescrita vazava pro próximo arquivo de teste escalado no mesmo worker do Vitest,
+quebrando uma asserção de formatação numérica em `period-report.spec.ts` sem relação óbvia com a
+causa (não reproduzia localmente, dependia do sharding do CI). Corrigido, documentado em
+`docs/TESTING.md`.
+
+`ng test` 221/221, Playwright 55/55 (suíte inteira). QA visual real (desktop/mobile,
+claro/escuro) sem achado. 2 achados de SonarCloud no gate pesado (mesma classe já vista antes)
+corrigidos antes do merge. Detalhe completo em `apps/web/progress.md`.
+
+**`epic-021` fechado por completo no `feature_list.json` da raiz.** Único epic aberto restante:
+`epic-024` (backlog residual em `apps/web feat-022..024`, `stats-service feat-018` `BLOCKED`).

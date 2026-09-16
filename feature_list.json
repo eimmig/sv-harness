@@ -249,8 +249,8 @@
         "epic-026",
         "epic-027"
       ],
-      "status": "in-progress",
-      "evidence": "Backlog granular criado em 2026-09-15 (Plan Reviewer): apps/web/feature_list.json feat-029, BLOCKED. Motivo original: dependia de web feat-026 (epic-027) decidir quem tipa byBetType em statistics-api.ts e de api-gateway feat-013 (epic-026) rotear bankroll/settings. Atualizacao (2026-09-15, mesmo dia): as 2 dependencias fecharam - epic-026 (api-gateway) e epic-027 (web, feat-026 decidiu ser dona de byBetType) estao done. Decisao de UX (substituir redirect pos-login vs. link novo na nav) levada ao usuario via AskUserQuestion - usuario escolheu substituir o redirect pos-login. feat-029 (plan_review atualizado pra READY) liberada pra implementacao.",
+      "status": "done",
+      "evidence": "apps/web feat-029 done - tela /overview (curva vitalicia, cards Lucro Total/Pre-Live/Lucro Medio Mensal/ROI, tabela mensal Jan-Dez). Login redireciona pra /overview em vez de /dashboard (decisao do usuario). Achado real: monthly[] de GET /api/v1/statistics nao vem escopado ao ano corrente sem filtro de periodo - filtrado client-side, documentado em docs/API-CONTRACTS.md e docs/services/web.md. Detalhe completo em apps/web/progress.md.",
       "harness": "apps/web/"
     },
     {
