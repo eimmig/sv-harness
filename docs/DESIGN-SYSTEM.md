@@ -222,7 +222,13 @@ do produto — replicar isto é tão importante quanto a paleta de cores.
   no painel, o campo era espremido a poucos caracteres em viewports estreitos (320px), chegando a
   cortar o próprio label. Corrigido para `flex-direction: column` (botão em linha própria abaixo
   do campo), mesmo padrão já usado por `shared/team-manager` — agora convenção para qualquer
-  formulário campo+botão dentro de um painel estreito: layout em coluna, não em linha.
+  formulário campo+botão dentro de um painel estreito: layout em coluna, não em linha. Mesma
+  feature também corrigiu `:host` sem padding lateral (`padding: 16px 0` → `24px` +
+  `box-sizing: border-box`) em `catalog-manager`/`team-manager` — sem essa padding própria do
+  componente, o card colava no menu lateral; testar isso via bounding-box (gap até a nav) é frágil
+  porque ancestrais (`app-panel`, chrome do Material) já geram gap suficiente pra mascarar a
+  ausência, então a asserção correta é ler `getComputedStyle(host).paddingLeft` diretamente, não
+  inferir pela posição do campo (achado do Test Suite Auditor, mesma feature).
 - **Painel = unidade de composição de página**, não só decoração dentro de uma página — todo
   fluxo de tela (dashboard, histórico, formulário de aposta, gestão de casas de apostas) é
   montado como um ou mais painéis lado a lado, nunca como formulário solto em página cheia ou
