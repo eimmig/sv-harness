@@ -284,8 +284,8 @@
         "epic-011",
         "epic-012"
       ],
-      "status": "in-progress",
-      "evidence": "bets-service feat-016/017, api-gateway feat-015, apps/web feat-020/021/023/024 e stats-service feat-018 done (fechada em 2026-09-16 - ver services/stats-service/feature_list.json/progress.md). Resta so apps/web feat-022 (REVISE, date picker) pra fechar o epic inteiro.",
+      "status": "done",
+      "evidence": "Fechado em 2026-09-16. bets-service feat-016/017, api-gateway feat-015, apps/web feat-020/021/023/024, stats-service feat-018 e apps/web feat-022 (ultimo item, date picker + formato localizado - ver apps/web/feature_list.json/progress.md, PRs #129-134 sv-frontend) todos done. Epic completo: dominio de times evoluiu de texto livre pra catalogo real (bets-service TEAM, stats-service DIM_TEAM alinhada), telas de cadastro corrigidas, e todos os campos de data do app passaram a usar date picker com formato localizado (pt-BR/en-US/es) em vez do formato americano fixo.",
       "harness": "services/bets-service/"
     },
     {
