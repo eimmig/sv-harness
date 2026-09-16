@@ -145,6 +145,15 @@ código" em `docs/CONVENTIONS.md`).
   e travaria a introdução do splash e qualquer animação/temporizador real da página. Qualquer teste
   novo que dependa de "hoje" (presets de período, filtros relativos a data) deve congelar o relógio
   desde o início, não hardcodar uma data e assumir que vai continuar batendo.
+- **`getByRole('gridcell', {name: 'N'})` não localiza um dia do `mat-datepicker` pelo número**
+  (achado real, `apps/web feat-022.5`): a célula do calendário do Angular Material tem
+  `role="gridcell"`, mas o nome acessível computado vem do `aria-label` do `<button>` interno
+  (ex. `"September 10, 2026"`), não do texto visível do dia (`"10"`) — `getByRole('gridcell',
+  {name: '10'})` nunca casa, timeout de 30s sem erro claro do motivo. Localizar pelo `role:
+  'button'` com o `aria-label` completo (`page.getByRole('button', {name: 'September 10,
+  2026'})`) em vez do número isolado. Mesmo racional do achado de locator acima (nunca copiar
+  texto sob teste como seletor) - aqui o texto nem é o mesmo elemento que carrega o nome
+  acessível.
 - **Cobertura**: gate de 80% (statements/branches/functions/lines) via `coverageThresholds` em
   `apps/web/angular.json`, aplicado automaticamente em todo `ng test` — não precisa mais da flag
   `--code-coverage`/`--coverage` na linha de comando (era a sintaxe do Karma, stale desde que o
