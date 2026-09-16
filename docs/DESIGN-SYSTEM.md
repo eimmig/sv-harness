@@ -215,6 +215,14 @@ do produto — replicar isto é tão importante quanto a paleta de cores.
     `height: 100%` e herda o espaço restante, sem precisar saber o pixel exato de nada acima
     dela. Qualquer página nova segue esse padrão (`height: 100%` no `:host`, nunca `calc(100vh -
     Npx)`).
+- **Formulário field+botão dentro de painel: nunca `flex-direction: row` sem uma largura mínima
+  garantida ao campo** (achado real, `apps/web` `feat-024`, 2026-09-16): `shared/catalog-manager`
+  (`.catalog-manager__form`) tinha campo `Nome` (`mat-form-field` em `flex: 1`) e o botão
+  "Adicionar" lado a lado na mesma linha — sem `min-width` no campo nem largura mínima garantida
+  no painel, o campo era espremido a poucos caracteres em viewports estreitos (320px), chegando a
+  cortar o próprio label. Corrigido para `flex-direction: column` (botão em linha própria abaixo
+  do campo), mesmo padrão já usado por `shared/team-manager` — agora convenção para qualquer
+  formulário campo+botão dentro de um painel estreito: layout em coluna, não em linha.
 - **Painel = unidade de composição de página**, não só decoração dentro de uma página — todo
   fluxo de tela (dashboard, histórico, formulário de aposta, gestão de casas de apostas) é
   montado como um ou mais painéis lado a lado, nunca como formulário solto em página cheia ou
