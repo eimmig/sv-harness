@@ -285,7 +285,7 @@
         "epic-012"
       ],
       "status": "in-progress",
-      "evidence": "bets-service feat-016/017, api-gateway feat-015 e apps/web feat-020/021/023/024 done. Restam: stats-service feat-018 (BLOCKED pelo proprio Plan Reviewer) e apps/web feat-022 (REVISE, date picker).",
+      "evidence": "bets-service feat-016/017, api-gateway feat-015, apps/web feat-020/021/023/024 e stats-service feat-018 done (fechada em 2026-09-16 - ver services/stats-service/feature_list.json/progress.md). Resta so apps/web feat-022 (REVISE, date picker) pra fechar o epic inteiro.",
       "harness": "services/bets-service/"
     },
     {
