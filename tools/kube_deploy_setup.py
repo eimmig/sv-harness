@@ -3,12 +3,11 @@
 gera um token de longa duracao pro ServiceAccount `ci-deployer` e distribui como o
 secret `KUBE_CONFIG` nos 6 repositorios de aplicacao, via `gh`.
 
-Fecha infra/feat-007 (epic-028 da raiz). Roda contra o kubeconfig ja configurado no
-ambiente do operador (variavel KUBECONFIG ou ~/.kube/config, o padrao do kubectl) -
-este script nunca guarda nem assume nenhuma credencial de cluster propria, so usa a
-que o operador ja tem. Precisa ser rodado por alguem com acesso real ao cluster de
-producao - nao roda numa sessao sem essa conectividade (ver infra/CLAUDE.md secao "CD
-automatico (feat-007)").
+Roda contra o kubeconfig ja configurado no ambiente do operador (variavel KUBECONFIG
+ou ~/.kube/config, o padrao do kubectl) - este script nunca guarda nem assume nenhuma
+credencial de cluster propria, so usa a que o operador ja tem. Precisa ser rodado por
+alguem com acesso real ao cluster de producao - nao roda numa sessao sem essa
+conectividade (ver infra/CLAUDE.md secao "CD automatico").
 
 O token e a menor coisa privilegiada que este script produz: nunca e impresso (mesmo
 --check so mostra se o secret ja existe em cada repo, nao o valor). Mesmo padrao de
