@@ -199,6 +199,19 @@ código" em `docs/CONVENTIONS.md`).
   fixture. Padrão adotado: `afterEach(() => TestBed.inject(OverlayContainer).ngOnDestroy())` (ver
   `app-nav.spec.ts`) — replicar em qualquer spec novo que abra `mat-menu`/`mat-select`/outro
   overlay do CDK.
+- **`Object.defineProperty(navigator, 'language', ...)` sem limpeza vaza pro próximo arquivo de
+  spec no mesmo worker** (achado real de `feat-029.3`, quebra intermitente só em CI): specs que
+  fixam o locale do browser pra testar formatação (`core/language.spec.ts`,
+  `pages/history/history.spec.ts`, e agora `telegram-link`/`overview`) sobrescrevem
+  `navigator.language` como own-property `configurable: true`. Sem `delete (navigator as
+  {language?: string}).language` no `afterEach`, a sobrescrita continua valendo pro próximo
+  arquivo de teste que rode no mesmo worker do Vitest — um spec que nunca define o locale
+  explicitamente (ex.: `period-report.spec.ts`, que assume o locale ambiente) herda o valor
+  vazado em vez do default real, quebrando uma asserção de formatação numérica sem nenhuma
+  relação óbvia com a causa. Não reproduz localmente de forma confiável (depende de qual worker
+  pega qual arquivo, sharding pode diferir entre a máquina local e o runner de CI) — todo spec
+  novo que sobrescreve `navigator.language` precisa limpar no `afterEach`, mesmo que a suíte
+  local passe sem o cleanup.
 
 ## Python (telegram-integration)
 
