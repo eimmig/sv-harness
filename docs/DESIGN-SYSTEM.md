@@ -448,6 +448,21 @@ passou a ter overlay corretamente escuro no tema escuro, não só o componente q
 tema novo no futuro, não assumir que os 4 aliases de `tokens.scss` bastam - overlays/paineis do
 Material especificamente merecem teste visual real no tema escuro, não só leitura do código.
 
+**Fonte de ícone (`feat-032`, 2026-09-16)**: `mat-icon` usa **Material Icons** clássico como
+padrão do app (`<link>` em `index.html`), mas o `app-side-nav` usa `fontSet` seletivo em cada
+`<mat-icon>` para renderizar via **Material Symbols Outlined** (`<link>` adicional, mais a classe
+global `.material-symbols-outlined` em `styles.scss` com `font-variation-settings`) — o Symbols
+tem centralização óptica melhor pra glifos diagonais (`trending_up`/`trending_down`,
+`sports_score`) que apareciam desalinhados na nav colapsada com a fonte clássica. Não é uma troca
+global: o ícone `telegram` (link do nav) **não existe** no Material Symbols (Google não inclui
+ícones de marca/social nesse conjunto, só no Material Icons clássico) — confirmado contra o
+`codepoints` oficial do `google/material-design-icons` no GitHub — então esse item específico
+mantém o `fontSet` padrão (`app-side-nav.html`, binding condicional por `link.icon === 'telegram'`).
+Outras telas (KPI cards de `overview`/`dashboard`/`period-report`/`search-statistics`, página
+`telegram-link`) continuam no Material Icons clássico sem mudança. Ao adicionar um ícone novo na
+sidebar, confirmar que o nome existe no Symbols Outlined antes de aplicar o `fontSet` — ícones de
+marca/social normalmente não existem lá.
+
 ## Identidade visual — StakeVault
 
 Nome e marca **definidos** (2026-08-01) — não é mais placeholder, substitui a seção anterior
