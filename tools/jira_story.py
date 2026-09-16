@@ -47,7 +47,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 ENV_FILE = ROOT / "tools" / ".jira.env"
 REQUIRED_ENV = ("JIRA_URL", "JIRA_EMAIL", "JIRA_API_TOKEN", "JIRA_PROJECT")
 ISSUE_API = "/rest/api/3/issue"
-ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9]*-[0-9]+$")
+ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9]*-\d+$")
 
 
 def validate_issue_key(key: str) -> str:
@@ -122,6 +122,11 @@ def load_feature(harness: str, feature_id: str) -> tuple[pathlib.Path, dict, dic
         data = json.load(handle)
     for feature in data["features"]:
         if feature["id"] == feature_id:
+            if feature.get("jira"):
+                validate_issue_key(feature["jira"])
+            for subtask in feature.get("subtasks") or []:
+                if subtask.get("jira"):
+                    validate_issue_key(subtask["jira"])
             return path, data, feature
     known = ", ".join(f["id"] for f in data["features"])
     sys.exit(f"ERRO: {feature_id} nao existe em {path}. Disponiveis: {known}")

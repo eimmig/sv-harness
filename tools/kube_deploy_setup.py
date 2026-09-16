@@ -82,9 +82,15 @@ def apply_rbac() -> None:
     print(result.stdout.strip())
 
 
+def duration_arg(value: str) -> str:
+    """Validado no proprio argparse (fronteira de entrada), antes de --duration
+    chegar em qualquer subprocess - evita argument injection contra `kubectl`."""
+    if not DURATION_RE.match(value):
+        raise argparse.ArgumentTypeError(f"invalido '{value}' (esperado ex.: 8760h, 30m, 45s)")
+    return value
+
+
 def mint_token(duration: str) -> str:
-    if not DURATION_RE.match(duration):
-        sys.exit(f"ERRO: --duration invalido '{duration}' (esperado ex.: 8760h, 30m, 45s).")
     result = kubectl(["create", "token", SERVICE_ACCOUNT, "--duration", duration])
     if result.returncode != 0:
         sys.exit(f"ERRO ao gerar token pro ServiceAccount '{SERVICE_ACCOUNT}':\n{result.stderr.strip()}")
@@ -185,7 +191,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--check", action="store_true",
                         help="so verifica cluster/RBAC/secrets existentes, nao aplica nem grava")
-    parser.add_argument("--duration", default=DEFAULT_DURATION,
+    parser.add_argument("--duration", default=DEFAULT_DURATION, type=duration_arg,
                         help=f"duracao do token via TokenRequest API (default {DEFAULT_DURATION})")
     args = parser.parse_args()
 
