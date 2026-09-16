@@ -582,6 +582,22 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
     (o item de grid real de `app-panel-layout`) — vale pra qualquer página que use `app-panel`
     com conteúdo largo (tabela, código, etc.), não só `betting-houses`. Verificar sempre que um
     `overflow-x: auto` num filho não parece surtir efeito dentro de um layout de grid/flex.
+  - **`display: block` envolvendo um filho com `width: 100%`, sem largura definida em nenhum
+    ancestral, mede errado** (achado real, `apps/web feat-023.1`, seletor de idioma sobreposto ao
+    botão de tema no login): `core/language-selector/language-selector.scss` tinha
+    `.language-selector-host { display: block }` envolvendo `.language-selector { width: 100% }`
+    — funciona quando ALGUM ancestral tem largura definida (a sidebar, que sempre deu certo), mas
+    quebra quando o componente fica dentro de um container que também se auto-dimensiona pelo
+    conteúdo (a tela de login, `.app-shell__floating-controls`, um `flex` sem largura própria).
+    Bloco (`display: block`) não tem regra de spec garantindo medição correta de um filho
+    percentual nesse cenário de shrink-to-fit encadeado — medido contra o dev server real
+    (`getBoundingClientRect()`), o filho renderizava 13–26px mais largo que a própria caixa que
+    deveria contê-lo, vazando sobre o elemento vizinho. Trocar o ancestral pra `display: flex`
+    (mesmo modo de layout do filho) resolve: Flexbox tem regra explícita pra isso (item flex com
+    largura percentual é tratado como `auto` pro dimensionamento intrínseco do próprio container,
+    CSS Flexbox §9.9). Verificar sempre que um componente com filho `width: 100%`/`height: 100%`
+    for reusado num container novo sem largura/altura própria — não basta funcionar no lugar
+    onde foi criado originalmente.
 - **Estilo**: SCSS por componente (`:host`), utilizando Angular Material. Tema (claro/escuro),
   paleta de cores e inventário de componentes visuais já decididos em [[DESIGN-SYSTEM]] — não
   escolher uma paleta alternativa por conta própria.

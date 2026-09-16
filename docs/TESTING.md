@@ -212,6 +212,16 @@ código" em `docs/CONVENTIONS.md`).
   pega qual arquivo, sharding pode diferir entre a máquina local e o runner de CI) — todo spec
   novo que sobrescreve `navigator.language` precisa limpar no `afterEach`, mesmo que a suíte
   local passe sem o cleanup.
+- **`ng serve` deixado rodando em background trava `npm ci`/`./init.sh` depois** (achado
+  operacional real, `feat-023.3`): um `ng serve` iniciado numa sessão pra QA visual (screenshots
+  reais contra o dev server, técnica usada em toda feature desta rodada) e nunca encerrado
+  segura um lock de arquivo em `node_modules/@esbuild/<plataforma>/esbuild.exe` (e possivelmente
+  outros binários nativos) — rodar `npm ci` mais tarde na mesma sessão falha com `EPERM:
+  operation not permitted, unlink` naquele arquivo, e `ng build`/`./init.sh` param de funcionar
+  com `npm error could not determine executable to run` até o `node_modules` ser reinstalado.
+  Encerrar o processo (`Get-NetTCPConnection -LocalPort 4300` pra achar o PID, no Windows) antes
+  de rodar `npm ci` resolve. Prática correta: encerrar o `ng serve` assim que a QA visual daquele
+  passo terminar, não deixar rodando "pro caso de precisar de novo" entre subtasks/features.
 
 ## Python (telegram-integration)
 

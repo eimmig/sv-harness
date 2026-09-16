@@ -2507,3 +2507,33 @@ corrigidos antes do merge. Detalhe completo em `apps/web/progress.md`.
 
 **`epic-021` fechado por completo no `feature_list.json` da raiz.** Único epic aberto restante:
 `epic-024` (backlog residual em `apps/web feat-022..024`, `stats-service feat-018` `BLOCKED`).
+
+## `apps/web feat-023` fechada — sobreposição do seletor de idioma no login (2026-09-15/16)
+
+Continuação do backlog residual de `epic-024`. Achado de usuário real (screenshot): pill do
+idioma sobreposto ao botão de tema no login. Investigação real (`getBoundingClientRect()` contra
+o dev server) achou a causa exata: `core/language-selector/language-selector.scss` tinha
+`.language-selector-host { display: block }` envolvendo um filho `width: 100%` — funciona só
+quando algum ancestral tem largura definida (a sidebar, onde o mesmo componente também é usado,
+nunca teve o bug); quebra quando o ancestral também se auto-dimensiona pelo conteúdo (a tela de
+login). Medido: o `mat-select` renderizava 13–26px mais largo que o próprio pill, vazando sobre o
+`theme-toggle`. Corrigido pra `display: flex` (Flexbox tem regra explícita pra filho percentual
+em container auto-dimensionado, CSS Flexbox §9.9) — sidebar intocada. Achado secundário: a tela
+de login também não conseguia rolar em viewports curtos (`min-height:100dvh` sem `overflow-y`,
+clipado por `.app-shell__content{overflow:hidden}`) — corrigido pro padrão já usado por outras
+páginas (`height:100%`+`overflow-y:auto`). `ng test` 221/221, Playwright 64/64 (9 e2e novos: 3
+locales x 2 temas + navegação por teclado). Gotcha reutilizável documentado em
+`docs/CONVENTIONS.md`. Detalhe completo em `apps/web/progress.md`.
+
+**`epic-024` segue `in-progress`** — restam `stats-service feat-018` (`BLOCKED`) e `apps/web
+feat-022` (`REVISE`, date picker)/`feat-024` (`READY`, espaçamento dos cadastros).
+
+**Achado operacional real, fim desta sessão**: o processo `ng serve` (porta 4300) usado pra QA
+visual em várias features ficou rodando em background a sessão inteira sem nunca ser encerrado —
+ao rodar `npm ci`/`./init.sh` depois do merge de `feat-023`, o processo estava segurando um lock
+em `node_modules/@esbuild/win32-x64/esbuild.exe`, corrompendo parcialmente `node_modules`
+(faltando `typescript`/`playwright` inteiros) e quebrando `ng build` (`npm error could not
+determine executable to run`). Perguntado ao usuário antes de encerrar o processo (PID
+identificado via `Get-NetTCPConnection -LocalPort 4300`) — autorizado, processo encerrado,
+`npm ci` refeito, `./init.sh` voltou a passar. Lição: encerrar processos de dev server em
+background (`ng serve`, etc.) ao final do uso, não deixar rodando entre features/subtasks.

@@ -304,6 +304,38 @@ nesta versão do Material em vez do `none` que o MDC normalmente daria — a col
 formulário de registro de aposta (efeito colateral do sidebar reduzir o espaço disponível) expôs
 esse bug latente, corrigido globalmente (ver `docs/CONVENTIONS.md`).
 
+## Sobreposição do seletor de idioma no login (`epic-024` da raiz, `apps/web feat-023`, done)
+
+Achado de usuário (2026-09-15, screenshot real): o pill do seletor de idioma (canto inferior
+esquerdo da tela de login, ver seção anterior) aparecia sobreposto ao botão de tema ao lado,
+cortando parte do ícone. Investigação real (medição de `getBoundingClientRect()` contra o dev
+server, não só leitura de CSS) achou a causa exata: `.language-selector-host`
+(`core/language-selector/language-selector.scss`) usava `display: block` envolvendo um filho
+(`.language-selector`) com `width: 100%`. Enquanto o `app-side-nav` (sidebar) sempre dá a esse
+componente uma largura definida (a própria coluna da sidebar), a tela de login o usa dentro de
+`app.scss`'s `.app-shell__floating-controls` — um container `flex` **sem largura própria**
+(shrink-to-fit, dimensionado pelos próprios filhos). Layout em bloco (`display: block`) não tem
+regra bem definida de spec pra medir corretamente um filho com largura percentual nesse cenário
+de auto-dimensionamento; o resultado medido: o `mat-select` renderizava 13–26px mais largo que o
+próprio pill que deveria contê-lo, vazando sobre o botão de tema adjacente. Trocado pra `display:
+flex` (mesmo modo de layout do filho) — Flexbox tem regra explícita pra esse caso (item flex com
+largura percentual é tratado como `auto` pro dimensionamento intrínseco do próprio container,
+CSS Flexbox §9.9) — sem efeito na sidebar, que nunca foi afetada.
+
+**Achado secundário, mesma investigação**: a tela de login usava `min-height: 100dvh` num `:host`
+com `align-items: center` — se o conteúdo (marca + card) excedesse a altura real disponível
+(`.app-shell__content` clipa com `overflow:hidden`, ver seção "Navegação lateral" acima), o texto
+crescia além da área visível sem nenhuma forma de rolar até ele, e a coluna de controles
+flutuantes acabava sobre os próprios campos do formulário. Trocado pra `height: 100%` (o padrão
+já usado por toda página roteada, ver `pages/period-report/period-report.scss`) +
+`overflow-y: auto`, com `padding-bottom` reservando o espaço dos controles flutuantes e
+`margin: auto 0` no lugar de `align-items: center` sozinho (técnica "flexbug #3": mantém o topo
+do conteúdo alcançável por rolagem em vez de cortar os dois lados simetricamente). Residual aceito
+(viewport extremamente curto, ex. celular em paisagem <450px de altura): o conteúdo ainda aparece
+parcialmente atrás do pill na primeira renderização até o usuário rolar — cenário raro pra uma
+tela de login, e a alternativa (reduzir o padding do `shared/panel` compartilhado por toda a
+tela de login) arriscaria regressão em todas as outras páginas que o usam.
+
 ## Página "Relatório do período" (`epic-017` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10, referência: print
