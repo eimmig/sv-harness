@@ -336,6 +336,27 @@
       "status": "done",
       "evidence": "Fechado em 2026-09-15. Lado infra/ (feat-007) fechado primeiro na mesma data: ServiceAccount ci-deployer restrito (so get/patch/update em Deployment, escopado por resourceNames aos 6 Deployments de aplicacao, nunca ClusterRole/Secret), aplicado pelo usuario pessoalmente contra o k3s de producao real (bloqueio do classificador de auto-mode do Claude Code pra acesso de producao, mesmo com autorizacao explicita no chat - usuario rodou tunel SSH + scp + tools/kube_deploy_setup.py). Token de 1 ano via TokenRequest API (kubectl create token, nao Secret estatica legada), secret KUBE_CONFIG distribuido nos 6 repositorios via gh. Na sequencia, os 6 repositorios de aplicacao fecharam a propria feature 'deploy' (job novo em ci.yml, needs: build-and-push-image, kubectl rollout restart deployment/<servico>, sem reaplicar manifest): bets-service feat-018 (primeiro, Plan Reviewer corrigiu 2 achados MINOR - remover azure/setup-kubectl por ser redundante com kubectl ja preinstalado no runner ubuntu-latest, adicionar permissions: {} explicito), depois stats-service feat-019/api-gateway feat-014/auth-service feat-016/telegram-integration feat-010/web feat-030, todos reaproveitando o mesmo plano ja revisado (Delivery Reviewer condensado em cada instancia, sem achado novo). Guard comportamento provado em CI real nos 6 (job deploy/build-and-push-image corretamente 'skipping' em evento de PR) - disparo real do primeiro rollout contra producao deliberadamente adiado em todos os 6 (nenhum promoveu develop->main durante esta sessao; bets-service tem razao concreta documentada - feat-017 quebra o contrato REST sincrono de POST /api/v1/bets ate apps/web feat-021 corrigir - os outros 5 adiaram por serem decisao de release mais ampla, nao exclusiva desta feature). Ver docs/services/infra.md 'CD automatico via CI' para o estado consolidado e o lembrete de registrar a confirmacao real (log do Actions) na primeira promocao develop->main de cada repositorio. 2 achados de processo desta sessao documentados em bets-service/stats-service progress.md (merge local em vez de PR real - corrigido; pular o estado Review no board do Jira ao marcar subtask+feature done na mesma edicao - corrigido a partir de api-gateway feat-014 em diante).",
       "harness": "infra/"
+    },
+    {
+      "id": "epic-029",
+      "name": "auth-service — endpoint de troca de senha",
+      "description": "Achado do usuario em uso real (2026-09-17): nao existe funcionalidade de troca/redefinicao de senha no frontend, e o backend tambem nunca teve o endpoint correspondente. Gap ja documentado desde 2026-09-04 (ver docs/DECISIONS-LOG.md 'mustChangePassword nao bloqueia login' - item aberto explicito la: 'quando uma feature de troca de senha for criada, decidir se o bloqueio real volta a ser implementado'). Hoje `POST /api/v1/auth/login` devolve `mustChangePassword` no corpo mas nenhum endpoint aceita a troca em si - o admin criado por provisionamento de tenant (senha aleatoria de alta entropia, feat-003) fica sinalizado pra trocar a senha sem nenhuma rota que aceite isso, e nao ha forma nenhuma (nem essa, nem 'esqueci minha senha') de qualquer usuario trocar a propria senha depois do cadastro inicial. Escopo a decidir no plan review: troca de senha 'sabendo a atual' (usuario logado, endpoint recebe senha atual+nova - cobre o caso mustChangePassword e o caso geral) - fluxo de 'esqueci minha senha' (reset via email/token) e escopo maior e separado, fora desta rodada a menos que o usuario peca explicitamente. api-gateway ja roteia `/api/v1/auth/**` via wildcard (RouteConfig.java) - endpoint novo sob esse prefixo nao precisa de rota nova no gateway, so confirmar no plan review que PasetoAuthenticationFilter (que isenta especificamente /api/v1/auth/login de exigir token) nao isenta o endpoint novo por engano (troca de senha exige usuario ja autenticado). Backlog granular em services/auth-service/feature_list.json (feat-018).",
+      "dependencies": [
+        "epic-002"
+      ],
+      "status": "not-started",
+      "harness": "services/auth-service/"
+    },
+    {
+      "id": "epic-030",
+      "name": "web — tela de troca de senha",
+      "description": "Consome o endpoint de epic-029 - formulario de troca de senha (senha atual+nova), acessivel a qualquer usuario logado, e usado tambem para satisfazer `mustChangePassword=true` (banner ja existente em `MustChangePasswordBanner`, hoje sem nenhuma acao porque o endpoint nao existia - ver docs/services/web.md e `core/must-change-password-banner`). Decisao de UX a fazer no plan review: tela dedicada (rota propria) vs. campo dentro de uma tela de 'conta'/perfil ainda inexistente neste app - nao ha precedente de tela de perfil de usuario hoje. Backlog granular em apps/web/feature_list.json (feat-035).",
+      "dependencies": [
+        "epic-029",
+        "epic-006"
+      ],
+      "status": "not-started",
+      "harness": "apps/web/"
     }
   ]
 }
