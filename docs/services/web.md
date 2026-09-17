@@ -188,6 +188,18 @@ minúsculo, `pre`/`live`) — requests com outros valores nunca eram rejeitados 
 quando o campo vem preenchido). Trocado por `mat-select` com 3 opções (`pre`/`live`/vazio =
 "não classificado"), mesmo padrão de outros selects do formulário.
 
+**Revisado em `apps/web feat-036`** (achado de usuário em uso real, 2026-09-17): a opção
+"não classificado" permitia cadastrar apostas sem `betType`, que então não entravam em nenhum dos
+2 buckets de `byBetType` (comportamento documentado em `docs/API-CONTRACTS.md`, ainda válido para
+apostas legadas e qualquer outro produtor do contrato, ex. `telegram-integration`) — mas dentro
+deste formulário especificamente isso não fazia sentido: toda aposta nova cadastrada por aqui tem
+um tipo conhecido no momento do cadastro. Campo `betType` do form agora é `Validators.required`
+com default `'pre'`; a opção vazia foi removida do `mat-select` e a chave i18n
+`registerBet.betTypeNone` (não usada em nenhum outro lugar do app) foi removida dos 3 locales.
+`byBetType`/`bet-type-dashboard` continuam tratando `betType` nulo normalmente para o que já
+existe na base ou entra por outro caminho — só este formulário passou a nunca mais produzir esse
+estado.
+
 **Decisão de ownership de `byBetType`** (registrada no `plan_review` de `feat-026`, decidida pelo
 usuário via pergunta direta, 2026-09-15): `core/statistics-api.ts` (`BetMetrics`) tinha um
 comentário explícito e pré-existente reservando `byBetType` para `epic-021` ("Visão geral", ver

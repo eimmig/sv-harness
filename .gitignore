@@ -15,6 +15,9 @@ __pycache__/
 .venv/
 venv/
 
+# --- tools/local-up.sh runtime (logs/pids, nao conteudo) ---
+tools/.local-run/
+
 # --- Obsidian (docs/) : estado local de janela/cache, nao conteudo ---
 **/.obsidian/workspace.json
 **/.obsidian/workspace-mobile.json

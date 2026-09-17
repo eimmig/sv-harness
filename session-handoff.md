@@ -7,8 +7,8 @@
 
 ## Objetivo atual
 
-**Todos os 30 epics do `feature_list.json` da raiz estão `done`**. **`apps/web feat-034`
-(backlog residual sem epic próprio) também fechada nesta sessão** — nenhum harness tem feature
+**Todos os 30 epics do `feature_list.json` da raiz estão `done`**. **`apps/web feat-034` e
+`feat-036`** (backlog residual sem epic próprio) **também fechadas** — nenhum harness tem feature
 `not-started` conhecida no momento (conferir cada `feature_list.json` antes de assumir, ver
 "Próxima sessão" abaixo).
 
@@ -27,6 +27,17 @@
       `docs/CONVENTIONS.md` e `apps/web/progress.md` para o detalhe completo.
 - [x] Decisão do usuário via `AskUserQuestion`: `mustChangePassword` continua sem bloqueio real de
       outras rotas — fecha o item aberto do `DECISIONS-LOG` de 2026-09-04.
+- [x] `apps/web feat-036` fechada (sessão seguinte, mesmo dia) — 6 achados ad-hoc de UX pós-deploy
+      em chat casual, **formalizados retroativamente** (código já escrito antes de passar pelo
+      harness — desvio reconhecido, plan_review rodado depois, achou e corrigiu 1 MAJOR real:
+      doc/CHANGELOG do `feat-026` desatualizados pela reversão da opção "não classificado" de
+      `betType`). `register-bet.betType` agora obrigatório, `shared/searchable-select` limpa o
+      texto default ao focar, rodapé do `app-side-nav` virou 1 menu de configurações (idioma em
+      acordeão + tema + trocar senha + sair, 2 bugs de CDK Overlay achados e corrigidos no
+      caminho), ícone de idioma do login parou de cortar (`fontSet` ausente, causa real — não
+      largura). Ver `apps/web/feature_list.json` (`plan_review`/`evidence` de `feat-036`) pro
+      detalhe completo, inclusive o achado de processo (componente duplicado recriado sem checar
+      se já existia).
 
 ## Bloqueios / Riscos
 
