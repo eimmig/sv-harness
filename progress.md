@@ -2591,3 +2591,30 @@ inútil num único argumento de `verify` — corrigidos no mesmo PR). `Delivery 
 `Test Suite Auditor`/`Persistence Auditor` (self-review, risco médio): todos `PASS`. `./init.sh`
 do serviço e da raiz verdes. Fecha `epic-029` — único epic aberto que dependia só de `epic-002`
 (done); `epic-030` (`apps/web`, tela de troca de senha) liberado, dependia deste.
+
+## `epic-030` fechado — `apps/web feat-035`, tela de troca de senha (2026-09-17, mesma sessão)
+
+Consumindo o endpoint de `epic-029` (fechado momentos antes, mesma sessão): tela nova
+`/change-password` (`authGuard`, sem `adminGuard` — qualquer usuário troca a própria senha), link
+novo no rodapé do `app-side-nav`, ação real no `MustChangePasswordBanner` (antes só tinha
+dispensar). `Plan Reviewer` corrigiu 2 achados MAJOR antes de codificar — mensagem de sucesso não
+podia reusar `--color-positive`/verde (reservado a ganho financeiro no design system, achado
+contra `docs/DESIGN-SYSTEM.md`); o Playwright proposto (login→trocar→logout→login de novo, contra
+o backend real) contradizia a convenção real da suíte deste app (**todo** e2e mocka a API via
+`page.route()`, nunca bate contra backend real).
+
+Bug real de produção pego só por QA visual real (screenshot contra o dev server, nenhum teste
+unitário/e2e mockado pegou): `FormGroup.reset()` não limpa a flag `submitted` da
+`FormGroupDirective`, então os 3 campos de senha apareciam com borda vermelha de erro bem ao lado
+da mensagem de sucesso — corrigido com `FormGroupDirective.resetForm()`. Achado colateral durante
+o commit: `git add -A` varreu um worktree de agente leftover (`.claude/worktrees/`, de `feat-033`)
+como gitlink de submódulo órfão — corrigido no mesmo PR (`git rm --cached` + `.gitignore`), antes
+do merge `story→develop`.
+
+Story SV-514 (subtasks SV-515/516/517, `035.1`+`035.2` bundladas — nav/banner precisavam existir
+pra QA visual real da descoberta da página nova), PRs #149-151, CI+SonarCloud verdes (SonarCloud
+reprovou 1x por 3 achados reais — import não usado, teste sem assertion, `@ViewChild` sem
+`readonly` — corrigidos no mesmo PR). `Delivery Reviewer`/`Test Suite Auditor` (self-review):
+`PASS`. `./init.sh` do app e da raiz verdes; `npx playwright test` completo (80/80) sem
+regressão. **Fecha o último epic aberto do `feature_list.json` da raiz — os 30 epics estão
+`done`.**

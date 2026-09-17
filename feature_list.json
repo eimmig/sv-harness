@@ -356,8 +356,9 @@
         "epic-029",
         "epic-006"
       ],
-      "status": "in-progress",
-      "harness": "apps/web/"
+      "status": "done",
+      "harness": "apps/web/",
+      "evidence": "Fechado em 2026-09-17 por apps/web feat-035 (ver evidencia detalhada em apps/web/feature_list.json). Tela /change-password implementada: usuario autenticado troca a propria senha (currentPassword+newPassword+confirmPassword), link de nav no rodape do side-nav, acao real no MustChangePasswordBanner (antes so tinha dispensar), sessao sincronizada sem novo login (Auth.clearMustChangePassword). Plan Reviewer (REVISE, 2 MAJOR corrigidos: cor de sucesso neutra em vez de --color-positive/verde, e2e mockado em vez de bater contra backend real) + Delivery Reviewer/Test Suite Auditor (ambos PASS) rodados contra o diff completo. Bug real de producao encontrado so por QA visual real (screenshot contra o dev server): FormGroup.reset() nao limpa a flag submitted da FormGroupDirective, corrigido com resetForm(). Ultimo epic novo aberto (fora do backlog original do TCC1) fechado - feature_list.json da raiz sem nenhum epic not-started no momento. ./init.sh do app e da raiz verdes."
     }
   ]
 }
