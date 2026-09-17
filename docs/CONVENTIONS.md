@@ -612,6 +612,20 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
     CSS Flexbox §9.9). Verificar sempre que um componente com filho `width: 100%`/`height: 100%`
     for reusado num container novo sem largura/altura própria — não basta funcionar no lugar
     onde foi criado originalmente.
+  - **`FormGroup.reset()` não limpa a flag `submitted` da `FormGroupDirective`** (achado real,
+    `apps/web feat-035`, pego só por QA visual real — nenhum teste unitário/e2e mockado pega,
+    porque nenhum dos dois renderiza o `ErrorStateMatcher` do Material com CSS real): o
+    `ErrorStateMatcher` padrão do Angular Material considera um campo inválido quando
+    `control.invalid && (control.touched || form.submitted)` — `form` aqui é a
+    `FormGroupDirective` associada ao `<form [formGroup]>`, cujo `submitted` vira `true` no
+    primeiro `(ngSubmit)` e **fica** `true` depois, porque `FormGroup.reset()` só reseta o
+    `FormGroup` em si (valor/`touched`/`dirty`), não a diretiva. Sintoma: um formulário que se
+    limpa a si mesmo após um submit bem-sucedido (em vez de navegar pra outra tela) mostra todos
+    os campos `required` com borda vermelha de erro assim que ficam vazios de novo — ao lado da
+    própria mensagem de sucesso. Corrigido com `@ViewChild(FormGroupDirective) formDirective` no
+    componente e `this.formDirective.resetForm()` no lugar de `this.form.reset()` — reseta o
+    `FormGroup` E a flag `submitted` junto. Aplicar em qualquer formulário novo deste app que
+    permaneça na mesma tela e se limpe após sucesso.
 - **Estilo**: SCSS por componente (`:host`), utilizando Angular Material. Tema (claro/escuro),
   paleta de cores e inventário de componentes visuais já decididos em [[DESIGN-SYSTEM]] — não
   escolher uma paleta alternativa por conta própria.

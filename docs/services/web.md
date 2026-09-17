@@ -288,6 +288,49 @@ pela resposta do último `POST` bem-sucedido e mostra o detail RFC 7807 em caso 
 comportamento correto nos dois cenários possíveis do backend, sem acoplamento a qual deles é o
 real.
 
+## Tela de troca de senha (`epic-030` da raiz, done)
+
+**Implementado em `web feat-035`**, consumindo `POST /api/v1/auth/change-password`
+(`auth-service feat-018`, `epic-029`). Plan Reviewer corrigiu 2 achados MAJOR antes de codificar
+(nenhum exigia decisão do usuário): (1) a mensagem de sucesso ia reusar o estilo de
+`unitPercentSuccess` (`--color-positive`, verde) — `docs/DESIGN-SYSTEM.md` reserva essa cor
+exclusivamente a ganho financeiro, então a confirmação usa estilo neutro (mesma caixa com borda
+de `.telegram-link__result`), não verde; (2) o e2e proposto batia contra o backend real
+(login→trocar→logout→login de novo) — contradiz a convenção real da suíte (**todo** Playwright
+deste app mocka a API via `page.route()`, nunca bate contra um backend real), corrigido para
+`e2e/change-password.spec.ts` mockado, mesmo padrão de `telegram-link.spec.ts`.
+
+`ChangePasswordApi` (novo, `core/change-password-api.ts`) só faz `POST
+/api/v1/auth/change-password` — mesmo padrão de `TelegramLinkApi`/`SettingsApi`, só
+`Authorization: Bearer`. Tela nova (`pages/change-password`, rota `/change-password`,
+`authGuard`, sem `adminGuard` — qualquer usuário troca a própria senha) com Reactive Form
+`currentPassword`/`newPassword`/`confirmPassword` e um validator de **grupo** customizado
+comparando `newPassword`/`confirmPassword` — primeiro validator desse tipo no codebase (grep
+confirmou nenhum `ValidatorFn`/`AbstractControl` customizado antes desta feature). `Auth`
+(`core/auth.ts`) ganhou `clearMustChangePassword()`: zera `session.mustChangePassword` no signal
+e no `localStorage` sem exigir novo login — necessário porque o token PASETO não é reemitido
+(suas claims nunca carregaram `mustChangePassword`) e a sessão é só client-side.
+
+**Gotcha real de Angular Reactive Forms encontrado via QA visual** (não pego por nenhum teste
+unitário/e2e, só pela captura de tela real): `FormGroup.reset()` sozinho **não** limpa a flag
+`submitted` da `FormGroupDirective` associada ao `<form [formGroup]>` — e o
+`ErrorStateMatcher` padrão do Angular Material considera um campo inválido quando
+`control.invalid && (control.touched || form.submitted)`. Resultado: depois de um submit
+bem-sucedido que limpava o form com `this.form.reset()`, os 3 campos de senha (agora vazios,
+`required` os torna inválidos de novo) apareciam com borda vermelha de erro bem ao lado da
+mensagem de sucesso — nada quebrado funcionalmente, mas visualmente contraditório (parece erro
+junto de "senha trocada com sucesso"). Corrigido trocando para
+`@ViewChild(FormGroupDirective) formDirective` + `this.formDirective.resetForm()`, que reseta a
+flag `submitted` junto com o valor/touched/dirty do `FormGroup`. Qualquer formulário novo deste
+app que limpe a si mesmo após um submit bem-sucedido (em vez de navegar pra outra tela) deve usar
+esse padrão, não `form.reset()` puro.
+
+`app-side-nav`: link novo no rodapé (`side-nav__footer`, entre `app-theme-toggle` e o botão de
+logout, ícone `lock_reset`) — não em `secondaryLinks` (grupo de analytics/relatórios), porque
+troca de senha é configuração de conta; disponível pra **todo** usuário (sem checagem de role,
+diferente do link `/users`). `MustChangePasswordBanner` ganhou um `routerLink` real pro botão de
+ação (antes só tinha o botão de dispensar, porque o endpoint não existia).
+
 ## Navegação lateral (sidebar), animações no shell e no login (`epic-022` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-11). Fecha uma
