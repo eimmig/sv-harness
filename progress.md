@@ -2565,3 +2565,29 @@ tipo de conteúdo (racional de decisão, achado de bug, histórico) agora vai s�
 commit, Jira ou nota do vault, nunca mais em comentário de código-fonte. Cada repositório recebeu
 seu próprio commit direto (sem cerimônia de DoD, processo combinado com o usuário pra esta tarefa
 específica). `auth-service`/`api-gateway`/`infra` já estavam limpos.
+
+## `epic-029` fechado — `auth-service feat-018`, endpoint de troca de senha (2026-09-17)
+
+Achado do usuário em uso real: nunca existiu endpoint pra trocar a própria senha — gap aberto
+desde `auth-service feat-005` (2026-09-04, `DECISIONS-LOG` "`mustChangePassword` não bloqueia
+login"). Decisão do usuário via `AskUserQuestion`, antes do `Plan Reviewer`: `mustChangePassword`
+continua **sem** bloqueio real de outras rotas — fecha aquele item aberto (entrada nova no
+`DECISIONS-LOG`, 2026-09-17). `Plan Reviewer` corrigiu 1 achado MAJOR: exceção dedicada
+(`CurrentPasswordMismatchException`) em vez de reusar `InvalidCredentialsException` do login
+(texto localizado enganoso — menciona tenant/e-mail, não se aplica à troca de senha).
+
+`POST /api/v1/auth/change-password` (`currentPassword`+`newPassword` → `204` sem corpo, zera
+`mustChangePassword` ao trocar com sucesso). Bug real de produção pego pelo próprio teste de
+integração, não por revisão de código: `UserJpaEntity.applyUpdate()` (escrito em `feat-017` só
+para `name`/`role`) descartava silenciosamente `passwordHash`/`mustChangePassword` no `update()`
+— a troca "funcionava" (`204`) mas nada era persistido. Corrigido alargando `applyUpdate` para os
+4 campos mutáveis do agregado `User`, sem regredir `feat-017`. Gotcha documentado em
+`docs/CONVENTIONS.md` para os outros 2 serviços Java schema-per-tenant que usam o mesmo padrão
+`findById`+mutar+`save`.
+
+Story SV-510 (subtasks SV-511/512/513), PRs #69/#70/#71 (subtask→story) + #72 (story→develop),
+CI+SonarCloud verdes (SonarCloud reprovou 1x por 2 MINOR reais — import não usado e `eq(...)`
+inútil num único argumento de `verify` — corrigidos no mesmo PR). `Delivery Reviewer`/
+`Test Suite Auditor`/`Persistence Auditor` (self-review, risco médio): todos `PASS`. `./init.sh`
+do serviço e da raiz verdes. Fecha `epic-029` — único epic aberto que dependia só de `epic-002`
+(done); `epic-030` (`apps/web`, tela de troca de senha) liberado, dependia deste.

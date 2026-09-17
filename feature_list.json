@@ -344,8 +344,9 @@
       "dependencies": [
         "epic-002"
       ],
-      "status": "not-started",
-      "harness": "services/auth-service/"
+      "status": "done",
+      "harness": "services/auth-service/",
+      "evidence": "Fechado em 2026-09-17 por services/auth-service feat-018 (ver evidencia detalhada em services/auth-service/feature_list.json). POST /api/v1/auth/change-password implementado: usuario logado troca a propria senha (currentPassword+newPassword), 204 sem corpo, zera mustChangePassword ao trocar com sucesso. Fecha o item aberto de 2026-09-04 no DECISIONS-LOG sobre mustChangePassword nao bloquear login - decisao do usuario via AskUserQuestion nesta sessao: sem bloqueio real de outras rotas, mitigacao por senha aleatoria de alta entropia continua suficiente. Achado real corrigido durante a implementacao: UserJpaEntity.applyUpdate() (feat-017) so aplicava name/role, descartando silenciosamente passwordHash/mustChangePassword no update() - corrigido sem regredir feat-017. Plan Reviewer (REVISE, 1 MAJOR corrigido) + Delivery Reviewer/Test Suite Auditor/Persistence Auditor (todos PASS) rodados contra o diff completo. ./init.sh do servico e da raiz verdes."
     },
     {
       "id": "epic-030",

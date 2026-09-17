@@ -120,6 +120,44 @@ de banco" para o racional completo. Resumo:
   > natureza) e sem filtro/busca no backlog atual. DTO de resposta é `UserSummaryResponse`, novo e
   > distinto de `CreateUserResponse` (mesmos 5 campos, nunca `passwordHash`) — mantém a convenção
   > de 1 DTO por operação já usada pelos demais endpoints deste serviço.
+  > **Contrato implementado em `feat-017`** (`PATCH /api/v1/users/{id}`, fecha o gap de "só
+  > create/list, sem update" no CRUD de usuários do tenant): mesmos headers/checagem de
+  > `role = admin` de `feat-004`/`feat-009` (401/400/403 idênticos). Body `{"name": "...", "role":
+  > "ADMIN"|"MEMBER"}` → `200` com `UpdateUserResponse` (mesmos 5 campos, DTO dedicado, nunca
+  > `passwordHash`). Só `name`/`role` são editáveis — `email` fica de fora (é a chave de
+  > unicidade/identidade dentro do tenant) e senha/`mustChangePassword` continuam fora do backlog
+  > (troca de senha nunca teve endpoint, decisão já registrada em `feat-005`). `404` se o `{id}`
+  > não existir no tenant resolvido (isolamento cross-tenant automático via
+  > `search_path`/multi-tenancy do Hibernate, mesmo mecanismo que já isola `findById`). `409` se a
+  > operação rebaixaria o único `admin` restante do tenant para `member` — sem rota de
+  > autocadastro nem de promoção `member`→`admin` no backlog, esse caminho deixaria o tenant sem
+  > nenhum admin e sem forma de se recuperar via API (achado do `Plan Reviewer`, ver
+  > `feature_list.json` de `auth-service`).
+  > **Contrato implementado em `feat-018`** (`POST /api/v1/auth/change-password`, fecha o gap
+  > registrado em `feat-005`/`feat-017`: nunca existiu endpoint para trocar a própria senha).
+  > Requer `X-User-Id`/`X-Tenant-Id` (usuário já autenticado — não está na lista de exceção do
+  > `PasetoAuthenticationFilter`, que só isenta `POST /api/v1/auth/login`). Body
+  > `{"currentPassword": "...", "newPassword": "..."}` → `204` sem corpo (token não é reemitido —
+  > as claims do PASETO não carregam `mustChangePassword`, então o token atual continua válido).
+  > Valida `currentPassword` contra o hash atual antes de trocar; erro `401` **genérico**
+  > (`current-password-mismatch`, exceção dedicada — não reaproveita `invalid-credentials` do
+  > login, cujo texto localizado menciona tenant/e-mail e seria enganoso aqui) sem diferenciar de
+  > "usuário não encontrado" (`caller-not-found`, reaproveitado de `feat-006`). Zera
+  > `mustChangePassword` ao trocar com sucesso. **Decisão do usuário nesta sessão**: a troca em si
+  > não passou a bloquear outras rotas enquanto `mustChangePassword = true` — mitigação por senha
+  > aleatória de alta entropia (nunca logada) continua sendo considerada suficiente; ver
+  > [[DECISIONS-LOG]]. Fluxo "esqueci minha senha" (sem sessão ativa) fica fora de escopo.
+  > **Achado real durante a implementação**: `UserRepository.update()` (adicionado em `feat-017`
+  > só para `name`/`role`) tinha `UserJpaEntity.applyUpdate(name, role)` que silenciosamente
+  > ignorava `passwordHash`/`mustChangePassword` — trocar a senha "funcionava" (204, sem erro) mas
+  > não persistia nada. Corrigido alargando `applyUpdate` para os 4 campos mutáveis do agregado
+  > `User` (`name`, `role`, `passwordHash`, `mustChangePassword`), já que o contrato de domínio
+  > `UserRepository.update(User): User` sempre recebeu o agregado inteiro — `feat-017` não muda de
+  > comportamento (já enviava `passwordHash`/`mustChangePassword` inalterados do alvo). Qualquer
+  > serviço Java que reaproveitar esse mecanismo de `findById+applyUpdate+save` (ver
+  > [[CONVENTIONS]]) deve conferir se o método `applyUpdate` da entidade cobre **todos** os campos
+  > que o `update()` de domínio promete alterar, não só os que a primeira feature que o criou
+  > precisava.
 - **Login (RF02)**: e-mail é único apenas dentro do schema do tenant, não globalmente — a tela
   de login precisa de um terceiro campo (slug/identificador da organização) para que este
   serviço saiba em qual schema procurar antes de validar a senha.

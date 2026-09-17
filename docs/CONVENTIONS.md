@@ -210,6 +210,20 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   nota e corrigir) na instância já rastreada; senão constrói uma nova. Sem risco de corrida a
   proteger aqui — RabbitMQ entrega mensagens da mesma fila sequencialmente a um consumidor, sem
   paralelismo entre eventos do mesmo `betId`.
+  **Gotcha real em `auth-service feat-018`**: o método da entidade que muta os campos (`applyFrom`/
+  `applyUpdate`) precisa cobrir **todos** os campos que a assinatura de domínio `Repository.update(
+  Agregado): Agregado` promete poder alterar, não só os que a primeira feature que criou o método
+  precisava. `UserRepository.update(User)` nasceu em `feat-017` (`PATCH /api/v1/users/{id}`, só
+  `name`/`role` editáveis) e `UserJpaEntity.applyUpdate(name, role)` foi escrito com só esses 2
+  parâmetros; `feat-018` (troca de senha) construiu um `User` atualizado com `passwordHash`/
+  `mustChangePassword` novos e chamou o mesmo `update()` esperando persistir — sem erro, sem
+  exceção, `204` de sucesso, mas os 2 campos novos eram silenciosamente descartados (`applyUpdate`
+  nunca os recebia). Corrigido alargando a assinatura pra `applyUpdate(name, role, passwordHash,
+  mustChangePassword)`, sem quebrar o caller original (que já enviava os 2 campos extras
+  inalterados do registro lido, só não os repassava adiante). Ao reaproveitar `findById`+mutar+
+  `save` para uma nova operação sobre uma entidade que **já tem** um método de mutação, conferir se
+  esse método aceita todo campo que o `User`/`Bet`/... novo pode trazer — não assumir que ele já é
+  genérico só porque o nome (`applyUpdate`) sugere.
 - **Entidade JPA com muitas colunas (`java:S107`, gate `feature -> develop` do SonarCloud)**:
   achado real em `bets-service feat-004` — `BetJpaEntity` (18 colunas) com um construtor
   posicional de 18 parâmetros reprovou o gate (`Constructor has 18 parameters, which is greater

@@ -1650,3 +1650,26 @@ parágrafo classificava. Implementação real corrigida (`bets-service feat-017`
 novos aditivos; `BetSettled` ganha `team1Id`/`team1Name`/`team2Id`/`team2Name` como dimensão nova
 (nunca teve `team1`/`team2` antes, nada a preservar lá). `schemaVersion` permanece `1` nos dois
 eventos. Nenhuma mudança foi exigida em `stats-service` para este commit.
+
+## 2026-09-17 — Fecha o item aberto de `mustChangePassword`: sem bloqueio real, endpoint de troca criado
+
+**O que mudou**: a entrada [2026-09-04 — `mustChangePassword` não bloqueia login](#2026-09-04-mustchangepassword-nao-bloqueia-login-reverte-a-intencao-original-da-entrada-de-2026-08-02)
+deixou um item aberto: quando uma feature de troca de senha existisse, decidir se o bloqueio real
+de outras rotas para um usuário com `mustChangePassword = true` voltaria a ser implementado.
+`auth-service feat-018` criou `POST /api/v1/auth/change-password` (fecha `epic-029` da raiz) — a
+decisão foi tomada com o usuário (`AskUserQuestion`) antes do Plan Review: **não bloquear**.
+
+**Por quê**: a mitigação já aceita em 2026-09-04 (senha aleatória de alta entropia, gerada por
+`SecureRandomPasswordGenerator`, nunca logada, devolvida só uma vez na resposta de `feat-003`)
+continua considerada suficiente. Bloquear exigiria uma mudança cross-cutting (filtro/interceptor
+tocando toda rota autenticada deste serviço, exceto login e o próprio change-password) sem
+nenhuma pressão de negócio nova além da já avaliada e descartada em 2026-09-04.
+
+**Impacto**:
+- Item aberto da entrada de 2026-09-04 fica fechado — não reabrir sem novo pedido do usuário.
+- `docs/services/auth-service.md` seção "Modelo de tenant" ganhou o parágrafo de contrato de
+  `feat-018` no mesmo commit.
+- Endpoint em si (`currentPassword`+`newPassword`, zera a flag ao trocar com sucesso) segue o
+  mesmo racional de erro genérico já usado no login, mas com exceção dedicada
+  (`CurrentPasswordMismatchException`, não reaproveita `InvalidCredentialsException` — achado do
+  `Plan Reviewer`, o texto localizado do login menciona tenant/e-mail e seria enganoso aqui).
