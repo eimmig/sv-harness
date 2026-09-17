@@ -408,6 +408,33 @@ Resultado em cards (ROI, taxa de acerto, odd média, volume/lucro líquido, draw
 drawdown, sem chamada extra). Estado vazio (nenhuma busca feita ainda, ou combinação sem apostas
 liquidadas) precisa de tratamento explícito — não é o mesmo caso de "carregando".
 
+## Selects de filtro pesquisáveis (`apps/web feat-031`, done)
+
+Achado do usuário a partir do painel "Filtros" de `search-statistics` (feat-012): campos de
+catálogo (esporte/liga/time/casa de apostas/mercado/tipster) eram `mat-select` fechado —
+inviável de rolar manualmente conforme o catálogo do tenant cresce. `shared/searchable-select`
+novo: wrapper sobre `mat-autocomplete` implementando `ControlValueAccessor` — mesmo uso via
+`formControlName` que o `mat-select` anterior, filtro por nome case+acento-insensível
+(`normalizeForSearch`, sem dependência nova), opção sentinela (`allOptionLabel`, ex. "Todos"/
+"Nenhum") e suporte a `disabled` (cobre `register-bet` team1Id/team2Id, desabilitados até um
+esporte ser escolhido). Substituiu `mat-select` em ~20 campos de 5 telas (`register-bet`,
+`team-manager`, `search-statistics`, `dashboard`, `history`) — `catalog-manager` e
+`period-preset-filter` confirmados sem mudança (nenhum tem select de catálogo).
+
+**Zero e2e por página precisou de edição** — todo teste já interagia via
+`getByTestId(...).click()` + `getByRole('option', {name}).click()`, e `mat-autocomplete` também
+renderiza `mat-option` com `role="option"`, só o alvo do `testId` mudou (de `<mat-select>` pro
+`<input>` interno). Única exceção: `betting-houses-move-balance.spec.ts` usava `toContainText`
+pro valor pré-selecionado — corrigido pra `toHaveValue` (ver [[TESTING]] "Frontend (apps/web)"
+para o porquê). 3 gotchas reais de implementação também documentados lá: `mat-error` nunca ativa
+sem `ngControl` (resolvido com `<p role="alert">` próprio em vez de brigar com o mecanismo do
+Material), `:host { display: contents }` necessário pro host do componente não virar item extra
+de flex/grid nas telas com filtro em `flex-wrap`, e duplo de teste precisa de `signal()` real
+(não propriedade mutável simples) pra repropagar num segundo `detectChanges()` sob CD zoneless.
+
+`errorMessage` (opcional) plugado em `search-statistics` (sportId/leagueId, `Validators.required`)
+— renderiza a mesma mensagem de antes, só que fora do `mat-form-field`.
+
 ## Ver também
 
 - [[auth-service]], [[bets-service]], [[stats-service]] — APIs consumidas via API Gateway.

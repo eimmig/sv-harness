@@ -154,6 +154,56 @@ código" em `docs/CONVENTIONS.md`).
   2026'})`) em vez do número isolado. Mesmo racional do achado de locator acima (nunca copiar
   texto sob teste como seletor) - aqui o texto nem é o mesmo elemento que carrega o nome
   acessível.
+- **`toContainText` num `<input>` nunca acha o valor digitado/selecionado** (achado real, `apps/web
+  feat-031`): `toContainText`/`textContent` só leem nós de texto filhos — um `<mat-select>`
+  renderiza o rótulo escolhido como texto de verdade dentro de um `mat-select-trigger`, então
+  `toContainText('Bet365')` funcionava; ao trocar o campo para um `<input>` (novo
+  `shared/searchable-select`, autocomplete), o valor exibido vive na *propriedade* `.value` do
+  elemento, nunca em `textContent` — o assert falha com string vazia recebida, sem nenhum erro de
+  execução, só timeout de 5s do `toContainText`. Pra qualquer campo que seja um `<input>` (nativo,
+  `matInput` ou custom CVA), usar `toHaveValue`, nunca `toContainText`/`toHaveText`.
+- **CVA próprio sem `ngControl` real nunca ativa `mat-error`, mesmo com a condição de exibição
+  certa no template** (achado real, `apps/web feat-031`, `shared/searchable-select`): um
+  componente que implementa `ControlValueAccessor` por conta própria (em vez de delegar pra um
+  `matInput`/`mat-select` ligado via `formControlName` na MESMA tag) tem um `<input matInput>`
+  interno sem nenhum `NgControl` associado a ele — `MatInput#ngDoCheck` só chama
+  `updateErrorState()` (que decide se `mat-form-field` mostra o `<mat-error>` projetado) quando
+  `this.ngControl` existe (`node_modules/@angular/material/fesm2022/input.mjs`). Sem isso,
+  `<mat-error>` fica **para sempre invisível**, mesmo com `@if` condicionando certo — não é bug
+  de template, é o próprio `mat-form-field` decidindo não mostrar o slot. Tentar forçar via
+  `[errorStateMatcher]` custom + chamar `updateErrorState()` manualmente (`viewChild(MatInput)`
+  + `effect()`) também não bastou de forma confiável no teste (zoneless, timing de `viewChild`
+  resolvendo depois do primeiro flush do efeito). Solução adotada: não brigar com o mecanismo do
+  Material — renderizar a mensagem como um `<p role="alert" [id]="...">` próprio, fora do
+  `mat-form-field`, ligado ao input via `aria-describedby`. `role="alert"` já anuncia a mensagem
+  proativamente (região *live*) assim que aparece, independente de foco — cobertura de
+  acessibilidade equivalente (ou melhor) sem depender de `ngControl`.
+- **Duplo do host de um componente sobre `mat-form-field` precisa de `:host { display: contents }`
+  pra não virar um item de flex/grid a mais** (achado real, `apps/web feat-031`): páginas com
+  filtros em `flex-wrap`/coluna (`dashboard.html`, `search-statistics.html`) estilizam
+  `mat-form-field` diretamente via seletor de descendente (`.filtros mat-form-field { min-width:
+  ... }`) — view encapsulation do Angular já impede essa regra de alcançar um `mat-form-field`
+  dentro do template de OUTRO componente (`shared/searchable-select`), então isso nunca foi o
+  problema real. O problema é de caixa: sem `display: contents` no `:host` do componente
+  encapsulador, o próprio elemento `<app-searchable-select>` (sem estilo, `display: inline` por
+  padrão em elemento customizado desconhecido) vira o item real do flex/grid do container pai, e
+  o `mat-form-field` interno fica inerte pra fins de layout — sintoma visual: campo encolhido/mal
+  dimensionado dentro de uma fileira que quebra linha normalmente. `display: contents` remove a
+  caixa do host, promovendo o `mat-form-field` interno a item direto do container pai — mesma
+  técnica pra qualquer componente futuro que só envolva (sem adicionar padding/borda própria) um
+  elemento de formulário do Material.
+- **Duplo de teste (host component) com propriedade mutável simples, não `signal()`, não
+  repropaga pra um `input()` do filho num segundo `detectChanges()`** (achado real, `apps/web
+  feat-031`, zoneless): um host component de teste com `options: X[] = [...]` (campo de classe
+  comum) e template `[options]="options"` funciona só na PRIMEIRA renderização; reatribuir
+  `fixture.componentInstance.options = novoValor` depois e chamar `fixture.detectChanges()` de
+  novo **não** propaga a mudança pro `input()` do componente filho neste app (zoneless, sem
+  Zone.js interceptando a mutação). Página real nunca teria esse bug porque todo estado assíncrono
+  do app já usa `signal()` + `.set()` (nunca campo mutável simples) — mas um *test double*
+  descuidado pode mascarar isso e fazer parecer que o componente sob teste não reage a `options()`
+  mudando, quando na verdade é o duplo que não é reativo. Corrigir sempre com `readonly options =
+  signal<X[]>([...])` no host de teste e `[options]="options()"` no template, nunca uma
+  propriedade mutável simples — mesmo padrão que o próprio app de produção já usa em toda página.
 - **Cobertura**: gate de 80% (statements/branches/functions/lines) via `coverageThresholds` em
   `apps/web/angular.json`, aplicado automaticamente em todo `ng test` — não precisa mais da flag
   `--code-coverage`/`--coverage` na linha de comando (era a sintaxe do Karma, stale desde que o
