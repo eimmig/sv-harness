@@ -288,6 +288,64 @@ pela resposta do último `POST` bem-sucedido e mostra o detail RFC 7807 em caso 
 comportamento correto nos dois cenários possíveis do backend, sem acoplamento a qual deles é o
 real.
 
+## 4 achados de UX ad-hoc pós-deploy (`feat-034`, sem epic próprio — mesmo precedente de `feat-032`/`033`)
+
+Achados do usuário em uso real, investigados contra o dev server (screenshots reais) antes de
+codificar — dois deles com hipótese explícita no `feature_list.json` a confirmar/descartar, dois
+sem investigação prévia nenhuma.
+
+**(1) `shared/searchable-select` grudado 2-por-linha** (confirmado por medição real):
+`getComputedStyle` no `mat-form-field` renderizado por `searchable-select.html` retornava
+`display: inline-flex` (default do Material), nunca `block`, mesmo com `register-bet.scss` tendo
+`mat-form-field { display: block }` — ViewEncapsulation emulado tageia o elemento com o hash de
+`searchable-select` (quem o renderiza), não o do caller, então o seletor compilado do caller nunca
+alcança fisicamente o elemento real. Só reproduzia visualmente em janelas largas (~1920px) — em
+1280/700/500px o painel já era estreito demais para 2 campos caberem lado a lado mesmo com o
+`display` errado, por isso a sessão anterior não tinha conseguido confirmar. Fix: `mat-form-field
+{ display: block; width: 100% }` **dentro** de `searchable-select.scss` — a única folha que
+realmente alcança o elemento.
+
+**(2) Rótulo cortado em "Mês inicial"/"Mês final"** (`shared/monthly-drawdown-grid`, `<input
+type="month">`): dois achados reais empilhados. Primeiro, o campo encolhia bem abaixo do próprio
+`flex-basis` em painel estreito (`min-width` ausente — `flex-shrink:1` default não respeita
+`flex-basis` como piso sem `min-width` explícito). Corrigir isso sozinho não resolveu o visual —
+segunda causa, medida diretamente (`getComputedStyle` comparado contra `register-bet`'s
+`ticket-number`, um `matInput` comum): `input[type="month"]` computava `line-height:16px`/
+`height:16px` contra os `24px`/`24px` de um input de texto normal — o UA do browser não aplica a
+regra `line-height:1.5` do Material a esse tipo de input nativo. Material posiciona o rótulo
+flutuante assumindo 24px de altura de conteúdo; só 16px reais deixava o rótulo sem espaço vertical
+para limpar o valor. Fix: `min-width` + `input[type='month'] { height: 24px; line-height: 24px }`.
+
+**(3) Logo da sidebar colapsada "quebrando em 2 linhas"**: não reproduzido em nenhuma condição
+testada (4 larguras, 2 níveis de zoom, screenshot no meio da transição de 0.25s) — o ícone atual
+(só a marca, sem wordmark, que já era condicional) renderiza limpo sempre. A própria descrição já
+apontava que o usuário pode ter aberto um worktree desatualizado. Decisão do usuário via
+`AskUserQuestion`: aplicar a sugestão original mesmo assim (esconder também o `<img>` do logo
+quando colapsada, deixando só o botão de expandir) — mudança preventiva de baixo risco, não uma
+correção de bug confirmado.
+
+**(4) Máscara de digitação `__/__/____` ausente** (regressão da `feat-022`, nunca notada):
+`core/date-mask.directive.ts` novo — primeira diretiva de máscara do codebase, aplicada nos 4
+lugares que usam `matDatepicker` texto livre (`shared/period-preset-filter`, `pages/history` ×2,
+`pages/search-statistics`, `pages/register-bet` — decisão do usuário via `AskUserQuestion` de
+cobrir os 4, não só o `period-preset-filter` citado literalmente no backlog). **Achado crítico**
+que só um teste e2e real revelou (documentado em detalhe em `docs/CONVENTIONS.md` seção
+"Formulários"): `NativeDateAdapter.parse()` (Angular Material) é `Date.parse()` puro — sempre
+M/D/Y para uma string com `/`, **independente** do locale ativo do app. A primeira versão desta
+diretiva ordenava a máscara pelo locale (D/M/Y para `pt-BR`/`es`, via `Intl.DateTimeFormat`,
+mesma filosofia de `core/date-format.ts`) — isso trocava dia e mês **em silêncio** no parse
+sempre que o dia fosse ≤12, um bug de integridade de dado real (aposta salva com data errada, sem
+erro nenhum). Corrigido para M/D/Y sempre, independente do idioma — só o texto do placeholder
+continua traduzido, a ordem de digitação exigida nunca varia. Testes unitários (`vitest`)
+cobrem a formatação da string; JSDOM nunca resolve um `Date` real por esse caminho (confirmado
+mesmo setando um valor completo diretamente, sem a diretiva) — a prova do `Date` final correto
+fica no e2e (`period-report.spec.ts`), que foi o teste que efetivamente capturou o bug antes do
+fix.
+
+Story SV-518 (subtasks SV-519..522), PRs #152-155, CI+SonarCloud verdes. `Delivery Reviewer`/
+`Test Suite Auditor` (self-review): `PASS`. `./init.sh` e `npx playwright test` completos verdes
+(56→57 arquivos de teste, 81 e2e).
+
 ## Tela de troca de senha (`epic-030` da raiz, done)
 
 **Implementado em `web feat-035`**, consumindo `POST /api/v1/auth/change-password`

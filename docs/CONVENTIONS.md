@@ -626,6 +626,56 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
     componente e `this.formDirective.resetForm()` no lugar de `this.form.reset()` — reseta o
     `FormGroup` E a flag `submitted` junto. Aplicar em qualquer formulário novo deste app que
     permaneça na mesma tela e se limpe após sucesso.
+  - **`NativeDateAdapter.parse()` (Angular Material) é `new Date(Date.parse(value))` — sempre
+    M/D/Y para uma string com `/`, INDEPENDENTE do locale ativo do app** (achado real e crítico,
+    `apps/web feat-034.3`, confirmado contra um browser real, não só leitura de código): lido
+    `node_modules/@angular/material/fesm2022/core.mjs` — `format()` usa `Intl.DateTimeFormat(
+    this.locale, ...)` (reage a `setLocale()`), mas `parse()` **não** — é só `Date.parse()` puro,
+    e `Date.parse()` para uma string não-ISO separada por `/` segue a convenção americana (M/D/Y)
+    em todo motor JS relevante, sempre, não importa `MAT_DATE_LOCALE`/`setLocale()`. O primeiro
+    `appDateMask` (diretiva de máscara de digitação `__/__/____`, `core/date-mask.directive.ts`)
+    formatava dia/mês/ano na ordem do locale ativo (`pt-BR`/`es` = D/M/Y, via
+    `Intl.DateTimeFormat(locale).formatToParts()`, mesmo racional Intl-based de
+    `core/date-format.ts`) — parecia correto e passava em unitário (JSDOM nunca resolve o Date
+    de verdade nesse caminho, só prova a formatação da string em si, ver abaixo). Só um teste
+    e2e real (`e2e/period-report.spec.ts`, digitando "05092026" esperando 5 de setembro em
+    pt-BR) expôs o defeito: `Date.parse("05/09/2026")` sempre lê mês=05/dia=09, então uma
+    aposta com dia≤12 e mês diferente do dia seria salva com dia e mês **trocados, em
+    silêncio** — sem erro, sem validação, só um dado errado no banco. Corrigido removendo o
+    Intl/locale da ordem da máscara — `appDateMask` agora usa M/D/Y **sempre**, independente do
+    idioma ativo (só o texto do placeholder continua traduzido — a ORDEM de digitação exigida
+    para o parse funcionar nunca varia, só a legenda visual). O clique no calendário do próprio
+    `mat-datepicker` nunca teve esse problema (constrói um `Date` direto a partir de ano/mês/dia,
+    nunca passa por `Date.parse()` de string) — só o caminho de digitação de texto livre é
+    afetado. Qualquer máscara/parsing de data futura neste app **não pode** assumir que o locale
+    ativo controla a ordem esperada por `matDatepicker`; controla só a exibição.
+  - **JSDOM nunca resolve um `Date` real através de `input+matDatepicker+ngModel`, mesmo para um
+    valor completo e corretamente formatado setado diretamente (sem digitação)** (achado real,
+    mesma feature): um harness mínimo (`date-mask.directive.spec.ts`) que seta `input.value =
+    '17/09/2026'` e dispara `input.dispatchEvent(new Event('input'))` nunca preenche o `ngModel`
+    vinculado, mesmo com `provideNativeDateAdapter()` e `DateAdapter.setLocale()` configurados —
+    causa raiz não identificada (não vale o custo de investigar mais a fundo só para viabilizar
+    unitário). Confirma o padrão já usado por `period-preset-filter.spec.ts` (testar o
+    componente via chamada direta de método, não pela digitação real no DOM) e desloca a prova
+    de que o texto digitado realmente vira um `Date` correto para o e2e (Playwright, browser
+    real) — unitário prova só a formatação da string (`input.value`), não o parse.
+  - **Vitest/JSDOM neste projeto resolve `navigator.language` como `en-US`, não `pt-BR`** (achado
+    real, mesma feature, `register-bet.spec.ts`): qualquer `describe` que nunca precisou de
+    `Language` antes (nenhum componente da árvore o injetava) e ganha uma dependência nova que o
+    injeta (aqui, `DateMaskDirective` em `betDateOnly`) corre o risco de `Language.current()`
+    resolver via `browserLocale()` (fallback quando `localStorage['stakevault.language']` está
+    vazio) para `en-US` em vez do `pt-BR` que o `langs`/`availableLangs` do teste presume — toda
+    chamada `.translate()`/pipe do componente (não só da diretiva nova) passa a resolver contra
+    um lang não registrado no mock, retornando a chave crua/formato de fallback do Transloco em
+    vez do texto esperado. Sintoma enganoso: o teste que quebra é o que afirma uma STRING
+    traduzida literal (`expect(...).toBe('Aposta registrada com sucesso.')`), não o que só
+    verifica presença/estrutura — os demais testes do mesmo arquivo continuam verdes. Corrigido
+    com `localStorage.setItem('stakevault.language', 'pt-BR')` explícito no `beforeEach` (não
+    `removeItem` — o fallback do browser não é `pt-BR` neste ambiente), mesmo padrão que
+    `auth.spec.ts`/`app-side-nav.spec.ts` já usam. Ao adicionar a QUALQUER componente uma
+    dependência nova que injeta `Language` (direta ou via uma diretiva/serviço), conferir se o
+    spec daquele componente já fixa o locale explicitamente antes de confiar em asserções de
+    texto traduzido.
 - **Estilo**: SCSS por componente (`:host`), utilizando Angular Material. Tema (claro/escuro),
   paleta de cores e inventário de componentes visuais já decididos em [[DESIGN-SYSTEM]] — não
   escolher uma paleta alternativa por conta própria.
