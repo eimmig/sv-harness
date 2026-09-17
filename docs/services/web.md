@@ -301,6 +301,13 @@ horizontal quando autenticado) — idioma/tema viram controles flutuantes no can
 esquerdo, sem barra, só na tela de login (não autenticado); nos demais estados, idioma/tema vivem
 no rodapé do `app-side-nav`.
 
+**Estilizar o painel de um overlay do CDK (`mat-menu`/`mat-select`) pelo tamanho de outro
+elemento** (`web feat-033`): o painel renderiza fora do `:host` do componente, então CSS scoped
+não alcança — precisa de `panelClass` (`[class]` no `<mat-menu>`) + `::ng-deep` no SCSS do
+componente que o abre, não um arquivo global. Usado 2x: `language-selector.scss` (raio da borda)
+e `app-side-nav.scss` (menu Cadastrar/Dashboard de cada recurso acompanha a largura da nav
+quando expandida, `min-width: $width-expanded`, volta ao padrão do Material quando colapsada).
+
 Motion pass (pedido do usuário, "bastante animações, bem fluido", orientado pela skill
 `impeccable` — `.claude/skills/impeccable`, `docs/DESIGN-SYSTEM.md`/`docs/AGENT-SKILLS.md`
 continuam a fonte normativa de paleta/layout, a skill só orienta motion/polish):
