@@ -4,7 +4,7 @@ tags: [service, backend]
 
 # auth-service
 
-Java 25 + Spring Boot 4.x. Ver [[ARCHITECTURE]] para o panorama geral e [[REQUIREMENTS]] para
+Java 25 + Spring Boot 4.x. Ver [[arquitetura]] para o panorama geral e [[requisitos]] para
 RF01/RF02 completos. Harness de código em `services/auth-service/CLAUDE.md`.
 
 ## Responsabilidade
@@ -20,12 +20,12 @@ RF01/RF02 completos. Harness de código em `services/auth-service/CLAUDE.md`.
 Token **PASETO** (Platform-Agnostic Security Tokens) — não JWT. O API Gateway valida o token
 antes de rotear para os demais serviços. O token carrega claims de `userId` **e** `tenantId`
 (slug do tenant, resolvido no login) — é a partir desses claims que o Gateway injeta
-`X-User-Id`/`X-Tenant-Id` (ver [[API-CONTRACTS]]).
+`X-User-Id`/`X-Tenant-Id` (ver [[contratos-de-api]]).
 
 > **Contrato implementado em `feat-005`** (`POST /api/v1/auth/login`, biblioteca
 > `io.github.nbaars:paseto4j-version4:2024.3` — v4.**local** simétrico, não v4.public/assinado,
 > chave `PASETO_LOCAL_KEY` compartilhada com `api-gateway` quando `epic-008` existir, ver
-> [[OBSERVABILITY-AND-CONFIG]]): body `{"slug": "acme", "email": "admin@acme", "password":
+> [[observabilidade-e-configuracao]]): body `{"slug": "acme", "email": "admin@acme", "password":
 > "..."}` → `200` `{"token": "v4.local...", "mustChangePassword": true|false, "userId": "uuid",
 > "role": "ADMIN"|"MEMBER"}`. `slug` vem do **corpo**, não do header `X-Tenant-Id` — o chamador
 > ainda não está autenticado, não há tenant resolvido antes do login. Token carrega
@@ -59,7 +59,7 @@ de banco" para o racional completo. Resumo:
   `mustChangePassword = true`.
   > **Resolvido em 2026-08-02** (ver [[DECISIONS-LOG]] "Modelo de tenant multiusuário", item 3):
   > autenticação via header `X-Admin-Api-Key` (segredo estático dedicado ao operador, ver
-  > [[API-CONTRACTS]]). Orquestração: **3 chamadas manuais separadas** do operador — este
+  > [[contratos-de-api]]). Orquestração: **3 chamadas manuais separadas** do operador — este
   > serviço primeiro, depois `bets-service`, depois `stats-service` — nenhum serviço chama os
   > outros dois em código. Senha padrão previsível sinalizada por `mustChangePassword`.
   > **Resolvido em `feat-005` (2026-09-04, decisão do usuário — não a intenção original desta
@@ -76,7 +76,7 @@ de banco" para o racional completo. Resumo:
   > recuperável. `409` se o slug já estiver provisionado (`gateway.exists()` checado **antes** de
   > qualquer escrita — idempotência do `CREATE SCHEMA IF NOT EXISTS` faria uma segunda chamada
   > reprovisionar em silêncio sem essa checagem); `422` para slug em formato inválido (validação
-  > de domínio, não Bean Validation — ver [[API-CONTRACTS]] seção "Formato de erro" para o corte
+  > de domínio, não Bean Validation — ver [[contratos-de-api]] seção "Formato de erro" para o corte
   > 400/422); `401` sem tocar o banco se `X-Admin-Api-Key` ausente/incorreto.
   > **`downstreamProvisioningFailures` acrescentado em `feat-015` (2026-09-11, reverte a decisão
   > de "3 chamadas manuais" - ver [[DECISIONS-LOG]] item 3)**: depois de criar schema+admin
@@ -105,7 +105,7 @@ de banco" para o racional completo. Resumo:
   > é identidade do chamador, não um campo de payload). `400` se `X-Tenant-Id` estiver ausente
   > (ainda não existe `api-gateway`/`epic-008` para injetar os dois headers de verdade — por ora
   > quem chama informa direto, mesmo modelo de confiança que `bets-service`/`stats-service` vão
-  > usar, ver [[API-CONTRACTS]]) ou se o payload falhar Bean Validation (`name`/`email`/`password`
+  > usar, ver [[contratos-de-api]]) ou se o payload falhar Bean Validation (`name`/`email`/`password`
   > em branco, `email` com formato inválido). `403` se o chamador não existir no tenant resolvido
   > ou não for `admin` (os dois casos retornam o mesmo erro, para não vazar enumeração de
   > usuário). `409` se o e-mail já estiver cadastrado nesse tenant.
@@ -155,7 +155,7 @@ de banco" para o racional completo. Resumo:
   > `UserRepository.update(User): User` sempre recebeu o agregado inteiro — `feat-017` não muda de
   > comportamento (já enviava `passwordHash`/`mustChangePassword` inalterados do alvo). Qualquer
   > serviço Java que reaproveitar esse mecanismo de `findById+applyUpdate+save` (ver
-  > [[CONVENTIONS]]) deve conferir se o método `applyUpdate` da entidade cobre **todos** os campos
+  > [[convencoes]]) deve conferir se o método `applyUpdate` da entidade cobre **todos** os campos
   > que o `update()` de domínio promete alterar, não só os que a primeira feature que o criou
   > precisava.
 - **Login (RF02)**: e-mail é único apenas dentro do schema do tenant, não globalmente — a tela
@@ -164,7 +164,7 @@ de banco" para o racional completo. Resumo:
 
 ## Modelo de dados (banco `auth`, isolado — Database per Service, schema-per-tenant)
 
-Ver [[DATA-MODEL]] para o ERD (Mermaid + PNG original do TCC1). ERD original confirmado sem
+Ver [[modelo-de-dados]] para o ERD (Mermaid + PNG original do TCC1). ERD original confirmado sem
 divergências em 2026-08-01; `role` e o isolamento por schema (`tenant_<slug>`) são extensões de
 2026-08-02 sobre esse ERD, ver [[DECISIONS-LOG]].
 
@@ -178,9 +178,9 @@ divergências em 2026-08-01; `role` e o isolamento por schema (`tenant_<slug>`) 
   tenant**, como qualquer outro dado de negócio.
 
 **Mapeamento JPA/persistência implementado em `feat-002`** (tabelas físicas `users`/
-`telegram_accounts`, não `user`/`telegram_account` — ver [[DATA-MODEL]] nota sobre palavra
+`telegram_accounts`, não `user`/`telegram_account` — ver [[modelo-de-dados]] nota sobre palavra
 reservada do Postgres): roteamento por schema via multi-tenancy do Hibernate (mecanismo
-reaproveitável pelos outros serviços Java, documentado em [[CONVENTIONS]] seção "Padrões de
+reaproveitável pelos outros serviços Java, documentado em [[convencoes]] seção "Padrões de
 código Java"). `UserRepository.save()`/`TelegramAccountRepository.save()` são **só de criação**
 por enquanto (`Persistable<UUID>` sempre trata o id como novo) — nenhuma feature do backlog atual
 precisa atualizar uma linha já existente; quando `mustChangePassword` precisar ser zerado após
@@ -242,7 +242,7 @@ mensagens do bot:
   > ambíguos, TTL configurável via `telegram.link-code-ttl-minutes`, default 15 minutos).
   > `TELEGRAM_LINK`/`PENDING_TELEGRAM_LINK` são entidades JPA normais com `@Table(schema =
   > "public")` explícito — não um adapter JDBC separado — convivendo com a multi-tenancy do
-  > Hibernate na mesma `EntityManagerFactory` (ver [[CONVENTIONS]] seção "Migrations"); a
+  > Hibernate na mesma `EntityManagerFactory` (ver [[convencoes]] seção "Migrations"); a
   > transação de confirmação abre o `TenantContextScope` do tenant resolvido **antes** de entrar
   > no método `@Transactional` (não durante), porque a sessão Hibernate resolve o schema da
   > conexão uma única vez, na primeira aquisição, não a cada query — abrir o escopo depois não

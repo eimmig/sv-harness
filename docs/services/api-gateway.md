@@ -6,12 +6,12 @@ tags: [service, backend, infra]
 
 Java 25 + Spring Boot 4.x + **Spring Cloud Gateway Server WebMVC** (bloqueante/servlet, não o
 Gateway reativo/WebFlux — decisão de 2026-09-07, ver [[DECISIONS-LOG]], para não introduzir o
-único serviço assíncrono do projeto). Ver [[ARCHITECTURE]] para o panorama geral e
-[[API-CONTRACTS]] para o modelo de confiança que este serviço implementa. Harness de código em
+único serviço assíncrono do projeto). Ver [[arquitetura]] para o panorama geral e
+[[contratos-de-api]] para o modelo de confiança que este serviço implementa. Harness de código em
 `services/api-gateway/CLAUDE.md`.
 
 > Nomenclatura nos diagramas originais do TCC1 (`docs/diagrams/architecture/`, ver
-> [[ARCHITECTURE]] seção "Diagramas estrutural e de implantação"): o diagrama de implantação
+> [[arquitetura]] seção "Diagramas estrutural e de implantação"): o diagrama de implantação
 > (`deployment-diagram.png`) mostra dois componentes distintos — um
 > `Container: API Gateway (HTTP/REST)`, que é este serviço, e uma `Abstração: Load Balancer
 > (Kubernetes Ingress/Service)` na frente dele, um nível de infraestrutura mais baixo (fora de
@@ -21,7 +21,7 @@ Gateway reativo/WebFlux — decisão de 2026-09-07, ver [[DECISIONS-LOG]], para 
 
 ## Por que existe
 
-Único ponto de entrada HTTP público da plataforma. [[API-CONTRACTS]] decide que `bets-service` e
+Único ponto de entrada HTTP público da plataforma. [[contratos-de-api]] decide que `bets-service` e
 `stats-service` confiam cegamente nos headers `X-User-Id`/`X-Tenant-Id` e não revalidam o token
 PASETO — este serviço é quem valida o token de fato e injeta esses headers, e é o único
 componente que pode. Sem ele, o modelo de confiança descrito na documentação não tem
@@ -32,9 +32,9 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
 
 1. **Validação de token PASETO**: toda rota autenticada exige um token PASETO válido (emitido
    por [[auth-service]]), enviado no header `Authorization: Bearer <token>` (ver
-   [[API-CONTRACTS]] seção "Confiança entre serviços"). Token ausente/inválido/expirado → `401`,
+   [[contratos-de-api]] seção "Confiança entre serviços"). Token ausente/inválido/expirado → `401`,
    `application/problem+json` (`title`/`detail` localizados por `Accept-Language`, ver
-   [[API-CONTRACTS]] seção "Internacionalização (i18n)"). **Exceção: `POST /api/v1/auth/login` é
+   [[contratos-de-api]] seção "Internacionalização (i18n)"). **Exceção: `POST /api/v1/auth/login` é
    pública** (achado real de `feat-003`, corrigido antes de existir tráfego real) - exigir token
    para emitir o próprio token impediria qualquer login. Único caminho isento além de
    `/actuator/**`.
@@ -85,7 +85,7 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
 4. **Credencial de serviço para [[telegram-integration]]**: o bot não tem um usuário logado com
    token PASETO — só sabe o `telegramUserId` de quem mandou a mensagem. Para esse caminho:
    - `telegram-integration` chama o Gateway com um header `X-Service-Key` (segredo estático por
-     ambiente, ver [[OBSERVABILITY-AND-CONFIG]]) em vez de um token PASETO, e informa **qual**
+     ambiente, ver [[observabilidade-e-configuracao]]) em vez de um token PASETO, e informa **qual**
      usuário do Telegram fez a chamada via `X-Telegram-User-Id` (decisão de 2026-09-07, ver
      [[DECISIONS-LOG]] — header dedicado, o corpo da requisição continua idêntico ao do
      formulário web).
@@ -107,7 +107,7 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
    (ausente ou em branco), propaga se já existir, injeta no MDC (`correlationId`, mesma
    convenção camelCase de `TenantSchemaFilter` em `bets-service`) e repassa no request roteado
    para `auth-service`/`bets-service`/`stats-service` via `CorrelationIdRequestWrapper` (ver
-   [[OBSERVABILITY-AND-CONFIG]]). Roda para **toda** rota — `@Order(Ordered.HIGHEST_PRECEDENCE)`,
+   [[observabilidade-e-configuracao]]). Roda para **toda** rota — `@Order(Ordered.HIGHEST_PRECEDENCE)`,
    sem `shouldNotFilter`, inclusive `/actuator/**` — independente de validação PASETO (item 1) ou
    credencial de serviço (item 4); a composição dos dois wrappers (`ResolvedIdentityRequestWrapper`
    + `CorrelationIdRequestWrapper`) foi provada ponta a ponta nos dois caminhos de autenticação.
@@ -120,13 +120,13 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
    cobria CORS antes, gap real desde que [[web]] existe, não só do ambiente local): `CorsConfig`
    registra um `CorsFilter` (biblioteca do Spring) para **toda** rota, origem(ns) configurável(is)
    via `CORS_ALLOWED_ORIGINS` (default `http://localhost:4200`, ver
-   [[OBSERVABILITY-AND-CONFIG]]), sem `allowCredentials` (token vai em `Authorization`, nunca
-   cookie — ver [[API-CONTRACTS]] seção "CORS"). Precisa rodar **antes** de `PasetoAuthenticationFilter`/
+   [[observabilidade-e-configuracao]]), sem `allowCredentials` (token vai em `Authorization`, nunca
+   cookie — ver [[contratos-de-api]] seção "CORS"). Precisa rodar **antes** de `PasetoAuthenticationFilter`/
    `ServiceKeyAuthenticationFilter` (item 1/4) — o preflight `OPTIONS` do navegador não carrega
    `Authorization`/`X-Service-Key`, então se qualquer um dos dois rodar primeiro rejeita o
    preflight com `401` antes do `CorsFilter` responder. **Gotcha real**: `@Order` direto no método
    `@Bean` que retorna o `CorsFilter` **não** é suficiente para isso — só funciona registrando via
-   `FilterRegistrationBean<CorsFilter>` com `.setOrder(...)` explícito (ver [[CONVENTIONS]] seção
+   `FilterRegistrationBean<CorsFilter>` com `.setOrder(...)` explícito (ver [[convencoes]] seção
    "Java" para o detalhe, evitar redescobrir em outro serviço que precise ordenar um `Filter` de
    biblioteca).
 
@@ -135,7 +135,7 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
 - **Não roteia a criação de tenant**: o operador da plataforma chama a rota administrativa de
   cada serviço (`auth-service`, `bets-service`, `stats-service`) diretamente, autenticado por
   `X-Admin-Api-Key` — 3 chamadas manuais separadas, fora da tabela de roteamento acima. Ver
-  [[API-CONTRACTS]] e [[DECISIONS-LOG]] item 3.
+  [[contratos-de-api]] e [[DECISIONS-LOG]] item 3.
 - Não implementa regra de negócio de nenhum outro serviço (RN01–RN09 continuam em
   `bets-service`/`stats-service`).
 - Não persiste dados — sem banco próprio, sem exceção à regra Database per Service (ele
@@ -148,5 +148,5 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
 - [[bets-service]], [[stats-service]] — destino do roteamento, confiam em
   `X-User-Id`/`X-Tenant-Id`.
 - [[telegram-integration]] — único consumidor do caminho de credencial de serviço.
-- [[API-CONTRACTS]] — modelo de confiança completo entre serviços.
+- [[contratos-de-api]] — modelo de confiança completo entre serviços.
 - [[DECISIONS-LOG]] — racional do modelo de tenant multiusuário (2026-08-02).

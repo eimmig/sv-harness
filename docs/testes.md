@@ -4,7 +4,7 @@ tags: [conventions, testing]
 
 # Estratégia de testes
 
-Ver [[CONVENTIONS]] para arquitetura/código. O TCC 1 já define a meta de cobertura (seção
+Ver [[convencoes]] para arquitetura/código. O TCC 1 já define a meta de cobertura (seção
 "Método", fase "Verificação" do fluxo Kanban): **cobertura de testes unitários superior a 80%**
 antes de uma feature ser considerada `done` — isso vale para todos os serviços, não só os Java.
 
@@ -13,18 +13,18 @@ antes de uma feature ser considerada `done` — isso vale para todos os serviço
 Nome de método/caso de teste sempre em **inglês**, padrão `should<ComportamentoEsperado>` (ex.:
 `shouldRejectDuplicateEmail`, `shouldReturnEmptyWhenUserIdNotFound`) — nunca descrição em
 português (`salvaEBuscaPorId`, `emailDuplicado_rejeitado`). Motivo: mesmo racional de
-`docs/CONVENTIONS.md` para mensagem de commit — superfície técnica compartilhada com nomes de
+`docs/convencoes.md` para mensagem de commit — superfície técnica compartilhada com nomes de
 classe/método, que já são em inglês; só documentação de projeto (`CHANGELOG.md`, `progress.md`,
 vault) segue em português. Decisão de 2026-09-04, corrigindo os testes de `auth-service feat-001`
 e o início de `feat-002`, escritos em português antes desta regra existir — não reescritos
 retroativamente sem confirmação do usuário (fora do escopo desta nota; não é divergência do TCC1,
 por isso não entra em `docs/DECISIONS-LOG.md` — mesmo padrão de "Título do PR"/"Comentário em
-código" em `docs/CONVENTIONS.md`).
+código" em `docs/convencoes.md`).
 
 ## Java (auth-service, bets-service, stats-service)
 
 - **Unitários**: JUnit 5 + Mockito + AssertJ. Testam `domain/` e `application/` isoladamente,
-  mockando os `port/out/` (ver [[CONVENTIONS]] para a estrutura hexagonal). Nenhum teste
+  mockando os `port/out/` (ver [[convencoes]] para a estrutura hexagonal). Nenhum teste
   unitário deve subir contexto Spring (`@SpringBootTest`) nem tocar banco/RabbitMQ real.
 - **Integração**: **Testcontainers** para Postgres, RabbitMQ e Redis (quando aplicável) — testam
   os `adapter/out/persistence/` e `adapter/in/messaging/` contra instâncias reais e efêmeras,
@@ -33,10 +33,10 @@ código" em `docs/CONVENTIONS.md`).
   execução de teste, isolado do ambiente de dev.
 - **Schema-per-tenant nos testes de integração** (decisão de 2026-08-02, ver [[DECISIONS-LOG]]):
   `auth-service`, `bets-service` e `stats-service` são schema-per-tenant com migração lazy (ver
-  [[CONVENTIONS]] seção "Migrations") — um teste de `adapter/out/persistence/` não tem schema
+  [[convencoes]] seção "Migrations") — um teste de `adapter/out/persistence/` não tem schema
   nenhum pronto no Postgres efêmero do Testcontainers até que algo o crie.
   - Uma classe base de teste de integração por serviço (`src/test/java/.../support/`, não
-    compartilhada entre serviços — cada um é buildado independentemente, ver [[CONVENTIONS]])
+    compartilhada entre serviços — cada um é buildado independentemente, ver [[convencoes]])
     provisiona um schema de teste **chamando o mesmo caso de uso de provisionamento usado em
     produção** (o port/in de `application/` que cria o schema + roda o Flyway, ex.:
     `ProvisionTenantSchemaUseCase`), não uma cópia do SQL de criação de schema escrita à mão no
@@ -63,7 +63,7 @@ código" em `docs/CONVENTIONS.md`).
   `mvn verify`, não apenas `mvn test`, exatamente para aplicar esse gate automaticamente.
 - **i18n**: pelo menos um teste de integração por serviço confirma que uma resposta de erro
   muda de `title`/`detail` conforme o header `Accept-Language` (`pt-BR` vs `en-US` vs `es`) —
-  não é suficiente testar só o idioma padrão (ver [[CONVENTIONS]] seção "Internacionalização").
+  não é suficiente testar só o idioma padrão (ver [[convencoes]] seção "Internacionalização").
 - **`BigDecimal` e coluna `NUMERIC` — não comparar por `equals()`/`record` cru** (achado real de
   `bets-service feat-003`): uma coluna `NUMERIC(19,2)` sempre devolve o valor já normalizado pra
   escala 2 (`100` vira `100.00`) depois do round-trip pelo banco. `BigDecimal.equals()` (usado
@@ -104,7 +104,7 @@ código" em `docs/CONVENTIONS.md`).
   feat-012.6`): um helper de mock genérico (`catalogRoute()`, pensado pros catálogos
   paginados — `{content:[...], page, size, ...}`) foi reaproveitado por engano pra
   `GET /api/v1/statistics/teams`, que devolve **array puro** (`[{id,name}]`, sem envelope — ver
-  [[API-CONTRACTS]]). O componente recebia `{content:[...]}` em vez de `[...]` e tentava iterar
+  [[contratos-de-api]]). O componente recebia `{content:[...]}` em vez de `[...]` e tentava iterar
   esse objeto num `@for`, produzindo `TypeError: newCollection[Symbol.iterator] is not a
   function` — um erro só visível no console real do Chromium (`page.on('console')`/log do
   `ng serve`), nunca reproduzido pelos testes unitários (`HttpTestingController` já tinha o
@@ -112,7 +112,7 @@ código" em `docs/CONVENTIONS.md`).
   travado (botão de submit nunca habilitava), sem nenhuma mensagem de erro visível na tela —
   Angular engoliu a exceção do `@for` e parou de atualizar aquele branch do template, sem
   quebrar o resto da página. Lição: ao mockar um endpoint novo em Playwright, conferir a forma
-  exata da resposta em `docs/API-CONTRACTS.md` antes de reaproveitar um helper de mock existente
+  exata da resposta em `docs/contratos-de-api.md` antes de reaproveitar um helper de mock existente
   — dois endpoints "parecidos" (ambos devolvem `{id,name}`) podem ter envelopes diferentes.
 - **Um `forkJoin` novo dentro de uma página já existente precisa de mock de rota Playwright pra
   CADA chamada, ou a página inteira trava, não só o campo novo** (achado real, `apps/web
@@ -213,7 +213,7 @@ código" em `docs/CONVENTIONS.md`).
     real, `apps/web feat-025`): um branch novo só exercitado por um e2e passou no `ng test` local
     (nenhum teste quebrou) mas reprovou o Quality Gate do PR `feature -> develop` com
     `new_coverage: 70% < 80%` — o e2e prova o comportamento (é a fonte de verdade preferida por
-    `docs/TESTING.md`), mas o SonarCloud só recebe o relatório do `ng test`, então uma linha só
+    `docs/testes.md`), mas o SonarCloud só recebe o relatório do `ng test`, então uma linha só
     coberta por Playwright aparece como não coberta pra ele. Toda lógica nova de componente
     (branch condicional, handler novo) precisa de pelo menos 1 teste unitário que a exercite, além
     do e2e que prova o comportamento de ponta a ponta — não é "ou/ou", os dois cobrem perguntas
@@ -222,7 +222,7 @@ código" em `docs/CONVENTIONS.md`).
     `ng test`.
 - **i18n**: pelo menos um fluxo Playwright roda com o idioma trocado para `en-US` (ou `es`) via
   o seletor de idioma, confirmando que o texto renderizado muda — não é suficiente testar só
-  `pt-BR` (ver [[CONVENTIONS]] seção "Internacionalização"). Não é necessário duplicar todos os
+  `pt-BR` (ver [[convencoes]] seção "Internacionalização"). Não é necessário duplicar todos os
   fluxos em todos os idiomas, só confirmar que a troca funciona de ponta a ponta.
 - **Glob de `page.route` não cruza `/`** (achado real de `feat-009.2`): um único `*` no padrão de
   `page.route('**/api/v1/bets*', ...)` casa só até a próxima `/` — não intercepta
@@ -232,7 +232,7 @@ código" em `docs/CONVENTIONS.md`).
   pra evitar uma interceptar a outra (código morto descoberto em revisão, nunca disparava). Só
   usar `**` (duplo) quando precisar mesmo casar um `/` no meio do padrão.
 - **Conteúdo de aba inativa de `mat-tab-group` não é confiável em teste unitário** (achado real
-  de `feat-011.3`): trocar a aba programaticamente (`MatTabGroup.selectedIndex = 1` +
+  de `feat-011.3`): trocar a aba programaticamente (`MatTabGroup.selectedindice = 1` +
   `detectChanges()`, mesmo com `await fixture.whenStable()` depois) não garante que o corpo da
   aba recém-ativada esteja no DOM no jsdom — a troca de `mat-tab-body` é *gated* por animação
   (`transitionend`), que não dispara de verdade no jsdom, então o portal do conteúdo pode nunca
@@ -296,7 +296,7 @@ O par `bets-service` (produtor) / `stats-service` (consumidor) dos eventos `BetC
 `BetSettled` não tem um broker de contrato automatizado (Pact ou similar) neste projeto — escopo
 pequeno demais para justificar a ferramenta. Em vez disso:
 
-- O schema de cada evento é a fonte da verdade (ver [[API-CONTRACTS]] e os dois arquivos em
+- O schema de cada evento é a fonte da verdade (ver [[contratos-de-api]] e os dois arquivos em
   `docs/contracts/`: `bet-created.schema.json` e `bet-settled.schema.json`).
 - `bets-service` deve ter um teste que valida cada mensagem publicada contra o JSON Schema
   correspondente.
@@ -310,7 +310,7 @@ pequeno demais para justificar a ferramenta. Em vez disso:
 Os relatórios de cobertura definidos acima (JaCoCo XML, LCOV do `ng test --code-coverage`,
 `coverage.xml` do `pytest-cov`) são gerados localmente pelo `init.sh`/gate de cada serviço e
 também consumidos pela pipeline de CI para a análise de qualidade/cobertura no SonarCloud — ver
-[[CI-CD]] para os 6 passos da pipeline e o setup pendente. O gate de 80% em si continua sendo
+[[pipeline-ci-cd]] para os 6 passos da pipeline e o setup pendente. O gate de 80% em si continua sendo
 aplicado localmente (`mvn verify`/`ng test`/`pytest-cov`), o Sonar não duplica esse gate, só
 reporta a métrica.
 
@@ -318,4 +318,4 @@ reporta a métrica.
 
 - [[DECISIONS-LOG]] — racional do modelo de tenant multiusuário e por que a fixture de teste de
   integração provisiona schema chamando o caso de uso de produção, não a rota admin HTTP.
-- [[CI-CD]] — pipeline de CI por serviço (changelog, i18n, build, testes, SonarCloud).
+- [[pipeline-ci-cd]] — pipeline de CI por serviço (changelog, i18n, build, testes, SonarCloud).

@@ -5,7 +5,7 @@ tags: [infra]
 # infra
 
 Docker Compose local para os serviços de infraestrutura compartilhada, mais o teste de
-resiliência cross-service (`epic-007`). Ver [[ARCHITECTURE]] para o panorama geral. Não tem
+resiliência cross-service (`epic-007`). Ver [[arquitetura]] para o panorama geral. Não tem
 serviço de aplicação (não é Java/Python/Angular), mas **tem harness de código completo e
 repositório Git próprio** (`infra/`, 7º repositório do projeto — decisão de 2026-08-02, ver
 [[DECISIONS-LOG]] "Topologia") — cobre dois epics da raiz, `epic-001` (`feat-001` em
@@ -33,8 +33,8 @@ serviço de aplicação e a raiz não pode hospedar código versionado.
 
 Transcrição fiel (Mermaid) dos diagramas de fluxo do TCC1 sobre o comportamento de RabbitMQ em
 falha — os PNGs originais ficam em `docs/diagrams/flows/` como prova de origem, o Mermaid abaixo
-é a versão autoritativa a partir de agora (mesmo motivo de [[DATA-MODEL]] e da seção "Fluxos
-dinâmicos" de [[ARCHITECTURE]]).
+é a versão autoritativa a partir de agora (mesmo motivo de [[modelo-de-dados]] e da seção "Fluxos
+dinâmicos" de [[arquitetura]]).
 
 ### Consumo com retry automático
 
@@ -76,7 +76,7 @@ sequenceDiagram
 *Diagrama original: `docs/diagrams/flows/dead-letter-queue.png`.*
 
 O limite de tentativas é `x-delivery-limit: 3` na fila `stats.bet-events` (quorum queue — ver
-tabela de topologia em [[API-CONTRACTS]]), mas **desde 2026-09-09 esse número só é decorativo no
+tabela de topologia em [[contratos-de-api]]), mas **desde 2026-09-09 esse número só é decorativo no
 broker — quem efetivamente conta e aciona a DLQ é o retry de aplicação em `stats-service`**, não
 mais o RabbitMQ. Ambiente local usa a estratégia de dead-lettering **default do RabbitMQ,
 `at-most-once`**: em falha de broker a mensagem pode se perder no trajeto até a DLQ.
@@ -225,7 +225,7 @@ Decisões de desenho, todas com precedente ou motivo documentado:
   Kubernetes): o `Job` `rabbitmq-init` usa um `initContainer` (`busybox`, `nc -z rabbitmq 5672`
   em loop) esperando a porta AMQP responder antes de rodar o mesmo script de sempre.
 - **Rotas administrativas continuam fora do Gateway** (mesmo desenho de sempre, ver
-  [[API-CONTRACTS]]): só `api-gateway` tem `Ingress`; `auth-service`/`bets-service`/
+  [[contratos-de-api]]): só `api-gateway` tem `Ingress`; `auth-service`/`bets-service`/
   `stats-service` são `Service` `ClusterIP`-only — o operador roda `POST
   /api/v1/admin/tenants` via `kubectl port-forward svc/<nome> <porta>:<porta>`, não um
   workaround temporário, é assim que se opera um cluster real também.
@@ -240,7 +240,7 @@ verde): tenant provisionado via `port-forward`, login e registro de aposta via `
 ### Migração pro k3s de produção (`infra/feat-005`, 2026-09-11)
 
 Mesmos manifests, agora contra o servidor Debian real (k3s, não `kind`) puxando as 6 imagens do
-GHCR (`imagePullSecrets: ghcr-pull`) em vez de `kind load` — ver `docs/CI-CD.md` seção "Build e
+GHCR (`imagePullSecrets: ghcr-pull`) em vez de `kind load` — ver `docs/pipeline-ci-cd.md` seção "Build e
 push de imagem Docker pro GHCR". `web` (frontend) ganhou manifest próprio pela primeira vez
 (nunca tinha, mesmo depois de `feat-004`); `ingress.yaml` foi dividido por path pra acomodar os
 dois (`/api` pro `api-gateway`, `/` pro `web` — rotas de negócio já nascem com o prefixo
@@ -379,7 +379,7 @@ produção enquanto essa decisão não for tomada.
 
 - `infra/.env.example` — todas as variáveis, sem valor real. Nenhuma variável tem default no
   compose: sem `.env` o `up` falha em vez de subir com credencial conhecida.
-- `infra/rabbitmq/definitions.json` — exchanges, filas e bindings (tabela em [[API-CONTRACTS]]).
+- `infra/rabbitmq/definitions.json` — exchanges, filas e bindings (tabela em [[contratos-de-api]]).
 - `infra/rabbitmq/apply-definitions.sh` — aplicado por um container one-shot `rabbitmq-init`
   depois do broker ficar `healthy`. A topologia **não** é carregada por `load_definitions`
   porque a documentação oficial do RabbitMQ é explícita: *"if a blank (uninitialised) node
@@ -397,7 +397,7 @@ deste repositório.
 
 ## Ver também
 
-- [[ARCHITECTURE]] — decisão de manter RabbitMQ com DLQ desde o início, não como melhoria futura.
+- [[arquitetura]] — decisão de manter RabbitMQ com DLQ desde o início, não como melhoria futura.
 - [[api-gateway]] — **não** faz parte deste harness, apesar de aparecer em diagramas de
   infraestrutura em outros projetos. É um serviço de aplicação com harness e repositório
   próprios (`epic-008`, `services/api-gateway/`), porque valida token e tem lógica de

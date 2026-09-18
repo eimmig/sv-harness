@@ -4,10 +4,13 @@ tags: [statistics, stats-service, web]
 
 # Fórmulas e conceitos estatísticos
 
+Navegação: [[business/estatisticas-e-dashboards]] · [[technical/referencia-tecnica|Referência técnica]] ·
+[[stats-service]] · [[web]]
+
 Nota canônica das métricas calculadas por [[stats-service]] e apresentadas em [[web]] (dashboard,
 RF10/RF11, e a tela "Buscar Estatísticas", `epic-011`/`epic-012`). Toda fórmula nova documentada
 aqui **antes** de ser implementada — se este arquivo e o código divergirem, é achado de auditoria
-(ver `docs/CONVENTIONS.md`).
+(ver `docs/convencoes.md`).
 
 ## Escopo de elegibilidade (RN06)
 
@@ -388,4 +391,4 @@ as apostas com o mesmo `profit`) → retorna `null` (indeterminado), nunca divis
 - [[bets-service]] — `GET /api/v1/bankroll/balance` (saldo inicial/final) e
   `GET /api/v1/settings` (`unitPercent`), ambos consumidos pelo dashboard.
 - [[web]] — apresentação em cards/gráficos (dashboard e tela "Buscar Estatísticas").
-- [[REQUIREMENTS]] — RN04, RN06, RN08, RN09 (regras normativas de que estas fórmulas derivam).
+- [[requisitos]] — RN04, RN06, RN08, RN09 (regras normativas de que estas fórmulas derivam).

@@ -5,7 +5,7 @@ tags: [conventions, observability, config]
 # Observabilidade e configuração
 
 Convenções operacionais que evitam cada serviço logar/configurar de um jeito diferente. Ver
-[[CONVENTIONS]] e [[API-CONTRACTS]].
+[[convencoes]] e [[contratos-de-api]].
 
 ## Logs
 
@@ -16,7 +16,7 @@ Convenções operacionais que evitam cada serviço logar/configurar de um jeito 
   - é repassado em qualquer chamada HTTP entre serviços (ex.: `telegram-integration` →
     `bets-service`);
   - vai como propriedade no **envelope do evento** RabbitMQ (`correlationId`, adicional ao
-    `eventId` — ver [[API-CONTRACTS]]) para que `stats-service` consiga correlacionar o
+    `eventId` — ver [[contratos-de-api]]) para que `stats-service` consiga correlacionar o
     processamento assíncrono de volta à requisição original;
   - aparece em toda linha de log relevante (MDC no Java / equivalente no Python).
 - Sem isso, depurar "por que essa aposta enviada pelo Telegram não apareceu no dashboard" exige
@@ -71,14 +71,14 @@ futura dos quatro serviços sem mudar o mecanismo (só o default deixa de ser `l
   necessárias (credenciais de banco, RabbitMQ, Redis, chave PASETO, token do bot Telegram,
   `X-Service-Key` compartilhada entre `api-gateway` e `telegram-integration`, `X-Admin-Api-Key`
   de uso exclusivo do operador da plataforma para criar tenants em `auth-service`/`bets-service`/
-  `stats-service` (decisão de 2026-08-02, ver [[DECISIONS-LOG]] item 3) — ver [[API-CONTRACTS]]
+  `stats-service` (decisão de 2026-08-02, ver [[DECISIONS-LOG]] item 3) — ver [[contratos-de-api]]
   seção "Confiança entre serviços"). `.env` real fica em `.gitignore` desde o `feat-001` de cada
   serviço. Em `auth-service`, a env var é `ADMIN_API_KEY` (`feat-003`), lida em
   `application.yml` como `admin.api-key` — perfil `test` usa um valor fixo, nunca `${ADMIN_API_KEY}`
   sem default.
 - Serviços Java: `application.yml` com profiles `dev`/`test`/`prod` — `dev` lê de `.env`
   (via `spring-dotenv` ou variáveis de ambiente do `docker-compose.yml`), `test` usa valores
-  fixos consumidos pelos containers do Testcontainers (ver [[TESTING]]), nunca aponta para
+  fixos consumidos pelos containers do Testcontainers (ver [[testes]]), nunca aponta para
   infraestrutura real.
   > **Gotcha confirmado em `infra/feat-002` (2026-09-09)**: nenhum dos 4 serviços Java tem a
   > dependência `spring-dotenv` no `pom.xml` — `cp .env.example .env` sozinho **não** alimenta
@@ -101,7 +101,7 @@ futura dos quatro serviços sem mudar o mecanismo (só o default deixa de ser `l
   > Perfil `test` de `auth-service` usa um valor hex fixo de 64 chars, mesmo padrão de
   > `ADMIN_API_KEY`.
 - CORS: env var `CORS_ALLOWED_ORIGINS` em `api-gateway` (`feat-012`, achado real de 2026-09-11 —
-  ver [[API-CONTRACTS]] seção "CORS"), lista de origens separada por vírgula, default
+  ver [[contratos-de-api]] seção "CORS"), lista de origens separada por vírgula, default
   `http://localhost:4200` (`apps/web` via `ng serve`). Sobrescrever com o domínio real de
   produção do `web` quando ele existir — nenhuma nota do vault fixa esse domínio ainda (mesmo
   estágio de `feat-009`/`feat-011`, só cluster `kind` local).

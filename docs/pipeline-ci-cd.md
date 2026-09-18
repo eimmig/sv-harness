@@ -5,8 +5,8 @@ tags: [conventions, ci-cd]
 # CI/CD
 
 Convenção de pipeline de integração contínua — evita cada serviço ganhar um workflow diferente
-(passos em ordem diferente, gate de cobertura diferente, etc.). Ver [[CONVENTIONS]] (build
-tool, i18n), [[TESTING]] (frameworks de teste, meta de cobertura 80%) e [[DECISIONS-LOG]] (data
+(passos em ordem diferente, gate de cobertura diferente, etc.). Ver [[convencoes]] (build
+tool, i18n), [[testes]] (frameworks de teste, meta de cobertura 80%) e [[DECISIONS-LOG]] (data
 da decisão).
 
 > **Topologia de repositórios (decisão de 2026-08-02, ver [[DECISIONS-LOG]])**: este projeto não
@@ -43,7 +43,7 @@ da decisão).
 | `apps/web/` | [eimmig/sv-frontend](https://github.com/eimmig/sv-frontend.git) |
 | `infra/` | [eimmig/sv-infra-backend](https://github.com/eimmig/sv-infra-backend.git) |
 
-Prefixo `sv-` = **StakeVault**, nome da marca já decidido em [[DESIGN-SYSTEM]] — não é um
+Prefixo `sv-` = **StakeVault**, nome da marca já decidido em [[sistema-de-design]] — não é um
 prefixo novo/arbitrário.
 
 **Chave de projeto no SonarCloud = `eimmig_<nome-do-repositório>`** (ex.:
@@ -86,7 +86,7 @@ Aplicam-se aos 6 repositórios de serviço (`api-gateway`, `auth-service`, `bets
    nascer, então cobrar o toque também no PR de subtask quebraria por sequenciamento).
 2. **Validador de chaves de tradução**: confere que os 3 arquivos de locale (`pt-BR`/`en-US`/
    `es`) do serviço têm exatamente o mesmo conjunto de chaves — nenhum idioma "para trás" (ver
-   [[CONVENTIONS]] seção "Internacionalização (i18n)": os três sempre em sincronia é requisito
+   [[convencoes]] seção "Internacionalização (i18n)": os três sempre em sincronia é requisito
    de `done`, não sugestão). Script: `.github/scripts/validate-i18n-keys.py` (dentro do próprio
    repositório). Caminhos por tipo de serviço, relativos à raiz do repositório:
    - Java (`api-gateway`, `auth-service`, `bets-service`, `stats-service`):
@@ -95,15 +95,15 @@ Aplicam-se aos 6 repositórios de serviço (`api-gateway`, `auth-service`, `bets
      (convenção pré-Angular 22; o `ng new` real deste app usa `public/` pra assets servidos como
      estão, achado real de `feat-001.3`, mesma classe de correção de `feat-001.1`/`.2`).
    - `telegram-integration`: `locales/{pt-BR,en-US,es}.json` (`--format json`) — formato
-     fechado como JSON nesta mesma decisão (ver [[DECISIONS-LOG]]; [[CONVENTIONS]] deixava
+     fechado como JSON nesta mesma decisão (ver [[DECISIONS-LOG]]; [[convencoes]] deixava
      JSON/gettext em aberto).
 3. **Build**: compila/instala dependências sem rodar teste ainda (serve para falhar rápido em
    erro de compilação antes de pagar o custo de subir Testcontainers). Java: `mvn -B -DskipTests
    package`. `web`: `npm ci && npm run build`. `telegram-integration`: `uv sync` + `ruff check`
    (Python não compila, mas lint/instalação de deps é o equivalente prático de "build" — ver
-   [[CONVENTIONS]] seção Python).
+   [[convencoes]] seção Python).
 4. **Testes unitários + cobertura**: Java: `mvn -B test jacoco:report` (gera
-   `target/site/jacoco/jacoco.xml`, ver [[TESTING]] — o gate de 80% em si já é aplicado pelo
+   `target/site/jacoco/jacoco.xml`, ver [[testes]] — o gate de 80% em si já é aplicado pelo
    `mvn verify` do `init.sh` local; aqui o objetivo é gerar o relatório que o Sonar consome, não
    duplicar o gate). `web`: `npm run test -- --watch=false` (gera `coverage/web/lcov.info`) — **não**
    `coverage/lcov.info` (achado real, `feat-001` PR story→develop, 2026-09-09: builder
@@ -170,7 +170,7 @@ do Jira (`description` da story/subtask) e na mensagem de commit — o `CHANGELO
 
 Consequência de sequenciamento: como a linha de cada subtask nasce **antes** da branch daquela
 subtask existir (a chave só existe depois que `jira_story.py` roda, e a branch só nasce depois de
-ter a chave — ver [[CONVENTIONS]] seção "Git"), o próprio diff de uma PR `subtask/` → branch da
+ter a chave — ver [[convencoes]] seção "Git"), o próprio diff de uma PR `subtask/` → branch da
 story **nunca** toca `CHANGELOG.md` — a linha já estava lá quando a branch foi criada. Por isso o
 passo 1 (changelog) só roda de fato na PR story → `develop` (guarda por `github.base_ref`, mesmo
 mecanismo já usado no passo 5/Sonar) — exigir o toque também no PR de subtask quebraria por
@@ -178,7 +178,7 @@ sequenciamento, não por esquecimento real.
 
 ### Quais passos rodam em qual PR
 
-O modelo de branch tem 4 níveis (ver [[CONVENTIONS]] seção "Git"), então nem todo passo faz
+O modelo de branch tem 4 níveis (ver [[convencoes]] seção "Git"), então nem todo passo faz
 sentido em todo PR:
 
 | Passo | `subtask/` → story | story → `develop` | push em `main`/`develop` |
@@ -322,7 +322,7 @@ SonarCloud):
 1. Dentro da pasta (`services/<nome>/`, `apps/web/` ou `infra/`): `git init -b main`, `git
    remote add origin <url da tabela acima>` (já feito em 2026-08-02 — ver [[DECISIONS-LOG]]),
    primeiro commit + push em `main`, depois `git checkout -b develop` + `git push -u origin
-   develop` — ver [[CONVENTIONS]] seção "Git" para o modelo de 3 branches
+   develop` — ver [[convencoes]] seção "Git" para o modelo de 3 branches
    (`main`/`develop`/`feature`-`bugfix`-`spike`).
 2. Criar o projeto correspondente no SonarCloud (mesma organização para os 6 serviços de
    aplicação, chave = nome do repositório, ex. `sv-bets-backend`).
@@ -562,9 +562,9 @@ SonarCloud daquele projeto antes de assumir defeito de código.
 
 ## Ver também
 
-- [[CONVENTIONS]] — build tool por stack, i18n (formato dos arquivos de tradução validados no
+- [[convencoes]] — build tool por stack, i18n (formato dos arquivos de tradução validados no
   passo 2).
-- [[TESTING]] — frameworks de teste e meta de cobertura 80% (o gate em si roda local via
+- [[testes]] — frameworks de teste e meta de cobertura 80% (o gate em si roda local via
   `init.sh`/`mvn verify`; o CI consome o relatório, não reimplementa o gate).
 - [[DECISIONS-LOG]] — data e racional da decisão de SonarCloud, formato JSON para i18n do
   Python, e da topologia de 7 repositórios independentes (em vez de monorepo), incluindo por que

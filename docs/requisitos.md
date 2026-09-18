@@ -4,10 +4,12 @@ tags: [requirements]
 
 # Requisitos — extraídos do TCC 1 (Quadros 3, 4 e 5)
 
+Navegação: [[business/negocio|Negócio]] · [[mapa-de-navegacao]] · [[technical/referencia-tecnica|Referência técnica]]
+
 Fonte: `TCC_1_Sistema_de_Apostas.pdf`, seção 4.1 (Escopo), cruzado com
 `docs/diagrams/process/use-case-diagram.png` (UC01–UC11, mesma cobertura de RF — confirmado em
 2026-08-01, sem divergências; movido de `D:\UTFPR\TCC\Graficos` para dentro do vault em
-2026-08-02). Ver também [[ARCHITECTURE]] para a arquitetura geral.
+2026-08-02). Ver também [[arquitetura]] para a arquitetura geral.
 
 ## Mapeamento por serviço
 
@@ -31,7 +33,7 @@ Fonte: `TCC_1_Sistema_de_Apostas.pdf`, seção 4.1 (Escopo), cruzado com
 > (organização com vários usuários independentes, um `admin` que cria os demais, login exige
 > identificador da organização além de e-mail/senha) — ver [[DECISIONS-LOG]] seção "Modelo de
 > tenant multiusuário e provisionamento de banco" para o racional completo e
-> [[auth-service]]/[[DATA-MODEL]] para o desenho resultante. A descrição da tabela acima é a
+> [[auth-service]]/[[modelo-de-dados]] para o desenho resultante. A descrição da tabela acima é a
 > transcrição fiel do TCC1 original — não editada, para preservar a rastreabilidade com a fonte.
 | RF03 | Manter casas de apostas | Cadastro/gerenciamento das casas usadas pelo usuário, com saldo e acompanhamento da banca. |
 | RF04 | Manter apostas | Registro manual de apostas pelas interfaces da plataforma. |

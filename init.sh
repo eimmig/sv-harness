@@ -33,7 +33,7 @@ check_tool() {
 echo "== Shared tooling =="
 check_tool "Docker" "docker" "Docker 24.x+"
 check_tool "Java" "java" "Java 25 (JDK)"
-check_tool "Node.js" "node" "Node.js compatible with Angular 21.x"
+check_tool "Node.js" "node" "Node.js compatible with Angular 22.x"
 check_tool "npm" "npm" "npm (bundled with Node.js)"
 # Windows' official python.org installer only ships 'python.exe', not 'python3' — try
 # both, in that order, since 'python3' is the POSIX-conventional name where it exists.

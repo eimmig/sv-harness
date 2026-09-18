@@ -4,9 +4,9 @@ tags: [service, frontend]
 
 # web
 
-Angular 21.x + TypeScript ES2025, SPA. Ver [[ARCHITECTURE]] para o panorama geral,
-[[REQUIREMENTS]] para RF/RNF completos, [[DESIGN-SYSTEM]] para tema (claro/escuro), paleta de
-cores e inventário de componentes, e [[CONVENTIONS]] seção "Internacionalização (i18n)" para a
+Angular 21.x + TypeScript ES2025, SPA. Ver [[arquitetura]] para o panorama geral,
+[[requisitos]] para RF/RNF completos, [[sistema-de-design]] para tema (claro/escuro), paleta de
+cores e inventário de componentes, e [[convencoes]] seção "Internacionalização (i18n)" para a
 estratégia de tradução (pt-BR/en-US/es sempre mantidos, biblioteca em runtime) — tudo normativo,
 não decidir uma alternativa aqui. Harness de código em `apps/web/CLAUDE.md`.
 
@@ -23,7 +23,7 @@ não decidir uma alternativa aqui. Harness de código em `apps/web/CLAUDE.md`.
 - RNF02 — usabilidade.
 
 Chama [[api-gateway]] **cross-origin** (`environment.apiGatewayUrl`/`environment.development.ts`
-absoluto, ver [[OBSERVABILITY-AND-CONFIG]] seção "Configuração de `apps/web`") — sem proxy `/api`
+absoluto, ver [[observabilidade-e-configuracao]] seção "Configuração de `apps/web`") — sem proxy `/api`
 no `nginx.conf` de produção nem no dev server. Depende do `api-gateway` responder CORS
 (`api-gateway feat-012`, achado real de 2026-09-11 — o gap existia desde sempre, só não tinha
 sido exercitado por um browser real até então) para o navegador não bloquear a chamada.
@@ -39,7 +39,7 @@ de autenticação precisa cobrir — nenhuma das telas abaixo é autocadastro p�
 - **Sem tela pública de "criar conta"**: criação de **tenant** (e do primeiro usuário, o admin
   daquele tenant) é uma rota administrativa restrita ao operador da plataforma, **fora do
   escopo deste app por completo** — operador chama a API diretamente (`X-Admin-Api-Key`, ver
-  [[API-CONTRACTS]]), sem UI própria em `apps/web` (decisão de 2026-08-02, ver [[DECISIONS-LOG]]
+  [[contratos-de-api]]), sem UI própria em `apps/web` (decisão de 2026-08-02, ver [[DECISIONS-LOG]]
   item 11). Esse é o único passo do fluxo sem equivalente no caso de uso original do TCC1 (UC01
   não previa um segundo ator "operador").
 - **Gestão de usuários do tenant** (tela nova, substitui a antiga tela de "cadastro" público):
@@ -48,7 +48,7 @@ de autenticação precisa cobrir — nenhuma das telas abaixo é autocadastro p�
   [[DECISIONS-LOG]] item 11). É a implementação de UC01 ("Manter usuário") do diagrama original,
   só que restrita a quem pode acioná-la; continua sendo o próprio usuário (o admin) quem cria os
   demais, não o operador da plataforma. Lista os usuários do tenant e permite criar novos
-  (`role = member`) — usa o mesmo layout em painéis (ver [[DESIGN-SYSTEM]] item 13, "Lista de
+  (`role = member`) — usa o mesmo layout em painéis (ver [[sistema-de-design]] item 13, "Lista de
   configurações/menu", como base) e a mesma regra semântica de cor (ação de criar usuário é
   neutra/azul, não verde).
 
@@ -94,11 +94,11 @@ Filtros por período, casa de apostas, esporte, liga, mercado e tipster devem re
 métricas dinamicamente — não são apenas um filtro client-side sobre dados já carregados; cada
 mudança de filtro é uma nova consulta a `GET /api/v1/statistics`, que responde um bundle único
 com todas as vistas do dashboard de uma vez (ver [[stats-service]]). Rótulos de filtro na UI são
-localizados (ver [[CONVENTIONS]]) mesmo os query params enviados sendo sempre em inglês —
+localizados (ver [[convencoes]]) mesmo os query params enviados sendo sempre em inglês —
 **corrigido em `feat-006`**: os nomes reais implementados usam sufixo `Id` (`bettingHouseId`,
 `sportId`, `leagueId`, `marketId`, `tipsterId`) mais `from`/`to` (data, `yyyy-MM-dd`), não
 `sport`/`league`/`market` como esta nota dizia antes — mesma correção de nomenclatura já feita em
-[[API-CONTRACTS]] para `bets-service`, só não tinha sido propagada até aqui.
+[[contratos-de-api]] para `bets-service`, só não tinha sido propagada até aqui.
 
 ## Dashboard consolidado — filtro de período com presets e novos cards (`epic-015` da raiz, done)
 
@@ -122,7 +122,7 @@ inicial e final do período).
 vem pronto de nenhuma API — `totalStaked / (saldoAtual × unitPercent)`, `unitPercent` de
 `GET /api/v1/settings`), apostas PRÉ/LIVE (`preCount`/`liveCount`), vitórias/derrotas ao lado da
 taxa de acerto já existente (`wonCount`/`lostCount` + `winRate`), odd média (`avgOdd`), saldo
-inicial do período, saldo final do período. Fórmulas completas em [[STATISTICS]].
+inicial do período, saldo final do período. Fórmulas completas em [[estatisticas]].
 
 **Configuração de unidade**: campo/tela admin-only para editar `unitPercent`
 (`PATCH /api/v1/settings`, `epic-013`) — local exato na UI (aba nova, dentro de casas de
@@ -136,7 +136,7 @@ apostas, ou área de usuário) é decisão de plan review daquela feature, não 
 > indeterminados (saldoAtual ou `unitPercent` = 0) renderizam texto localizado, não lançam
 > exceção nem dividem por zero. `shared/period-preset-filter` (presets + range customizado com
 > `<input type="date">`, não Material Datepicker — sem precedente no inventário de
-> `docs/DESIGN-SYSTEM.md`, evita dependência nova para 1 par de campos) fica em `shared/` porque
+> `docs/sistema-de-design.md`, evita dependência nova para 1 par de campos) fica em `shared/` porque
 > `epic-017` ("Relatório do período") reusa o mesmo componente. Mudança de comportamento
 > intencional: o dashboard agora aplica o preset "Hoje" por padrão no load (antes carregava sem
 > filtro nenhum) — mudanças de período aplicam na hora, os 5 filtros de catálogo continuam atrás
@@ -167,7 +167,7 @@ dedicado, usa o primeiro item do array esparso e ordenado por data de
 prevista no plan review, confirmada na implementação. Saldo Começo/Final por mês derivado
 client-side de uma única chamada a `GET /api/v1/bankroll/balance?at=<data mais antiga>` (pulada
 inteiramente para um tenant sem histórico) + o próprio lucro diário já buscado para a curva, sem
-1 chamada por mês (`buildMonthlyBalances`) — ver [[STATISTICS]].
+1 chamada por mês (`buildMonthlyBalances`) — ver [[estatisticas]].
 
 **Achado real, diverge do que a descrição do epic assumia**: `monthly` de
 `GET /api/v1/statistics` **não** vem pré-filtrado pelo ano corrente quando a chamada é feita sem
@@ -190,7 +190,7 @@ quando o campo vem preenchido). Trocado por `mat-select` com 3 opções (`pre`/`
 
 **Revisado em `apps/web feat-036`** (achado de usuário em uso real, 2026-09-17): a opção
 "não classificado" permitia cadastrar apostas sem `betType`, que então não entravam em nenhum dos
-2 buckets de `byBetType` (comportamento documentado em `docs/API-CONTRACTS.md`, ainda válido para
+2 buckets de `byBetType` (comportamento documentado em `docs/contratos-de-api.md`, ainda válido para
 apostas legadas e qualquer outro produtor do contrato, ex. `telegram-integration`) — mas dentro
 deste formulário especificamente isso não fazia sentido: toda aposta nova cadastrada por aqui tem
 um tipo conhecido no momento do cadastro. Campo `betType` do form agora é `Validators.required`
@@ -225,7 +225,7 @@ outras telas — granularidade de mês, filtro dedicado desta seção. Intervalo
 de mês por construção (`<input type="month">` não tem componente de dia): `from` = dia 01 do mês
 inicial, `to` = último dia do mês final. Uma chamada a `GET /api/v1/statistics/daily`
 (`epic-016`) cobrindo o intervalo inteiro; cliente agrupa por mês e calcula a curva acumulada em
-unidades (ver [[STATISTICS]] "Grade de gráficos mensais de drawdown" para a fórmula — usa
+unidades (ver [[estatisticas]] "Grade de gráficos mensais de drawdown" para a fórmula — usa
 `saldoAtual`/`GET /api/v1/bankroll/balance` sem `at`, não `saldoFinal` do período como
 `period-report-metrics.ts`; reset só na virada de mês, dia sem aposta carrega o valor anterior).
 Zero backend novo. Grade CSS `auto-fit` com N mini-gráficos (`shared/monthly-drawdown-chart`,
@@ -244,7 +244,7 @@ requisições sobrepostas quando os dois mudavam, com risco da resposta desatual
 bug de responsividade mobile (filtro não quebrava linha, cortando os rótulos). Rodar a suíte e2e
 completa (não só o arquivo tocado) revelou e corrigiu uma regressão real pré-existente de
 `feat-021` (`e2e/register-bet.spec.ts` nunca ganhou o mock do catálogo de times que aquela
-feature acrescentou ao `forkJoin` do formulário) — ver [[TESTING]] para o padrão de falha geral.
+feature acrescentou ao `forkJoin` do formulário) — ver [[testes]] para o padrão de falha geral.
 
 ## Menu por cadastro — Cadastrar + Dashboard (`epic-019` da raiz, done)
 
@@ -269,7 +269,7 @@ não 5 telas quase idênticas.
 > também à camada de roteamento, não só aos componentes. (2) `pages/catalogs/` (grupo de abas)
 > foi removida por completo — cada catálogo agora é uma rota própria, alcançada pelo menu, sem
 > troca de aba em página única. (3) `app-nav` ganhou 5 `mat-menu` (primeiro uso de overlay do CDK
-> no app — gotcha de limpeza em teste unitário documentado em [[TESTING]]) com um helper
+> no app — gotcha de limpeza em teste unitário documentado em [[testes]]) com um helper
 > `isResourceActive()` pra destacar o gatilho ativo, já que o botão-gatilho de um `mat-menu` não é
 > ele mesmo um `routerLink` (`routerLinkActive` sozinho não o alcança).
 
@@ -341,7 +341,7 @@ correção de bug confirmado.
 lugares que usam `matDatepicker` texto livre (`shared/period-preset-filter`, `pages/history` ×2,
 `pages/search-statistics`, `pages/register-bet` — decisão do usuário via `AskUserQuestion` de
 cobrir os 4, não só o `period-preset-filter` citado literalmente no backlog). **Achado crítico**
-que só um teste e2e real revelou (documentado em detalhe em `docs/CONVENTIONS.md` seção
+que só um teste e2e real revelou (documentado em detalhe em `docs/convencoes.md` seção
 "Formulários"): `NativeDateAdapter.parse()` (Angular Material) é `Date.parse()` puro — sempre
 M/D/Y para uma string com `/`, **independente** do locale ativo do app. A primeira versão desta
 diretiva ordenava a máscara pelo locale (D/M/Y para `pt-BR`/`es`, via `Intl.DateTimeFormat`,
@@ -363,7 +363,7 @@ Story SV-518 (subtasks SV-519..522), PRs #152-155, CI+SonarCloud verdes. `Delive
 **Implementado em `web feat-035`**, consumindo `POST /api/v1/auth/change-password`
 (`auth-service feat-018`, `epic-029`). Plan Reviewer corrigiu 2 achados MAJOR antes de codificar
 (nenhum exigia decisão do usuário): (1) a mensagem de sucesso ia reusar o estilo de
-`unitPercentSuccess` (`--color-positive`, verde) — `docs/DESIGN-SYSTEM.md` reserva essa cor
+`unitPercentSuccess` (`--color-positive`, verde) — `docs/sistema-de-design.md` reserva essa cor
 exclusivamente a ganho financeiro, então a confirmação usa estilo neutro (mesma caixa com borda
 de `.telegram-link__result`), não verde; (2) o e2e proposto batia contra o backend real
 (login→trocar→logout→login de novo) — contradiz a convenção real da suíte (**todo** Playwright
@@ -404,7 +404,7 @@ ação (antes só tinha o botão de dispensar, porque o endpoint não existia).
 ## Navegação lateral (sidebar), animações no shell e no login (`epic-022` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-11). Fecha uma
-divergência real: `docs/DESIGN-SYSTEM.md` item 1 do inventário sempre especificou nav lateral,
+divergência real: `docs/sistema-de-design.md` item 1 do inventário sempre especificou nav lateral,
 mas a implementação real (desde `feat-002`) ficou como nav horizontal no topo — nunca corrigido
 até esta feature. `app-side-nav` substitui `app-nav`: colapsável (ícone+texto expandido / só
 ícone retraído, alternado manualmente, estado persistido como `Theme`/`Language`), submenus de
@@ -422,7 +422,7 @@ e `app-side-nav.scss` (menu Cadastrar/Dashboard de cada recurso acompanha a larg
 quando expandida, `min-width: $width-expanded`, volta ao padrão do Material quando colapsada).
 
 Motion pass (pedido do usuário, "bastante animações, bem fluido", orientado pela skill
-`impeccable` — `.claude/skills/impeccable`, `docs/DESIGN-SYSTEM.md`/`docs/AGENT-SKILLS.md`
+`impeccable` — `.claude/skills/impeccable`, `docs/sistema-de-design.md`/`docs/habilidades-do-agente.md`
 continuam a fonte normativa de paleta/layout, a skill só orienta motion/polish):
 `withViewTransitions()` no router, transição de collapse/expand do sidebar, e uma animação
 autoral no card de login (`app-login-border-trace`) — um traço verde sai do ponto central
@@ -444,7 +444,7 @@ escolheu explicitamente. (3) achado durante a implementação, não da QA visual
 de um `mat-select`/`mat-form-field` (`label.mdc-floating-label`) mantinha `pointer-events: all`
 nesta versão do Material em vez do `none` que o MDC normalmente daria — a coluna mais estreita do
 formulário de registro de aposta (efeito colateral do sidebar reduzir o espaço disponível) expôs
-esse bug latente, corrigido globalmente (ver `docs/CONVENTIONS.md`).
+esse bug latente, corrigido globalmente (ver `docs/convencoes.md`).
 
 ## Sobreposição do seletor de idioma no login (`epic-024` da raiz, `apps/web feat-023`, done)
 
@@ -494,10 +494,10 @@ dashboard de `epic-015`, reaproveitadas aqui) e `GET /api/v1/settings` (`unitPer
 
 Tudo o resto é calculado no cliente, sem campo novo de backend além de `epic-016`: tabela de dias
 (preenchendo com zero os dias sem aposta que não vêm no array esparso), profit em unidades e R$,
-`roiBankroll` (**distinto** do `roi` já existente — ver [[STATISTICS]]), ROI médio diário ("Average
+`roiBankroll` (**distinto** do `roi` já existente — ver [[estatisticas]]), ROI médio diário ("Average
 Profit"), stake médio (`totalStaked/settledCount`, já existe desde `feat-006`), dias
 green/red, taxa de acerto das entradas sem `void` e `+EV`. Fórmulas completas e a decisão de
-deixar "Cashout Favor/Contra" (do print de referência) fora do escopo em [[STATISTICS]] seção
+deixar "Cashout Favor/Contra" (do print de referência) fora do escopo em [[estatisticas]] seção
 "Métricas da página \"Relatório do período\"".
 
 > **Implementado em `web feat-015`** sem divergência do planejado. Decisão do plan review (única
@@ -507,16 +507,16 @@ deixar "Cashout Favor/Contra" (do print de referência) fora do escopo em [[STAT
 > dashboard consolidado. Módulo de cálculo puro (`period-report-metrics.ts`) testado contra os
 > valores do print de referência do usuário como oráculo independente — achado real: a própria
 > nota do vault tinha um erro de aritmética no exemplo de `+EV` (`37,00% − 31,06% = 5,98%` estava
-> escrito, o correto é `5,94%`), corrigido em [[STATISTICS]] no mesmo commit deste fechamento.
+> escrito, o correto é `5,94%`), corrigido em [[estatisticas]] no mesmo commit deste fechamento.
 
 ## Tela "Buscar Estatísticas" (`epic-012` da raiz, planejado)
 
 Tela nova, distinta do dashboard consolidado (feat-006) — fonte de verdade para decisão
 pré-aposta, não visão geral de desempenho já ocorrido. Formulário de busca: esporte e liga
-obrigatórios (validação client-side, reforçada pelo backend — ver [[API-CONTRACTS]]
+obrigatórios (validação client-side, reforçada pelo backend — ver [[contratos-de-api]]
 `GET /api/v1/statistics/search`), time/casa de apostas/mercado/tipster/período opcionais.
 Resultado em cards (ROI, taxa de acerto, odd média, volume/lucro líquido, drawdown máximo,
-Índice de Sharpe simplificado — fórmulas em [[STATISTICS]]) mais um gráfico de linha da série
+Índice de Sharpe simplificado — fórmulas em [[estatisticas]]) mais um gráfico de linha da série
 `timeline` (equity curve/lucro acumulado da combinação buscada, mesma série usada pro cálculo de
 drawdown, sem chamada extra). Estado vazio (nenhuma busca feita ainda, ou combinação sem apostas
 liquidadas) precisa de tratamento explícito — não é o mesmo caso de "carregando".
@@ -538,7 +538,7 @@ esporte ser escolhido). Substituiu `mat-select` em ~20 campos de 5 telas (`regis
 `getByTestId(...).click()` + `getByRole('option', {name}).click()`, e `mat-autocomplete` também
 renderiza `mat-option` com `role="option"`, só o alvo do `testId` mudou (de `<mat-select>` pro
 `<input>` interno). Única exceção: `betting-houses-move-balance.spec.ts` usava `toContainText`
-pro valor pré-selecionado — corrigido pra `toHaveValue` (ver [[TESTING]] "Frontend (apps/web)"
+pro valor pré-selecionado — corrigido pra `toHaveValue` (ver [[testes]] "Frontend (apps/web)"
 para o porquê). 3 gotchas reais de implementação também documentados lá: `mat-error` nunca ativa
 sem `ngControl` (resolvido com `<p role="alert">` próprio em vez de brigar com o mecanismo do
 Material), `:host { display: contents }` necessário pro host do componente não virar item extra

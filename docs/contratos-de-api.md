@@ -4,9 +4,12 @@ tags: [conventions, api, contracts]
 
 # Contratos de API e de eventos
 
+Navegação: [[technical/referencia-tecnica|Referência técnica]] · [[business/integracao-por-eventos]] ·
+[[business/autenticacao-e-acesso]] · [[services/servicos|Serviços]]
+
 Convenções para que os três serviços Java exponham APIs consistentes entre si, e para o
-contrato do único evento assíncrono do sistema. Ver [[ARCHITECTURE]] para o panorama dos fluxos
-e [[CONVENTIONS]] para arquitetura/código.
+contrato do único evento assíncrono do sistema. Ver [[arquitetura]] para o panorama dos fluxos
+e [[convencoes]] para arquitetura/código.
 
 ## Convenções REST
 
@@ -94,7 +97,7 @@ e [[CONVENTIONS]] para arquitetura/código.
   ```
   Os mesmos campos novos aninham em `bySport`/`byMarket`/`byBettingHouse`/`byLeague`/`byTipster`/
   `monthly` também (RN09 já aplica as métricas existentes por segmento — os campos novos seguem
-  a mesma regra, sem exceção documentada). Ver [[STATISTICS]] para as fórmulas.
+  a mesma regra, sem exceção documentada). Ver [[estatisticas]] para as fórmulas.
 - **`byBetType` novo em `GET /api/v1/statistics` (`stats-service`, `epic-014` da raiz, pedido da
   tela "Visão geral" de `epic-021`, 2026-09-10)**: 6º segmento, mesmo formato dos outros 5 — só
   que com exatamente 2 itens fixos (`PRE`/`LIVE`, apostas sem `betType` classificado não entram
@@ -119,7 +122,7 @@ e [[CONVENTIONS]] para arquitetura/código.
   `bettingHouseId` (decisão do usuário: a métrica é sempre agregada, nunca por casa individual).
   Query param opcional `at` (`yyyy-MM-dd`, default hoje) — saldo naquele instante, não só o
   corrente: `initialBalance` de todas as casas + transações (`createdAt <= at`) + `profit` das
-  apostas liquidadas (`settledAt <= at`, **não** `betDate` — ver [[STATISTICS]] "Saldo
+  apostas liquidadas (`settledAt <= at`, **não** `betDate` — ver [[estatisticas]] "Saldo
   inicial/final do período"). Fecha o gap já sinalizado em [[bets-service]] `feat-005` ("RF07 não
   ganhou endpoint de saldo consolidado próprio") — reaproveita a mesma fórmula que
   `GET /api/v1/betting-houses` já usa por casa (`balance = initialBalance + depósitos - saques +
@@ -132,7 +135,7 @@ e [[CONVENTIONS]] para arquitetura/código.
   para os cards de saldo inicial/final, e 1x sem `at` (saldo atual) para o cálculo client-side de
   "unidades apostadas".
 - **`GET`/`PATCH /api/v1/settings` (`bets-service`, `epic-013` da raiz, 2026-09-10)**:
-  configuração por tenant, linha única (`TENANT_SETTINGS`, ver [[DATA-MODEL]]). Só `unitPercent`
+  configuração por tenant, linha única (`TENANT_SETTINGS`, ver [[modelo-de-dados]]). Só `unitPercent`
   por enquanto (`decimal`, default `0.01`) — "unidade" de banca como percentual configurável
   (decisão do usuário: não é valor fixo em R$ nem campo por aposta). `PATCH` restrito a
   `X-User-Role: admin` (header novo do Gateway, ver seção de headers acima — `bets-service` não
@@ -164,17 +167,17 @@ e [[CONVENTIONS]] para arquitetura/código.
   ]
   ```
   Dias sem aposta dentro de `from`..`to` **não aparecem** na resposta — o cliente preenche com
-  zero antes de montar a tabela (ver [[STATISTICS]] "Quebra diária"). Sem cache-aside, mesmo
+  zero antes de montar a tabela (ver [[estatisticas]] "Quebra diária"). Sem cache-aside, mesmo
   padrão de qualquer consulta filtrada deste serviço.
 - **`GET /api/v1/statistics/search` (`stats-service`, `epic-011` da raiz, tela "Buscar
   Estatísticas" de [[web]])**: rota nova, distinta de `GET /api/v1/statistics` — existe pra
   responder uma combinação específica de filtro com métricas de decisão (RN04/RN09 + as 3 novas
-  de [[STATISTICS]]: odd média, drawdown máximo, Índice de Sharpe simplificado), não o bundle
+  de [[estatisticas]]: odd média, drawdown máximo, Índice de Sharpe simplificado), não o bundle
   consolidado do dashboard. **`sportId` e `leagueId` são obrigatórios** (`400`, RFC 7807, se
   ausentes) — único ponto do contrato onde um filtro de estatística deixa de ser opcional,
   decisão de produto da tela (não RN08, que continua regendo o dashboard). Demais filtros
   opcionais, mesmo vocabulário de `GET /api/v1/statistics` mais `teamId` (novo — casa contra
-  `team1Id` **ou** `team2Id` em `FACT_BET`, ver [[DATA-MODEL]] "`DIM_TEAM`"), `from`/`to` também
+  `team1Id` **ou** `team2Id` em `FACT_BET`, ver [[modelo-de-dados]] "`DIM_TEAM`"), `from`/`to` também
   `yyyy-MM-dd`:
   `?sportId=<uuid>&leagueId=<uuid>&teamId=<uuid>&bettingHouseId=<uuid>&marketId=<uuid>&tipsterId=<uuid>&from=2026-01-01&to=2026-01-31`
   ```json
@@ -189,7 +192,7 @@ e [[CONVENTIONS]] para arquitetura/código.
   }
   ```
   `sharpeRatio` é `null` quando o recorte tem menos de 2 apostas liquidadas ou desvio-padrão zero
-  (ver [[STATISTICS]] "casos-limite") — nunca divisão por zero. `timeline` é a série ordenada por
+  (ver [[estatisticas]] "casos-limite") — nunca divisão por zero. `timeline` é a série ordenada por
   `betDate` de lucro acumulado das apostas liquidadas do recorte (mesma série usada para calcular
   `maxDrawdown`), reaproveitada pelo frontend para o gráfico de equity curve sem uma segunda
   chamada. Sempre calculado direto (sem cache-aside) — o espaço de combinações possíveis
@@ -201,7 +204,7 @@ e [[CONVENTIONS]] para arquitetura/código.
   `bets-service` (texto livre por aposta), sem esse endpoint não haveria como o frontend saber
   quais `teamId` existem. **`sportId` obrigatório** (`400` RFC 7807 localizado, mesma
   `MissingRequiredStatisticsFilterException` de `GET /api/v1/statistics/search`) — decisão do
-  usuário: `DIM_TEAM` tem chave natural composta `(name, sportId)` (ver [[DATA-MODEL]]), então a
+  usuário: `DIM_TEAM` tem chave natural composta `(name, sportId)` (ver [[modelo-de-dados]]), então a
   listagem é sempre escopada por esporte; trocar de esporte na tela refiltra a lista, nunca
   mistura times de esportes diferentes. Sem paginação (volume baixo por tenant, mesmo raciocínio
   já aceito para as outras dimensões de `FACT_BET` sem índice):
@@ -221,7 +224,7 @@ e [[CONVENTIONS]] para arquitetura/código.
   "Envio da aposta resolvida".
 - **Valores de status de aposta** (campo `status`, em `BET` e nos eventos): sempre em inglês —
   `pending`, `won`, `lost`, `void`. Correspondem a `pendente`/`ganha`/`perdida`/`devolvida` na
-  especificação original do TCC1 (RF12/RN06, ver [[REQUIREMENTS]] — a tabela de RF/RN em si
+  especificação original do TCC1 (RF12/RN06, ver [[requisitos]] — a tabela de RF/RN em si
   **não** é traduzida, é transcrição fiel do TCC1; só a codificação técnica do campo é inglês).
 
 ## Formato de erro
@@ -240,10 +243,10 @@ Todos os serviços Java respondem erros como **RFC 7807** (`application/problem+
 
 - `type` é um slug estável **em inglês**, referenciando a regra de negócio violada quando
   aplicável (RN01–RN09) — para que o front-end e os logs consigam correlacionar o erro à regra
-  documentada em [[REQUIREMENTS]]. `type` nunca muda com o idioma da requisição (é identificador
+  documentada em [[requisitos]]. `type` nunca muda com o idioma da requisição (é identificador
   técnico, não texto para humano).
 - `title`/`detail` são **localizados** conforme o header `Accept-Language` da requisição (`pt-BR`,
-  `en-US` ou `es`, ver [[CONVENTIONS]] seção "Internacionalização (i18n)") — o exemplo acima está
+  `en-US` ou `es`, ver [[convencoes]] seção "Internacionalização (i18n)") — o exemplo acima está
   em inglês só ilustrativamente; o mesmo erro em `pt-BR` teria `"title": "Odd inválida"`,
   `"detail": "A odd informada (0.95) deve ser estritamente maior que 1.00 (RN07)."`.
 - Erros de validação de campo (`jakarta.validation`) usam `status: 400`; violações de regra de
@@ -279,12 +282,12 @@ o código-fonte do outro serviço.
   requisição antes de rotear para `bets-service`/`stats-service`:
   - `X-User-Id`: qual usuário fez a chamada. **Persistido como trilha de auditoria** (decisão de
     2026-08-02, ver [[DECISIONS-LOG]]): `BET.createdByUserId` e `BET_RESULT.settledByUserId` em
-    [[bets-service]] gravam esse valor (ver [[DATA-MODEL]]), e o envelope de evento (seção
+    [[bets-service]] gravam esse valor (ver [[modelo-de-dados]]), e o envelope de evento (seção
     abaixo) carrega `userId` além de `tenantId`.
   - `X-Tenant-Id`: qual organização/schema a chamada pertence — extraído do token PASETO
     (resolvido no login a partir do slug informado, ver [[auth-service]]). O valor é o slug do
     tenant; cada serviço deriva o nome físico do schema deterministicamente a partir dele
-    (`tenant_<slug>`, ver [[CONVENTIONS]] seção "Migrations").
+    (`tenant_<slug>`, ver [[convencoes]] seção "Migrations").
   - `X-User-Role` (desde 2026-09-10, ver [[DECISIONS-LOG]] "Claim `role` no PASETO"): `admin` ou
     `member`, extraído do claim `role` do token (embutido por [[auth-service]] na emissão). Existe
     porque serviços além de `auth-service` passaram a precisar de uma checagem `role = admin`
@@ -301,7 +304,7 @@ o código-fonte do outro serviço.
   assumir que pode confiar em qualquer requisição que chegue sem passar pelo Gateway.
 - **Chamadas sem usuário logado** (hoje só `telegram-integration`, que não tem token PASETO):
   autenticam no `api-gateway` com um header `X-Service-Key` (segredo estático por ambiente, ver
-  [[OBSERVABILITY-AND-CONFIG]]) em vez de um token PASETO, e informam **qual** usuário do
+  [[observabilidade-e-configuracao]]) em vez de um token PASETO, e informam **qual** usuário do
   Telegram fez a chamada via um segundo header, `X-Telegram-User-Id` (decisão de 2026-09-07, ver
   [[DECISIONS-LOG]] — nenhuma nota fixava isso antes de `api-gateway feat-004`; o corpo da
   requisição continua idêntico ao do formulário web, sem esse campo). O `api-gateway` resolve o
@@ -313,10 +316,10 @@ o código-fonte do outro serviço.
   > diretório `TELEGRAM_LINK` (`telegramUserId -> tenantId`/`userId`) no schema `public` do seu
   > próprio banco, fora de qualquer schema de tenant — o lookup é uma consulta direta a essa
   > tabela, sem precisar varrer schemas nem o bot informar o slug do tenant. Ver [[auth-service]]
-  > e [[DATA-MODEL]].
+  > e [[modelo-de-dados]].
 - **Chamadas administrativas do operador da plataforma** (criação de tenant — ver
   [[DECISIONS-LOG]] item 3, **revertido** em 2026-09-11, ver o mesmo item): autenticam com um
-  header **`X-Admin-Api-Key`** (segredo estático, ver [[OBSERVABILITY-AND-CONFIG]]), direto em
+  header **`X-Admin-Api-Key`** (segredo estático, ver [[observabilidade-e-configuracao]]), direto em
   cada serviço (`auth-service`, `bets-service`, `stats-service`) — **não passam pelo
   `api-gateway`**, que só roteia tráfego de usuário/bot. **O operador faz 1 chamada** — `POST
   /api/v1/admin/tenants` em `auth-service` — que orquestra as outras 2 em código
@@ -328,7 +331,7 @@ o código-fonte do outro serviço.
   `downstreamProvisioningFailures` (nomes dos serviços que falharam, vazio se os 2 deram certo) e
   o operador pode repetir a chamada standalone daquele serviço específico depois (idempotente,
   409 se já provisionado - por isso nunca é destrutivo re-tentar). `auth-service` cria o primeiro
-  usuário admin do tenant com senha aleatória e `mustChangePassword = true` (ver [[DATA-MODEL]]).
+  usuário admin do tenant com senha aleatória e `mustChangePassword = true` (ver [[modelo-de-dados]]).
   Contrato de `auth-service`: `POST /api/v1/admin/tenants` → `201`
   `{"userId", "email", "temporaryPassword", "downstreamProvisioningFailures": []}` — ver
   [[auth-service]] seção "Modelo de tenant" para o payload completo. `bets-service`/
@@ -352,11 +355,11 @@ o código-fonte do outro serviço.
 Achado real de `api-gateway feat-012` (2026-09-11, durante o primeiro teste local end-to-end dos
 6 serviços): nenhuma nota do vault fixava CORS antes — o gap existia desde que [[web]] passou a
 existir (`environment.apiGatewayUrl` sempre foi absoluto, cross-origin de verdade, ver
-[[OBSERVABILITY-AND-CONFIG]]), não só no ambiente local.
+[[observabilidade-e-configuracao]]), não só no ambiente local.
 
 - `api-gateway` responde `Access-Control-Allow-Origin` para toda rota (autenticada ou não,
   inclusive preflight `OPTIONS` de rota protegida) — origem(ns) configurável(is) via
-  `CORS_ALLOWED_ORIGINS` (ver [[OBSERVABILITY-AND-CONFIG]]), default `http://localhost:4200`.
+  `CORS_ALLOWED_ORIGINS` (ver [[observabilidade-e-configuracao]]), default `http://localhost:4200`.
 - **Sem `Access-Control-Allow-Credentials`**: o token PASETO vai no header `Authorization`
   (guardado em `localStorage` pelo [[web]], nunca cookie) — CORS credentials mode não se aplica.
 - `bets-service`/`stats-service`/`auth-service` não implementam CORS próprio — nunca são chamados
@@ -368,7 +371,7 @@ existir (`environment.apiGatewayUrl` sempre foi absoluto, cross-origin de verdad
 Dois eventos distintos, ambos produzidos por `bets-service` e consumidos por `stats-service`
 (ver [[bets-service]] e [[stats-service]]) — fiéis aos diagramas de fluxo do TCC1
 (`docs/diagrams/flows/manual-bet-registration.png` e `bet-settlement.png`, transcritos como
-Mermaid em [[ARCHITECTURE]] seção "Fluxos dinâmicos", que chamavam os eventos de `ApostaCriada`/
+Mermaid em [[arquitetura]] seção "Fluxos dinâmicos", que chamavam os eventos de `ApostaCriada`/
 `ApostaLiquidada` — nomes traduzidos para inglês nesta revisão, mesma decisão de "tudo em
 inglês" do topo desta nota; o diagrama estrutural do TCC1 já usava `BetCreated` em inglês,
 então esta tradução também corrige uma inconsistência entre os próprios diagramas originais),
@@ -384,7 +387,7 @@ que mostram dois eventos separados, não um único evento reaproveitado:
 
 **Nomes das dimensões denormalizados no payload** (achado real de `stats-service feat-002`,
 antes de qualquer código, implementado em `bets-service feat-010`):
-`DIM_BETTING_HOUSE`/`DIM_SPORT`/`DIM_LEAGUE`/`DIM_MARKET`/`DIM_TIPSTER` (ver [[DATA-MODEL]]) têm
+`DIM_BETTING_HOUSE`/`DIM_SPORT`/`DIM_LEAGUE`/`DIM_MARKET`/`DIM_TIPSTER` (ver [[modelo-de-dados]]) têm
 coluna `name`, mas os IDs sozinhos (`bettingHouseId`, `sportId`, `leagueId`, `marketId`,
 `tipsterId`) não bastam para `stats-service` populá-la — `stats-service` só lê o evento, nunca
 chama `bets-service` de volta (consistência eventual é intencional, ver `CLAUDE.md` raiz). Por
@@ -441,7 +444,7 @@ os dois eventos importa:
   depender daquela feature para existir.
 
 Mudanças de payload em qualquer um dos dois atualizam o schema correspondente, os testes de
-contrato (ver [[TESTING]]) e este parágrafo no mesmo commit.
+contrato (ver [[testes]]) e este parágrafo no mesmo commit.
 
 **Cópias vendorizadas do schema em cada repositório de serviço**: os arquivos `docs/contracts/
 *.schema.json` vivem no repositório `sv-harness` (raiz) — `bets-service` e `stats-service` são
@@ -449,7 +452,7 @@ repositórios Git separados, e a pipeline de CI de cada um só faz checkout do p
 (sem acesso aos `docs/` da raiz). Por isso, o teste que valida a mensagem publicada/consumida
 contra o schema real (exigido pela Definição de Pronto de ambos os serviços) precisa de uma cópia
 do `.schema.json` dentro do próprio repositório — mesmo padrão de duplicação já aceito para
-`.github/scripts` (ver [[CI-CD]]). O diretório da cópia depende de **quem lê o schema e quando**:
+`.github/scripts` (ver [[pipeline-ci-cd]]). O diretório da cópia depende de **quem lê o schema e quando**:
 - `bets-service` (produtor): só o **teste** valida a mensagem já publicada contra o schema —
   produção nunca lê o arquivo. Cópia em `src/test/resources/contracts/` (achado real de
   `feat-006`).
@@ -520,7 +523,7 @@ desta tabela é mudança de contrato: atualiza `infra/rabbitmq/definitions.json`
 
 Decisão explícita do usuário (2026-08-01): o sistema é **100% internacionalizável** — nenhum
 texto voltado ao usuário final (mensagens de erro de API, UI do front-end) é hardcoded num único
-idioma. Ver [[CONVENTIONS]] seção "Internacionalização (i18n)" para a implementação completa
+idioma. Ver [[convencoes]] seção "Internacionalização (i18n)" para a implementação completa
 (backend Java e frontend Angular). Nesta nota, o que importa para o contrato de API:
 
 - `type` (RFC 7807) é sempre um slug estável em inglês — **não** é localizado, é identificador

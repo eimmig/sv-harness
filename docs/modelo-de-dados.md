@@ -4,11 +4,14 @@ tags: [conventions, architecture, data]
 
 # Modelo de dados — visão consolidada
 
+Navegação: [[technical/referencia-tecnica|Referência técnica]] · [[business/negocio|Negócio]] ·
+[[services/servicos|Serviços]]
+
 Nota cross-service que reúne os ERDs de **auth-service**, **bets-service** e **stats-service**
 num só lugar, como diagrama Mermaid versionado (revisável em texto/PR, não uma imagem estática).
 Cada serviço mantém sua própria lista de colunas/regras em `docs/services/<nome>.md` — esta nota
 não duplica aquele texto, só a representação visual e o histórico de evolução do modelo. Ver
-[[ARCHITECTURE]] para a justificativa de **Database per Service** e o isolamento por schema
+[[arquitetura]] para a justificativa de **Database per Service** e o isolamento por schema
 (multi-tenancy) dentro de `bets-service`/`stats-service`.
 
 Os PNGs originais do TCC1 (`D:\UTFPR\TCC\Graficos`, movidos para `docs/diagrams/` em
@@ -165,7 +168,7 @@ erDiagram
 
 ![bets-service ERD original](diagrams/database/bets-service-erd.png)
 
-`status` armazena `pending`/`won`/`lost`/`void` (inglês, ver [[API-CONTRACTS]]). `BET_RESULT` só
+`status` armazena `pending`/`won`/`lost`/`void` (inglês, ver [[contratos-de-api]]). `BET_RESULT` só
 existe quando a aposta é liquidada — não é criado junto com `BET` (ver [[bets-service]] seção
 "Regras de negócio").
 
@@ -179,13 +182,13 @@ momento da chamada, sem integridade referencial garantida pelo Postgres.
 > usuário, especificação do dashboard consolidado) — sem relação com `bets-service-erd.png`
 > original nem com o TCC1. `betType` era `varchar` livre desde o início (sem enum, usuário
 > digitava qualquer coisa no registro da aposta); migra para `PRE`/`LIVE` porque o dashboard
-> passa a contar apostas por esse campo (ver [[STATISTICS]]) — contagem por string livre
+> passa a contar apostas por esse campo (ver [[estatisticas]]) — contagem por string livre
 > fragmentaria (`"Live"`/`"live"`/`"Ao vivo"` como valores distintos). Migration não remapeia
 > dados antigos (sem forma segura de inferir PRE/LIVE de texto arbitrário) — linhas existentes
 > ficam `NULL`. `TENANT_SETTINGS` é linha única por schema de tenant (sem FK — não referencia
 > nem é referenciada por nenhuma outra entidade), seed automático (via Flyway, mesmo mecanismo já
 > usado pra criar o schema do tenant) com `unitPercent = 0.01` no provisionamento; editável via
-> `PATCH /api/v1/settings` (ver [[API-CONTRACTS]]). "Unidade" aqui é percentual configurável da
+> `PATCH /api/v1/settings` (ver [[contratos-de-api]]). "Unidade" aqui é percentual configurável da
 > banca, decisão do usuário — não um valor fixo em R$ nem um campo por aposta.
 
 ## stats-service (OLAP, esquema estrela, schema-per-tenant)
@@ -197,7 +200,7 @@ inicial de `BetCreated` conviver com o *upsert* posterior de `BetSettled` na mes
 
 `DIM_BETTING_HOUSE`/`DIM_SPORT`/`DIM_LEAGUE`/`DIM_MARKET`/`DIM_TIPSTER.name` são preenchidas a
 partir dos campos `bettingHouseName`/`sportName`/`leagueName`/`marketName`/`tipsterName`
-denormalizados no payload de `BetCreated`/`BetSettled` (ver [[API-CONTRACTS]] "Contratos de
+denormalizados no payload de `BetCreated`/`BetSettled` (ver [[contratos-de-api]] "Contratos de
 evento") — `stats-service` nunca consulta `bets-service` de volta para resolver nome (quebraria
 consistência eventual). `id` de cada dimensão é o MESMO uuid do catálogo em `bets-service` (`bettingHouseId` etc.), não
 um id gerado por `stats-service` — a dimensão é upsert (insere se a linha ainda não existe,
@@ -293,7 +296,7 @@ erDiagram
 > Estatísticas" — decisão do usuário): a chave natural passa de `name` sozinho para **`(name,
 > sportId)`** composta — o mesmo nome de time pode existir em esportes diferentes. `sportId`
 > também viabiliza `GET /api/v1/statistics/teams?sportId=<uuid>` (autocomplete de time escopado
-> por esporte na tela — trocar de esporte refiltra a lista). Ver [[API-CONTRACTS]] para o
+> por esporte na tela — trocar de esporte refiltra a lista). Ver [[contratos-de-api]] para o
 > endpoint.
 
 > **`betType` acrescentado em 2026-09-10** (`epic-014` da raiz, extensão do dashboard
@@ -303,7 +306,7 @@ erDiagram
 > de texto livre para enum `PRE`/`LIVE` na mesma rodada (`epic-013`, ver seção "bets-service"
 > acima) — sem essa migração, agrupar por `betType` aqui seria agrupar por string arbitrária.
 > Apostas com `betType` nulo (anteriores à migração) não entram em nenhuma contagem PRÉ/LIVE do
-> dashboard (ver [[STATISTICS]]).
+> dashboard (ver [[estatisticas]]).
 
 `PROCESSED_EVENT` não participa do esquema estrela (não é fato nem dimensão) — controle técnico
 de idempotência de consumo de evento, sem relacionamento de FK com `FACT_BET`. Ver seção
@@ -334,7 +337,7 @@ para implementar algo hoje, o Mermaid acima já é a versão corrigida/atual:
   `BetSettled`), `STATS_SNAPSHOT` como tabela plana denormalizada (antes de virar o esquema
   estrela `FACT_BET` + dimensões). É a **origem** da tabela `PROCESSED_EVENT`, que não sobreviveu
   aos diagramas OLAP mais recentes mas foi revivida deliberadamente em `stats-service` porque o
-  requisito de idempotência (ver [[TESTING]]) não tem outro mecanismo definido — decisão registrada
+  requisito de idempotência (ver [[testes]]) não tem outro mecanismo definido — decisão registrada
   em `progress.md` da raiz, entrada "Cruzamento com os diagramas originais do TCC1 (2026-08-01)".
 - **`combined-overview-pre-split-superseded.png`** (27/05): visão combinada de todos os serviços
   num diagrama só (`USER`/`TELEGRAM_ACCOUNT`/`BETTING_HOUSE`/`TRANSACTION`/catálogos/`BET`/
@@ -348,10 +351,10 @@ para implementar algo hoje, o Mermaid acima já é a versão corrigida/atual:
 
 ## Ver também
 
-- [[ARCHITECTURE]] — Database per Service, separação OLTP/OLAP, multi-tenancy por schema.
+- [[arquitetura]] — Database per Service, separação OLTP/OLAP, multi-tenancy por schema.
 - [[auth-service]], [[bets-service]], [[stats-service]] — colunas, regras de negócio (RN01–RN09)
   e endpoints de cada serviço; esta nota só cobre a estrutura de tabelas, não comportamento.
-- [[API-CONTRACTS]] — contratos `BetCreated`/`BetSettled`, o payload que conecta o OLTP de
+- [[contratos-de-api]] — contratos `BetCreated`/`BetSettled`, o payload que conecta o OLTP de
   `bets-service` ao OLAP de `stats-service`.
 - [[DECISIONS-LOG]] — racional completo do modelo de tenant multiusuário (por que `USER` não tem
   `tenantId`, por que o login exige slug de organização, diretório global que resolve o lookup

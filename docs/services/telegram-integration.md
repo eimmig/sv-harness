@@ -4,7 +4,7 @@ tags: [service, integration]
 
 # telegram-integration
 
-Python 3.12+ e n8n. Ver [[ARCHITECTURE]] para o panorama geral e [[REQUIREMENTS]] para RF05.
+Python 3.12+ e n8n. Ver [[arquitetura]] para o panorama geral e [[requisitos]] para RF05.
 Harness de código em `services/telegram-integration/CLAUDE.md`.
 
 ## Responsabilidade
@@ -17,7 +17,7 @@ todas 100% manuais.
 
 Isolamento de falhas: instabilidade da API do Telegram ou bugs de parsing não podem afetar
 [[bets-service]] nem [[stats-service]]. Esta é uma decisão de arquitetura, não preferência de
-linguagem — não reescrever em Java "para unificar a stack" (ver [[ARCHITECTURE]] seção
+linguagem — não reescrever em Java "para unificar a stack" (ver [[arquitetura]] seção
 "Decisões que não devem ser reinterpretadas").
 
 ## Vínculo de conta (pré-requisito do RF05)
@@ -79,7 +79,7 @@ novo a partir de uma mensagem do Telegram.
 6. **Envio da aposta resolvida** (`feat-004`): a chamada leva `Idempotency-Key` derivada do
    `update_id` nativo do Telegram (repassado pelo n8n como `telegramUpdateId` — protege contra o
    Telegram reentregar o mesmo webhook; um hash do conteúdo da aposta foi cogitado e descartado
-   por colidir entre duas apostas legítimas com odd/stake/casa iguais, ver [[API-CONTRACTS]]).
+   por colidir entre duas apostas legítimas com odd/stake/casa iguais, ver [[contratos-de-api]]).
    `bettingHouseId`/`sportId`/`leagueId`/`marketId` resolvidos no passo 4; `betDate` convertido de
    data pura (`aaaa-mm-dd`) para instante completo (`aaaa-mm-ddT00:00:00Z`) — `CreateBetRequest`
    exige `Instant`, não data pura. Resposta do Gateway vira uma de seis mensagens localizadas:
@@ -101,11 +101,11 @@ novo a partir de uma mensagem do Telegram.
 
 Mensagens que o bot envia de volta ao usuário (erro de vínculo, confirmação de captura de
 aposta, orientação para vincular a conta, etc.) são localizadas — não é só o frontend, ver
-[[CONVENTIONS]] seção "Internacionalização (i18n)". Idioma escolhido pelo `language_code` que o
+[[convencoes]] seção "Internacionalização (i18n)". Idioma escolhido pelo `language_code` que o
 próprio update do Telegram já traz — não é necessário armazenar preferência de idioma em nenhum
 serviço para isso. Formato **JSON**, um arquivo por locale em
 `src/telegram_integration/locales/{pt-BR,en-US,es}.json` (decisão fechada em 2026-08-02, ver
-[[DECISIONS-LOG]] — `docs/CONVENTIONS.md` deixava JSON ou `gettext` em aberto até então; caminho
+[[DECISIONS-LOG]] — `docs/convencoes.md` deixava JSON ou `gettext` em aberto até então; caminho
 movido pra dentro do pacote em `feat-008`, 2026-09-10 — só funcionava fora dele em install
 editable). Os três locales sempre em sincronia, mesma regra do resto do
 projeto — nenhuma mensagem nova do bot é considerada `done` traduzida para só um ou dois deles.

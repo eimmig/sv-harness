@@ -4,7 +4,7 @@ tags: [service, backend]
 
 # bets-service
 
-Java 25 + Spring Boot 4.x. Ver [[ARCHITECTURE]] para o panorama geral e [[REQUIREMENTS]] para
+Java 25 + Spring Boot 4.x. Ver [[arquitetura]] para o panorama geral e [[requisitos]] para
 RF/RN completos. Harness de código em `services/bets-service/CLAUDE.md`.
 
 ## Responsabilidade
@@ -20,24 +20,24 @@ transacional (OLTP), garantindo ACID e isolamento entre organizações. Não é 
 físico (isso é reservado para o isolamento entre *serviços*, não entre *tenants* do mesmo
 serviço). Tenant = organização com múltiplos usuários (ver [[auth-service]] e
 [[DECISIONS-LOG]]) — o schema de conexão é resolvido a partir do header `X-Tenant-Id` (não mais
-`X-User-Id`, ver [[API-CONTRACTS]]), e migrado sob demanda antes de atender a requisição (Flyway
-lazy, ver [[CONVENTIONS]] seção "Migrations").
+`X-User-Id`, ver [[contratos-de-api]]), e migrado sob demanda antes de atender a requisição (Flyway
+lazy, ver [[convencoes]] seção "Migrations").
 
 ## Provisionamento de tenant (rota admin)
 
 `POST /api/v1/admin/tenants` (`{"slug": "<slug>"}` → 201 `{"schema": "tenant_<slug>"}`), autenticada
-por `X-Admin-Api-Key` (ver [[API-CONTRACTS]] e [[DECISIONS-LOG]] item 3 — chamada manual do
+por `X-Admin-Api-Key` (ver [[contratos-de-api]] e [[DECISIONS-LOG]] item 3 — chamada manual do
 operador, direto neste serviço, não roteada pelo `api-gateway`). Idempotente por design (409
 `tenant-already-provisioned` se o slug já tem schema), 422 `invalid-tenant-slug` para slug
 malformado. Diferente de [[auth-service]] `feat-003`: aqui não há criação de usuário/senha — só o
 schema `tenant_<slug>` (`ProvisionTenantSchemaUseCase`, mesmo mecanismo Flyway lazy usado pelo
-filtro por requisição, ver [[CONVENTIONS]] seção "Migrations"). Implementado em `feat-001.4`
+filtro por requisição, ver [[convencoes]] seção "Migrations"). Implementado em `feat-001.4`
 (bundlado com o setup do serviço, não uma feature separada como em `auth-service` — decisão
 aceita no Plan Reviewer daquela feature, já que não há complexidade de criação de admin aqui).
 
 ## Modelo de dados (OLTP)
 
-Ver [[DATA-MODEL]] para o ERD (Mermaid + PNG original do TCC1). Confirmado sem divergências em
+Ver [[modelo-de-dados]] para o ERD (Mermaid + PNG original do TCC1). Confirmado sem divergências em
 2026-08-01.
 
 - `BETTING_HOUSE` (id, name, initialBalance, createdAt) 1:N `TRANSACTION` (id, bettingHouseId FK,
@@ -48,7 +48,7 @@ Ver [[DATA-MODEL]] para o ERD (Mermaid + PNG original do TCC1). Confirmado sem d
   **createdByUserId** (uuid, de `X-User-Id` — trilha de auditoria, sem FK real entre bancos,
   ver [[DECISIONS-LOG]] 2026-08-02), ticketNumber, team1Id FK (nullable), team2Id FK (nullable),
   description, betType, playType, stake decimal, odd decimal, status, betDate). `status` armazena
-  `pending`/`won`/`lost`/`void` (inglês — ver [[API-CONTRACTS]] — corresponde a
+  `pending`/`won`/`lost`/`void` (inglês — ver [[contratos-de-api]] — corresponde a
   pendente/ganha/perdida/devolvida em RF12/RN06).
 - `TEAM` (id, name, sportId FK, `UNIQUE(name, sportId)`) — catálogo próprio (não a
   `CatalogJpaEntity` genérica de `SPORT`/`LEAGUE`/`MARKET`/`TIPSTER`, que não tem FK pra outro
@@ -61,7 +61,7 @@ Ver [[DATA-MODEL]] para o ERD (Mermaid + PNG original do TCC1). Confirmado sem d
   diferente de `createdByUserId`), profit decimal, settledAt) — só existe quando a aposta é
   liquidada.
 
-## Regras de negócio a codificar (ver [[REQUIREMENTS]] para a tabela completa)
+## Regras de negócio a codificar (ver [[requisitos]] para a tabela completa)
 
 - RN01 — saldo consolidado = soma dos saldos iniciais de todas as casas, ajustado por
   depósitos/retiradas, atualizado pelo resultado das apostas liquidadas.
@@ -73,7 +73,7 @@ Ver [[DATA-MODEL]] para o ERD (Mermaid + PNG original do TCC1). Confirmado sem d
 
 ## Catálogos base (`feat-002`)
 
-`POST`/`GET` (paginado, envelope de [[API-CONTRACTS]]) para os 4 catálogos —
+`POST`/`GET` (paginado, envelope de [[contratos-de-api]]) para os 4 catálogos —
 `/api/v1/sports`, `/api/v1/leagues`, `/api/v1/markets`, `/api/v1/tipsters`. Sem seed
 compartilhado: cada schema de tenant nasce vazio, cada organização cadastra os próprios
 catálogos (decisão explícita do usuário, ver [[DECISIONS-LOG]] item 8) — sem isso, nenhum
@@ -81,7 +81,7 @@ tenant conseguiria referenciar `sportId`/`leagueId`/`marketId`/`tipsterId` em `B
 `409 <catalog>-already-registered` para nome duplicado dentro do mesmo schema (`UNIQUE(name)`
 por tabela). Primeira introdução de multi-tenancy do Hibernate neste serviço
 (`CurrentTenantIdentifierResolver`/`MultiTenantConnectionProvider`, mesmo padrão de
-[[auth-service]] `feat-002`, ver [[CONVENTIONS]]) — e primeiro momento em que
+[[auth-service]] `feat-002`, ver [[convencoes]]) — e primeiro momento em que
 `TenantSchemaFilter` passa a exigir `X-Tenant-Id` (`400 missing-tenant-id`) em rotas de negócio,
 antecipando o que `feat-001` tinha deixado como residual para `feat-004`.
 
@@ -97,7 +97,7 @@ validation-failed` para `amount` não positivo (RN07, "bloquear movimentações 
 saque que deixaria o saldo negativo **não** é bloqueado (RN01 trata saldo como total corrente, não
 piso rígido; revisitar se o usuário quiser proteção contra saldo negativo). `type` de
 `TRANSACTION` (`deposit`/`withdrawal`) trafega minúsculo no JSON via `@JsonProperty` por
-constante — ver [[CONVENTIONS]] seção "Padrões de código Java" para o porquê de não seguir o
+constante — ver [[convencoes]] seção "Padrões de código Java" para o porquê de não seguir o
 precedente maiúsculo de `Role` em [[auth-service]].
 
 ## Registro e ciclo de vida da aposta (`feat-004`)
@@ -108,7 +108,7 @@ de [[auth-service]] `feat-004`), valida as 4 FKs (`bettingHouseId`/`sportId`/`le
 `marketId` obrigatórias, `tipsterId` opcional — nullable, ver `docs/contracts/bet-created.schema.json`
 já existente antes desta feature), 404 `<recurso>-not-found` para FK inexistente. RN07 (`odd`
 estritamente > 1,00, `stake` > 0) validado como regra de domínio (422 `invalid-odd`/
-`invalid-stake`, mensagem citando "(RN07)" — segue o exemplo literal de [[API-CONTRACTS]], não
+`invalid-stake`, mensagem citando "(RN07)" — segue o exemplo literal de [[contratos-de-api]], não
 Bean Validation). Header `Idempotency-Key` opcional: reenvio da mesma chave retorna a aposta já
 criada (200, não 201), sem checar se o corpo bate com o original (simplificação aceita, sem TTL).
 `GET /api/v1/bets/{id}` (recurso único, 404 `bet-not-found`) e `PATCH /api/v1/bets/{id}/status`
@@ -118,7 +118,7 @@ criada (200, não 201), sem checar se o corpo bate com o original (simplificaç�
 **`team1`/`team2` viraram `team1Id`/`team2Id` (UUID) em `CreateBetRequest`/`BetResponse` na
 `feat-017` (2026-09-15) — mudança incompatível deste contrato síncrono, achado do `Delivery
 Reviewer` daquela feature**: diferente do contrato de evento (`BetCreated`/`BetSettled`, mantido
-aditivo de propósito — ver `docs/API-CONTRACTS.md` "`TEAM` vira dimensão"), a API REST não tinha
+aditivo de propósito — ver `docs/contratos-de-api.md` "`TEAM` vira dimensão"), a API REST não tinha
 como preservar o campo antigo com o mesmo tipo (não dá pra aceitar tanto `string` livre quanto
 `uuid` no mesmo campo sem reintroduzir o texto livre que a decisão de `epic-024` queria eliminar).
 **Corrigido em `apps/web feat-021` (2026-09-15, mesmo dia)**: `register-bet.ts` trocou os 2 inputs
@@ -163,10 +163,10 @@ dashboard consolidado em [[web]]) — 3 mudanças independentes:
   `BetResultRepository.sumProfitUpTo(Instant)` — diferentes dos métodos `Map<UUID, ...>` por casa
   já usados por `feat-005`). Corte por **liquidação**, não por `betDate` — o saldo só muda quando o
   resultado é realizado. `at` (`yyyy-MM-dd`) é convertido pro **fim do dia civil brasileiro**
-  (`America/Sao_Paulo`, ver `docs/CONVENTIONS.md` "Timezone padrão") como limite superior
+  (`America/Sao_Paulo`, ver `docs/convencoes.md` "Timezone padrão") como limite superior
   exclusivo antes de comparar com `createdAt`/`settledAt` (`Instant`/UTC) — não UTC ingênuo:
   `2026-09-11T01:00:00Z` ainda é dia civil `2026-09-10` no Brasil (UTC-3) e entra no corte de
-  `at=2026-09-10`, mesmo já sendo `2026-09-11` em UTC. Ver [[API-CONTRACTS]] e [[STATISTICS]]
+  `at=2026-09-10`, mesmo já sendo `2026-09-11` em UTC. Ver [[contratos-de-api]] e [[estatisticas]]
   "Saldo inicial/final do período" para a fórmula completa e o porquê de não replicar isso para
   `stats-service` via evento. `BankrollService.getBalance` é `@Transactional(readOnly = true)`
   (achado real do `Persistence Auditor`, 2026-09-10: sem isso as 3 queries agregadas rodavam em
@@ -181,7 +181,7 @@ dashboard consolidado em [[web]]) — 3 mudanças independentes:
   valores fixos (usuário digitava qualquer coisa). Migração normaliza pra lowercase e zera
   (`NULL`) qualquer valor fora de `('pre','live')` antes de aplicar o `CHECK` — linhas existentes
   não têm remapeamento seguro (texto arbitrário → 2 valores fixos), apostas antigas saem das
-  contagens PRÉ/LIVE do dashboard (ver [[STATISTICS]]). Publicado no evento `BetCreated`
+  contagens PRÉ/LIVE do dashboard (ver [[estatisticas]]). Publicado no evento `BetCreated`
   (`docs/contracts/bet-created.schema.json` ganhou `enum: [pre, live, null]`) — serializado
   minúsculo como qualquer outro enum de domínio deste serviço (`status`), não revalidado por
   `stats-service`, que só grava o valor recebido.
@@ -200,18 +200,18 @@ dashboard consolidado em [[web]]) — 3 mudanças independentes:
 
 `GET /api/v1/bets` (listagem, além do `GET /api/v1/bets/{id}` de `feat-004`) e
 `GET /api/v1/transactions` são endpoints de leitura paginados com filtros opcionais e
-combináveis (ver [[API-CONTRACTS]] seção "Convenções REST" para o envelope e os query params —
+combináveis (ver [[contratos-de-api]] seção "Convenções REST" para o envelope e os query params —
 mesmo vocabulário usado por [[stats-service]] para os filtros de dashboard, RF11/RN08):
 `bettingHouseId`/`sportId`/`leagueId`/`marketId`/`tipsterId` (só `/bets`) e `from`/`to` (ambos os
 endpoints, sobre `betDate`/`createdAt` respectivamente). Alimentam a tela de histórico em [[web]]
 e servem como trilha de auditoria. Uma única query JPQL por endpoint, com predicado condicional
 por filtro — **achado real**: `(:param IS NULL OR coluna >= :param)` quebra no Postgres para
 coluna `timestamp` (`could not determine data type of parameter`, mesmo padrão seguro para
-`UUID`) — corrigido com `coluna >= COALESCE(:param, coluna)`, ver `docs/CONVENTIONS.md`.
+`UUID`) — corrigido com `coluna >= COALESCE(:param, coluna)`, ver `docs/convencoes.md`.
 
 ## Eventos publicados
 
-Dois eventos distintos no RabbitMQ (ver [[API-CONTRACTS]] para os schemas completos e o motivo
+Dois eventos distintos no RabbitMQ (ver [[contratos-de-api]] para os schemas completos e o motivo
 da separação — fiel aos diagramas de fluxo do TCC1, que não reaproveitam um único evento):
 
 - **`BetCreated`** (`feat-006`, implementado): publicado uma vez, logo após o `INSERT` de `BET`
@@ -230,8 +230,8 @@ atualizar a nota daquele serviço e os JSON Schemas correspondentes no mesmo com
 Ambos os eventos carregam também `bettingHouseName`/`sportName`/`leagueName`/`marketName`
 (obrigatórios) e `tipsterName` (opcional, acompanha `tipsterId`) — denormalizados a partir do
 catálogo deste serviço (`feat-010`, implementado) para `stats-service` popular `name` das
-dimensões OLAP sem chamada síncrona de volta a este serviço (ver [[API-CONTRACTS]] "Nomes das
-dimensões denormalizados no payload" e [[DATA-MODEL]]). `BetService.resolveDimensionNames`
+dimensões OLAP sem chamada síncrona de volta a este serviço (ver [[contratos-de-api]] "Nomes das
+dimensões denormalizados no payload" e [[modelo-de-dados]]). `BetService.resolveDimensionNames`
 busca as 5 entidades de catálogo por id (`findById`, não só `existsById`) no momento de publicar,
 tanto em `create()` quanto em `updateStatus()`.
 
@@ -240,7 +240,7 @@ tanto em `create()` quanto em `updateStatus()`.
 `bet.created`/`bet.settled`) já provisionado por `infra/rabbitmq/definitions.json` — nunca
 redeclarado em código; os dois compartilham o mesmo envelope genérico (`BetEventEnvelope<T>`) e
 o mesmo método privado de publish/log de erro. Mensagem marcada `PERSISTENT` (sobrevive a
-restart do broker, já que a fila de produção é durable) — ver `docs/CONVENTIONS.md` para o
+restart do broker, já que a fila de produção é durable) — ver `docs/convencoes.md` para o
 gotcha de `getDeliveryMode()` vs `getReceivedDeliveryMode()` descoberto testando isso. Falha ao
 publicar é logada (nível ERROR) e nunca propagada como erro HTTP — a durabilidade do registro da
 aposta/liquidação pesa mais que o sinal assíncrono nesta fase do projeto; **risco residual
@@ -249,7 +249,7 @@ replay de `Idempotency-Key` (`BetCreated`) e nova tentativa de liquidação já 
 (`BetSettled`, bloqueada por `422`) não tentam republicar. Revisitar se o volume/criticidade
 justificar um mecanismo de outbox. Teste de contrato valida cada mensagem publicada contra a
 cópia vendorizada do schema correspondente (`src/test/resources/contracts/*.schema.json` — ver
-`docs/API-CONTRACTS.md` seção "Cópias vendorizadas do schema").
+`docs/contratos-de-api.md` seção "Cópias vendorizadas do schema").
 
 ## Correlation id no envelope de evento (gap conhecido, 2026-09-08)
 

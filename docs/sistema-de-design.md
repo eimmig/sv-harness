@@ -5,15 +5,15 @@ tags: [conventions, design, frontend]
 # Design System — apps/web
 
 Convenção normativa de tema e componentes visuais para [[web]], no mesmo espírito de
-[[CONVENTIONS]] (fecha uma lacuna que o TCC 1 não especificava — ele cobre requisitos e
-modelagem de dados, não identidade visual). Ver [[CONVENTIONS]] seção "Frontend" para a
+[[convencoes]] (fecha uma lacuna que o TCC 1 não especificava — ele cobre requisitos e
+modelagem de dados, não identidade visual). Ver [[convencoes]] seção "Frontend" para a
 arquitetura Angular (standalone, Signals, Reactive Forms, Angular Material) que este documento
 assume e estende.
 
 > **i18n**: todo texto usado nos componentes deste documento ("Watchlist", "Banca atual",
 > "Not set", "Em aberto" etc.) é **referência visual das capturas/mockups, não copy final da
 > aplicação** — a implementação real passa cada string por `@jsverse/transloco` nos três locales
-> sempre mantidos (`pt-BR`/`en-US`/`es`), ver [[CONVENTIONS]] seção "Internacionalização (i18n)".
+> sempre mantidos (`pt-BR`/`en-US`/`es`), ver [[convencoes]] seção "Internacionalização (i18n)".
 > Nenhum componente do inventário abaixo tem texto hardcoded — isso vale inclusive para a
 > tagline do logo (ver seção "Identidade visual"), que não é fixa apesar de estar num mockup de
 > marca.
@@ -158,7 +158,7 @@ não verde — registrar uma aposta não é, em si, um resultado positivo ou neg
     monetários/percentuais — obrigatório para preço/saldo não "dançarem" horizontalmente ao
     atualizar. Formatação de número/data respeita o locale ativo — o mockup de referência mostra
     o formato `pt-BR` (`R$ 12.480`, `8,4%`, separador de milhar `.` e decimal `,`); `en-US`/`es`
-    usam separadores invertidos (`1,234.56`) — ver [[CONVENTIONS]] seção "Internacionalização
+    usam separadores invertidos (`1,234.56`) — ver [[convencoes]] seção "Internacionalização
     (i18n)". O símbolo de moeda também segue o locale/moeda do usuário, não é sempre `R$`.
 - Escala (usar como base, ajustar durante implementação):
   - Display (saldo total, valor grande de input): 40–48px, peso 700. KPI de painel (ex.: "Banca
@@ -261,7 +261,7 @@ do produto — replicar isto é tão importante quanto a paleta de cores.
 
 Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por componente
 (`:host`) usando os tokens acima e as primitivas de Angular Material — ver
-[[CONVENTIONS]] seção "Frontend".
+[[convencoes]] seção "Frontend".
 
 1. **Shell/nav lateral de ícones** — coluna fixa estreita, logo StakeVault no topo (ver seção
    "Identidade visual" abaixo), botões de ícone empilhados (ícone ativo = cor `--color-brand`),
@@ -336,7 +336,7 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
 16. **Badge de resultado de aposta** — pequeno rótulo com fundo tonal e texto na mesma cor
     (ex.: fundo verde escuro + texto verde, não fundo verde sólido + texto branco — mesma
     técnica do badge "+R$ 212" no mockup), mapeado 1:1 ao `status` do domínio (ver
-    [[API-CONTRACTS]]): `won` → tom `--color-positive`; `lost` → tom `--color-negative`;
+    [[contratos-de-api]]): `won` → tom `--color-positive`; `lost` → tom `--color-negative`;
     `pending`/`void` → tom `--color-text-secondary` sobre `--color-surface-elevated` (neutro,
     "Em aberto" no mockup). Usado nas linhas de histórico (RF08) e em qualquer lista de apostas.
 17. **Splash/loading animado** — duas referências em `docs/design-references/`, a segunda é a
@@ -390,7 +390,7 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
 
 ## Integração com Angular Material (M3)
 
-`apps/web` já decidiu Angular Material em [[CONVENTIONS]]. Angular Material 22.x usa o sistema
+`apps/web` já decidiu Angular Material em [[convencoes]]. Angular Material 22.x usa o sistema
 de tema M3 (`mat.theme()`, Sass), que gera um conjunto completo de tokens (`--mat-sys-*`) a
 partir de uma cor semente. Não duplicar um sistema de cor paralelo do zero:
 
@@ -531,12 +531,12 @@ mudam com o idioma da interface).
 
 Três ferramentas de *design guidance para agentes de IA* — [Impeccable](https://github.com/pbakaus/impeccable),
 [taste-skill](https://github.com/leonxlnx/taste-skill) e [huashu-design](https://github.com/alchaincyf/huashu-design)
-— **prioritárias** em `apps/web`, igual ao Caveman/claude-code-skills (ver [[AGENT-SKILLS]]) —
+— **prioritárias** em `apps/web`, igual ao Caveman/claude-code-skills (ver [[habilidades-do-agente]]) —
 não uma opção entre outras, o conjunto padrão para qualquer tarefa de frontend. Usadas **só como
 auditoria/polish/prototipagem** do que for implementado, nunca como fonte de novas decisões de
 design:
 
-- **Este documento (`DESIGN-SYSTEM.md`) continua sendo a única fonte de verdade de design** —
+- **Este documento (`sistema-de-design.md`) continua sendo a única fonte de verdade de design** —
   marca StakeVault, paleta, layout em painéis, tema, tipografia, já fechados. O taste-skill não
   pode gerar um design language paralelo, e o huashu-design não pode usar sua própria "filosofia
   de design"/review em 5 dimensões para *decidir* aparência — ambos duplicariam a fonte de
@@ -575,13 +575,13 @@ design:
   Instalação das três prevista para `feat-001`, junto com Angular/Playwright — ver
   `apps/web/CLAUDE.md` e `apps/web/feature_list.json`.
 - **Playwright** (Microsoft) é diferente das três acima — teste E2E **funcional**, não QA visual.
-  Já estava planejado antes desta decisão (ver [[TESTING]]).
+  Já estava planejado antes desta decisão (ver [[testes]]).
 
 ## Ver também
 
-- [[CONVENTIONS]] — arquitetura Angular que este documento estende.
+- [[convencoes]] — arquitetura Angular que este documento estende.
 - [[web]] — RF/RNF cobertos, regras de Shneiderman para o formulário de apostas.
-- [[TESTING]] — Playwright deve cobrir os fluxos críticos nos dois temas (claro/escuro), não só
+- [[testes]] — Playwright deve cobrir os fluxos críticos nos dois temas (claro/escuro), não só
   no padrão.
 - [[DECISIONS-LOG]] — decisão de 2026-08-02 sobre Impeccable/taste-skill como QA visual, não
   fonte de design, estendida em 2026-09-03 para incluir huashu-design sob a mesma restrição.

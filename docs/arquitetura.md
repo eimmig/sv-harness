@@ -4,10 +4,13 @@ tags: [architecture, overview]
 
 # Arquitetura — Plataforma de Gestão de Bankroll e Análise Estatística de Apostas Esportivas
 
+Navegação: [[mapa-de-navegacao]] · [[business/negocio|Negócio]] · [[technical/referencia-tecnica|Referência técnica]] ·
+[[services/servicos|Serviços]]
+
 Fonte: TCC 1 de Eduardo Mateus Immig (UTFPR, 2026) — `TCC_1_Sistema_de_Apostas.pdf` e
 `Proposta_TCC_Eduardo_Mateus_Immig.pdf` em `D:\UTFPR\TCC`, e os diagramas originais (ERDs, fluxos
 de sequência, casos de uso, implantação), movidos de `D:\UTFPR\TCC\Graficos` para
-`docs/diagrams/` (dentro do vault) em 2026-08-02 — ver [[DATA-MODEL]] para os ERDs e a seção
+`docs/diagrams/` (dentro do vault) em 2026-08-02 — ver [[modelo-de-dados]] para os ERDs e a seção
 "Fluxos dinâmicos" abaixo para os diagramas de sequência, ambos agora também como Mermaid. Este
 vault resume o que foi especificado no TCC 1 para que sessões de agente não precisem reabrir os
 PDFs/imagens. Cruzado com todos os diagramas em 2026-08-01 (ver `progress.md` da raiz) — algumas
@@ -15,19 +18,19 @@ divergências entre os diagramas e as decisões deste harness foram encontradas 
 explicitamente onde relevante (ex.: eventos `BetCreated`/`BetSettled`, tabela `PROCESSED_EVENT`,
 caminho de confiança de `telegram-integration`). No mesmo dia, decisão adicional do usuário: toda
 rota de API/nome e valor de evento é sempre em inglês (os diagramas originais usam português para
-esses mesmos conceitos — traduzido aqui, ver [[API-CONTRACTS]]), e o sistema é 100%
-internacionalizável na UI/mensagens de erro (ver [[CONVENTIONS]]). Se algo aqui divergir do
+esses mesmos conceitos — traduzido aqui, ver [[contratos-de-api]]), e o sistema é 100%
+internacionalizável na UI/mensagens de erro (ver [[convencoes]]). Se algo aqui divergir do
 código já implementado, o código manda — atualize esta nota.
 
 O TCC 1 entregou apenas especificação, modelagem e prototipação. Codificação e testes são
-escopo do TCC 2, ou seja, deste repositório. Ver [[REQUIREMENTS]] para RF/RNF/RN completos.
+escopo do TCC 2, ou seja, deste repositório. Ver [[requisitos]] para RF/RNF/RN completos.
 
 ## Visão geral
 
 Plataforma para consolidar apostas esportivas de múltiplas casas em um único lugar, com
 gestão de bankroll (saldo, lucro, prejuízo) e métricas estatísticas (ROI, taxa de acerto,
 drawdown). Dois canais de entrada de dados: formulário web manual, e captura remota via bot
-do Telegram (o diferencial competitivo do projeto, ver [[REQUIREMENTS]]).
+do Telegram (o diferencial competitivo do projeto, ver [[requisitos]]).
 
 ## Harness multinível
 
@@ -115,10 +118,10 @@ que o `docker-compose.yml` de dev não modela (rede bridge única, sem Ingress).
 
 ## Fluxos dinâmicos (dos diagramas de sequência do TCC1, movidos para `docs/diagrams/flows/` em 2026-08-02 — implementar fielmente)
 
-Rotas e nomes de evento abaixo já em inglês (ver [[API-CONTRACTS]]) — os diagramas originais do
+Rotas e nomes de evento abaixo já em inglês (ver [[contratos-de-api]]) — os diagramas originais do
 TCC1 citados usam nomes em português (`/apostas`, `ApostaCriada`) para os mesmos conceitos. Os
 quatro diagramas Mermaid abaixo são a transcrição fiel (nomes traduzidos) dos PNGs originais,
-mantidos como fonte visual autoritativa a partir de agora pelo mesmo motivo de [[DATA-MODEL]]
+mantidos como fonte visual autoritativa a partir de agora pelo mesmo motivo de [[modelo-de-dados]]
 (mais fácil de manter em sincronia com o código do que um editor de diagrama externo).
 
 ### 1. Registro manual (web)
@@ -203,7 +206,7 @@ implementação para fechar essa lacuna, não uma divergência por engano.
 
 `PUT /api/v1/bets/{id}/result` → API Gateway valida token → `bets-service` atualiza `status` e
 calcula `profit` (RN02/RN03), responde `200 OK` → publica `BetSettled` (evento distinto de
-`BetCreated`, ver [[API-CONTRACTS]]) → `stats-service` consome de forma assíncrona e faz *upsert*
+`BetCreated`, ver [[contratos-de-api]]) → `stats-service` consome de forma assíncrona e faz *upsert*
 na linha de `FACT_BET` já existente (por `betId`), passando a contar nas métricas (RN06).
 
 ```mermaid
@@ -276,7 +279,7 @@ ms) depende do caminho de cache hit.*
   (produtor) e [[stats-service]] (consumidor) — mudar qualquer um dos payloads exige atualizar
   os dois e esta nota no mesmo commit/feature.
 - Rotas de API, query params, nomes/valores de evento são sempre em inglês; UI e mensagens de
-  erro são sempre localizadas (pt-BR/en-US/es) — ver [[API-CONTRACTS]] e [[CONVENTIONS]]. Não
+  erro são sempre localizadas (pt-BR/en-US/es) — ver [[contratos-de-api]] e [[convencoes]]. Não
   misturar as duas coisas (não traduzir uma rota, não deixar um texto de erro hardcoded).
 - Tenant é uma **organização com múltiplos usuários independentes**, não sinônimo de um único
   usuário — decisão de 2026-08-02, ver [[DECISIONS-LOG]]. `X-User-Id` (quem) e `X-Tenant-Id`

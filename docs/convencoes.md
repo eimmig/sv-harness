@@ -4,17 +4,20 @@ tags: [conventions, architecture]
 
 # Convenções de código e arquitetura
 
+Navegação: [[technical/referencia-tecnica|Referência técnica]] · [[arquitetura]] · [[contratos-de-api]] ·
+[[testes]] · [[observabilidade-e-configuracao]]
+
 Decisões que valem para **todos** os serviços, para que sessões diferentes (ou serviços
-diferentes) não cheguem a soluções distintas para o mesmo problema. Ver [[ARCHITECTURE]] para
+diferentes) não cheguem a soluções distintas para o mesmo problema. Ver [[arquitetura]] para
 a arquitetura de sistema (microsserviços/infra); esta nota é sobre a arquitetura *dentro* de
-cada serviço. Ver também [[TESTING]], [[API-CONTRACTS]] e [[OBSERVABILITY-AND-CONFIG]].
+cada serviço. Ver também [[testes]], [[contratos-de-api]] e [[observabilidade-e-configuracao]].
 
 > Nada disto foi especificado no TCC 1 (que cobre requisitos, modelagem de dados e arquitetura
 > de implantação, não a organização interna do código) — são decisões tomadas para fechar
 > lacunas antes da implementação, para reduzir divergência entre serviços e sessões.
 
 > Tema, paleta de cores e inventário de componentes de `apps/web` são tratados em nota separada
-> — ver [[DESIGN-SYSTEM]] — para não misturar decisão visual com arquitetura de código nesta
+> — ver [[sistema-de-design]] — para não misturar decisão visual com arquitetura de código nesta
 > nota.
 
 ## Arquitetura interna dos serviços Java (auth-service, bets-service, stats-service)
@@ -50,7 +53,7 @@ sistema de build diferente. `pom.xml` na raiz de cada serviço (não é um monor
 multi-módulo — cada serviço é buildado e versionado de forma independente, coerente com a
 arquitetura de microsserviços).
 
-GroupId: `com.stakevault.betting` (nome do produto, ver [[DESIGN-SYSTEM]] — corrigido em
+GroupId: `com.stakevault.betting` (nome do produto, ver [[sistema-de-design]] — corrigido em
 2026-09-03, era `com.eduardoimmig.betting` até `auth-service feat-001`), artifactId = nome do
 serviço (`auth-service`, `bets-service`, `stats-service`).
 
@@ -90,16 +93,16 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
 - **Tratamento de erro**: exceptions de domínio customizadas (ex.: `OddInvalidaException`,
   `StakeNegativoException`) lançadas em `domain/`/`application/`, capturadas por um
   `@RestControllerAdvice` em `adapter/in/web/` que as traduz para respostas
-  `application/problem+json` (ver [[API-CONTRACTS]]) com `title`/`detail` localizados (ver seção
+  `application/problem+json` (ver [[contratos-de-api]]) com `title`/`detail` localizados (ver seção
   "Internacionalização (i18n)" abaixo) — a exception carrega uma chave de mensagem, não o texto
   final.
 - **Migrations**: Flyway, arquivos em `src/main/resources/db/migration/`, nomeados
   `V{date_now}__descricao_em_snake_case.sql` (ex.: `V2026080119170000__create_user_table.sql`). Nunca editar uma
   migration já commitada — sempre criar uma nova.
 - **Migração lazy por schema** (decisão de 2026-08-02, ver [[DECISIONS-LOG]]): em
-  `auth-service`, `bets-service` e `stats-service` (schema-per-tenant, ver [[ARCHITECTURE]]), o
+  `auth-service`, `bets-service` e `stats-service` (schema-per-tenant, ver [[arquitetura]]), o
   Flyway **não** migra uma lista fixa de schemas no boot. Em vez disso, o schema do tenant
-  resolvido a partir de `X-Tenant-Id` (ver [[API-CONTRACTS]]) é verificado/migrado sob demanda,
+  resolvido a partir de `X-Tenant-Id` (ver [[contratos-de-api]]) é verificado/migrado sob demanda,
   antes de a requisição chegar ao controller — mesmo ponto de código que resolve o schema da
   conexão (`SET search_path`/multi-tenant provider) também garante que ele está em dia. Evita
   ter que migrar N schemas de tenant a cada deploy e cobre schemas criados depois que a
@@ -110,7 +113,7 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   SCHEMA` falha se o schema já existir).
 - **Migration eager para o schema `public`** (introduzida em `auth-service feat-006`, achado do
   `Plan Reviewer`): tabelas de diretório global (fora de qualquer tenant, ex.: `TELEGRAM_LINK`/
-  `PENDING_TELEGRAM_LINK`, ver [[DATA-MODEL]]) não se beneficiam da migração lazy acima — não há
+  `PENDING_TELEGRAM_LINK`, ver [[modelo-de-dados]]) não se beneficiam da migração lazy acima — não há
   "schema do tenant resolvido por requisição" para elas, e o schema `public` sempre existe e
   pertence ao próprio serviço, sem a ambiguidade de "quem provisiona" que motivou a lazy
   migration. Solução: uma segunda pasta de migrations (`classpath:db/migration-public/`,
@@ -228,7 +231,7 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   achado real em `bets-service feat-004` — `BetJpaEntity` (18 colunas) com um construtor
   posicional de 18 parâmetros reprovou o gate (`Constructor has 18 parameters, which is greater
   than 7 authorized`), só descoberto no PR `feature -> develop` (gate completo — PRs de subtask
-  pulam SonarCloud, ver `docs/CI-CD.md`). Corrigido trocando o construtor posicional por um único
+  pulam SonarCloud, ver `docs/pipeline-ci-cd.md`). Corrigido trocando o construtor posicional por um único
   parâmetro: `BetJpaEntity(Bet bet)`, que lê os campos do record de domínio — direção de
   dependência já é a correta em hexagonal (adapter conhece domínio, nunca o contrário), e
   `TransactionJpaEntity`/`CatalogJpaEntity` já importavam tipos de domínio (`TransactionType`)
@@ -276,7 +279,7 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
 - **Falha de validação de schema num `@RabbitListener` precisa de `AmqpRejectAndDontRequeueException`,
   não uma `RuntimeException` comum** (achado real de `stats-service feat-001.9`, primeiro consumidor
   RabbitMQ do projeto): o mecanismo de "3 tentativas então DLQ" (`x-delivery-limit` da quorum
-  queue, ver `docs/API-CONTRACTS.md` "Topologia RabbitMQ") só funciona quando o container para de
+  queue, ver `docs/contratos-de-api.md` "Topologia RabbitMQ") só funciona quando o container para de
   pedir "requeue" ao broker — o `ConditionalRejectingErrorHandler` padrão do Spring AMQP trata uma
   exceção comum como não-fatal e reenfileira (`requeue=true`) indefinidamente, então o
   `x-delivery-limit` nunca é atingido do jeito esperado (achado em teste real: 128+ redeliveries em
@@ -337,7 +340,7 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   serviço que rejeita por padrão (nenhuma credencial = `401`) precisa do mesmo
   `shouldNotFilter` decodificado (`UriUtils.decode` + `startsWith("/actuator/")`) do achado
   acima — health checks precisam continuar acessíveis sem token pro `docker-compose.yml`
-  funcionar (ver [[OBSERVABILITY-AND-CONFIG]]). Vale para o filtro de `X-Service-Key` de
+  funcionar (ver [[observabilidade-e-configuracao]]). Vale para o filtro de `X-Service-Key` de
   `feat-004` também.
   > **Gate `feature -> develop` do SonarCloud pegou o próprio prefixo hardcoded** (`java:S1075`,
   > "Refactor your code to get this URI from a customizable parameter"): a string literal
@@ -364,7 +367,7 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
 ## Internacionalização (i18n)
 
 Decisão explícita do usuário (2026-08-01): o sistema é **100% internacionalizável**. Dois
-princípios que não se misturam (ver também [[API-CONTRACTS]] seção "Internacionalização"):
+princípios que não se misturam (ver também [[contratos-de-api]] seção "Internacionalização"):
 
 - **Superfície técnica (rotas, query params, nomes/valores de evento, chaves de cache, nomes de
   campo) é sempre em inglês, nunca localizada** — não muda com o idioma do usuário.
@@ -377,7 +380,7 @@ princípios que não se misturam (ver também [[API-CONTRACTS]] seção "Interna
 
 ### Backend Java (auth-service, bets-service, stats-service, api-gateway)
 
-- Mensagens de erro (`title`/`detail` do RFC 7807, ver [[API-CONTRACTS]]) resolvidas via Spring
+- Mensagens de erro (`title`/`detail` do RFC 7807, ver [[contratos-de-api]]) resolvidas via Spring
   `MessageSource` + `ResourceBundle` (`messages_pt_BR.properties`, `messages_en_US.properties`,
   `messages_es.properties`, uma chave por tipo de erro), escolhidas pelo `LocaleResolver` a
   partir do header `Accept-Language` da requisição. Sem header reconhecido, cai em `pt-BR`
@@ -477,7 +480,7 @@ princípios que não se misturam (ver também [[API-CONTRACTS]] seção "Interna
   gerenciamento de estado já decidido abaixo), arquivos de tradução JSON por locale
   (`pt-BR.json`, `en-US.json`, `es.json`), troca de idioma instantânea sem reload nem rebuild,
   um único build para os três idiomas. Mesma filosofia do toggle de tema claro/escuro (ver
-  [[DESIGN-SYSTEM]]) — troca em runtime, preferência persistida em `localStorage`, com fallback
+  [[sistema-de-design]]) — troca em runtime, preferência persistida em `localStorage`, com fallback
   inicial para o idioma do navegador.
 - Nenhum componente tem string de UI hardcoded — toda label/mensagem passa pela chave de
   tradução (`transloco()`/pipe `| transloco`), mesmo em componentes pequenos.
@@ -498,7 +501,7 @@ princípios que não se misturam (ver também [[API-CONTRACTS]] seção "Interna
   qualquer imagem de produção), selecionado pelo campo `language_code` que o
   próprio Telegram Bot API já envia em todo update — não é necessário armazenar preferência de
   idioma em nenhum serviço para isso. Formato validado automaticamente pelo passo de i18n da
-  pipeline de CI — ver [[CI-CD]].
+  pipeline de CI — ver [[pipeline-ci-cd]].
 
 ## Timezone padrão
 
@@ -677,7 +680,7 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
     spec daquele componente já fixa o locale explicitamente antes de confiar em asserções de
     texto traduzido.
 - **Estilo**: SCSS por componente (`:host`), utilizando Angular Material. Tema (claro/escuro),
-  paleta de cores e inventário de componentes visuais já decididos em [[DESIGN-SYSTEM]] — não
+  paleta de cores e inventário de componentes visuais já decididos em [[sistema-de-design]] — não
   escolher uma paleta alternativa por conta própria.
   - **Gotcha real (`apps/web` `feat-001.7`, 2026-09-09)**: um elemento customizado Angular
     (`<app-x>`) é `display: inline` por padrão, igual qualquer tag desconhecida do browser —
@@ -706,7 +709,7 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
   seção "Internacionalização (i18n)" acima, não hardcodar strings de UI.
 - **Cliente HTTP**: serviços Angular tipados por domínio (`AuthService`, `BetsService`,
   `StatsService`), um por serviço backend consumido, usando os tipos documentados em
-  [[API-CONTRACTS]]. Não gerar cliente automaticamente a partir de OpenAPI neste projeto (escopo
+  [[contratos-de-api]]. Não gerar cliente automaticamente a partir de OpenAPI neste projeto (escopo
   pequeno o suficiente para não justificar a ferramenta extra) — mas manter os tipos TypeScript
   sincronizados manualmente com os DTOs Java é responsabilidade de quem mexe na feature.
 - **Nunca usar `any`** (decisão de 2026-09-04): todo tipo é explícito — `unknown` + type guard
@@ -720,7 +723,7 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
   instanciado, e o componente só existe numa rota lazy (`loadComponent`), a biblioteca inteira
   fica dentro do chunk daquela rota em vez do bundle principal (confirmado no tamanho real dos
   chunks pós-build, não só na teoria). `ngx-echarts` é usado por todos os gráficos de RF10/RF11
-  (ver [[DESIGN-SYSTEM]] item 6) — qualquer novo gráfico de `feat-006` (dashboard real) deve
+  (ver [[sistema-de-design]] item 6) — qualquer novo gráfico de `feat-006` (dashboard real) deve
   seguir o mesmo padrão de escopo por componente, não reintroduzir o registro global.
 - **Teste unitário de componente com `ngx-echarts` real precisa de um stub de contexto 2D de
   canvas** (achado real, `apps/web` `feat-006`, 2026-09-09): `jsdom` não implementa
@@ -742,9 +745,9 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
   `NgxEchartsDirective` real (não só os gráficos de `feat-006`, qualquer futuro RF10/RF11) precisa
   do mesmo stub.
 - **QA visual (Impeccable/taste-skill)**: ferramentas de design guidance para agentes de IA,
-  usadas só como auditoria/polish de componentes já implementados contra [[DESIGN-SYSTEM]] —
+  usadas só como auditoria/polish de componentes já implementados contra [[sistema-de-design]] —
   nunca como fonte de novas decisões de design (esse documento já é a fonte de verdade). Ver
-  [[DESIGN-SYSTEM]] seção "QA visual" para o racional completo e status de instalação.
+  [[sistema-de-design]] seção "QA visual" para o racional completo e status de instalação.
 
 ## Python (telegram-integration)
 
@@ -778,7 +781,7 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
 
 Modelo de **4 níveis** de branch (3 níveis decididos em 2026-08-02; o nível de subtask entrou em
 2026-08-03 junto com o espelhamento no Jira — ver [[DECISIONS-LOG]]), igual nos 7 repositórios
-**de código** (cada serviço e `infra/` — ver [[CI-CD]]). O repositório `sv-harness` da raiz é a
+**de código** (cada serviço e `infra/` — ver [[pipeline-ci-cd]]). O repositório `sv-harness` da raiz é a
 exceção deliberada: docs + harness, sem build nem CI, vive numa única branch `master` com commits
 diretos — ver [[DECISIONS-LOG]] 2026-08-19. O fluxo de branch/merge/gate descrito abaixo vale
 para os 7, não para ele. O formato de **mensagem de commit** (Conventional Commits 1.0.0, em
@@ -816,7 +819,7 @@ O merge sobe um nível por vez, sempre `--no-ff`: `subtask/SV-13` → `feature/S
     > `CHANGELOG.md` de toda a story no exato momento em que cria as issues — se esse commit for
     > feito em `develop` e só depois vier o `git checkout -b feature/SV-12`, a branch da feature
     > nasce já com as linhas, `CHANGELOG.md` nunca mais é tocado nela (nenhuma subtask toca, ver
-    > seção "Changelog por serviço" de [[CI-CD]]), e a PR final `feature/` → `develop` mostra
+    > seção "Changelog por serviço" de [[pipeline-ci-cd]]), e a PR final `feature/` → `develop` mostra
     > diff vazio no arquivo — o passo 1 do gate falha achando que a mudança não documentou nada,
     > mesmo a issue e o codigo existindo de verdade. Pior: como o `base.sha` que o GitHub Actions
     > usa é o **merge-base** entre as branches (o ponto onde divergiram), empurrar um commit novo
@@ -858,18 +861,18 @@ O merge sobe um nível por vez, sempre `--no-ff`: `subtask/SV-13` → `feature/S
   estrutura já documentado na seção "Arquitetura interna dos serviços Java" acima; não recriar em
   nenhum dos 4 serviços Java.
 - **Merge `subtask/` → branch da story**: `--no-ff`, via PR, com a **pipeline de CI daquele PR
-  passando** (i18n, build, testes — não changelog, ver [[CI-CD]] seção "Changelog por serviço")
+  passando** (i18n, build, testes — não changelog, ver [[pipeline-ci-cd]] seção "Changelog por serviço")
   e a subtask marcada `done` no `feature_list.json`. **Não** exige `./init.sh` local nem as
   skills de revisão de `claude-code-skills`: um estado intermediário raramente passa no gate de
   cobertura (um `docker-compose.yml` sem o RabbitMQ ainda não sobe; `mvn verify` num serviço pela
   metade também não). O **SonarCloud é pulado** nesses PRs — cobertura parcial de uma feature em
   andamento reprovaria o quality gate de código novo sem indicar defeito real (condição
-  `github.base_ref` no `ci.yml`, ver [[CI-CD]]).
+  `github.base_ref` no `ci.yml`, ver [[pipeline-ci-cd]]).
 - **Merge de `feature/`/`bugfix`/`spike/` → `develop`**: gate completo — `./init.sh` daquele
   repositório passando, `feature_list.json` atualizado (todas as `subtasks` `done`, `evidence`
-  preenchida), skills de revisão rodadas (ver [[AGENT-SKILLS]]) e a pipeline de CI inteira,
+  preenchida), skills de revisão rodadas (ver [[habilidades-do-agente]]) e a pipeline de CI inteira,
   **incluindo SonarCloud** (changelog, i18n, build, testes, Sonar nos 6 de aplicação; changelog +
-  validação do compose em `infra/`) — ver [[CI-CD]]. **Branch protection real nos 7 repositórios
+  validação do compose em `infra/`) — ver [[pipeline-ci-cd]]. **Branch protection real nos 7 repositórios
   do GitHub** (`develop` e `main`, `required_status_checks` no check `pipeline`, configurado via
   API em 2026-09-04 depois de uma PR mergear com 27 apontamentos do SonarCloud nunca revisados —
   até então nenhuma falha de CI de fato impedia o botão de merge, só ficava um X vermelho
@@ -878,7 +881,7 @@ O merge sobe um nível por vez, sempre `--no-ff`: `subtask/SV-13` → `feature/S
 - **`CHANGELOG.md`**: uma linha por issue do Jira (story e cada subtask), formato
   `- [chave](url) - título`, nada além disso — sem prosa, sem categoria Added/Fixed. Escrita
   automaticamente por `tools/jira_story.py` no momento em que cada issue é criada, nunca à mão
-  pela sessão (ver [[CI-CD]] seção "Changelog por serviço" para o racional completo e o motivo
+  pela sessão (ver [[pipeline-ci-cd]] seção "Changelog por serviço" para o racional completo e o motivo
   de a validação de changelog só rodar na PR story → `develop`, não nas de subtask).
 - **Merge de `develop` → `main`**: quando o conjunto de features acumuladas em `develop` estiver
   estável o suficiente para ser considerado uma entrega (não há cadência fixa definida — critério
@@ -924,7 +927,7 @@ O merge sobe um nível por vez, sempre `--no-ff`: `subtask/SV-13` → `feature/S
     (`Feature: feat-004.3`).
   - **Breaking change**: `!` antes dos dois-pontos **e** footer `BREAKING CHANGE: <descrição>`
     — obrigatório quando um contrato entre serviços muda (payload de `BetCreated`/`BetSettled`,
-    rota pública, header de confiança). Ver [[API-CONTRACTS]].
+    rota pública, header de confiança). Ver [[contratos-de-api]].
 
   **O idioma inglês vale só para a mensagem de commit.** Não muda `CHANGELOG.md`, `progress.md`,
   `session-handoff.md`, `feature_list.json` nem o vault, que seguem em português — e não muda a
