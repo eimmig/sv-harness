@@ -359,6 +359,21 @@
       "status": "done",
       "harness": "apps/web/",
       "evidence": "Fechado em 2026-09-17 por apps/web feat-035 (ver evidencia detalhada em apps/web/feature_list.json). Tela /change-password implementada: usuario autenticado troca a propria senha (currentPassword+newPassword+confirmPassword), link de nav no rodape do side-nav, acao real no MustChangePasswordBanner (antes so tinha dispensar), sessao sincronizada sem novo login (Auth.clearMustChangePassword). Plan Reviewer (REVISE, 2 MAJOR corrigidos: cor de sucesso neutra em vez de --color-positive/verde, e2e mockado em vez de bater contra backend real) + Delivery Reviewer/Test Suite Auditor (ambos PASS) rodados contra o diff completo. Bug real de producao encontrado so por QA visual real (screenshot contra o dev server): FormGroup.reset() nao limpa a flag submitted da FormGroupDirective, corrigido com resetForm(). Ultimo epic novo aberto (fora do backlog original do TCC1) fechado - feature_list.json da raiz sem nenhum epic not-started no momento. ./init.sh do app e da raiz verdes."
+    },
+    {
+      "id": "epic-031",
+      "name": "web — tela dedicada de comparativo entre dois periodos",
+      "description": "Escopo novo, fora do backlog original do TCC1 (pedido do usuario, 2026-09-22). Tela nova (rota propria, distinta do dashboard consolidado epic-015, de 'Relatorio do periodo' epic-017 e de 'Buscar Estatisticas' epic-012), com 2 seletores de periodo independentes (Periodo A / Periodo B, reusando shared/period-preset-filter de epic-015 - presets + range customizado, um por lado) mais o conjunto de filtros ja suportado por GET /api/v1/statistics (esporte/liga/mercado/casa de apostas/tipster, todos opcionais - decisao do usuario via AskUserQuestion: 'filtrar pelo que quiser'), aplicado igualmente aos dois periodos (o que varia entre A e B e so a janela de tempo, nao o criterio). Decisao do usuario via AskUserQuestion: zero endpoint novo no stats-service - 2 chamadas paralelas (forkJoin) a GET /api/v1/statistics (overall + segmentos bySport/byMarket/byBettingHouse/byLeague/byTipster/byBetType/monthly, epic-014/018) e a GET /api/v1/statistics/daily (epic-016) com os mesmos filtros, uma por periodo; bankroll/settings (epic-013, saldo inicial/final e unitPercent para profit em unidades, mesma conversao ja usada em epic-017/020/021) tambem 2x. Toda a comparacao (delta absoluto/percentual dos KPIs, overlay da curva de lucro acumulado normalizada por dia-do-periodo em vez de data calendario, diff dos segmentos) e computada no cliente. Decisao do usuario via AskUserQuestion: escopo de visualizacao e amplo ('visualizar da maneira que quiser') - layout exato (quais paineis/graficos, se todos sempre visiveis ou com toggle) fica pro plan review desta feature, mas o minimo e KPIs lado a lado com delta, curva de lucro acumulado sobreposta e comparacao dos segmentos existentes. Backlog granular em apps/web/feature_list.json (feat-037).",
+      "dependencies": [
+        "epic-006",
+        "epic-013",
+        "epic-014",
+        "epic-016",
+        "epic-018"
+      ],
+      "status": "done",
+      "harness": "apps/web/",
+      "evidence": "Fechado em 2026-09-22 por apps/web feat-037 (ver evidencia detalhada em apps/web/feature_list.json). Tela /period-comparison entregue: comparativo entre 2 periodos escolhidos livremente pelo usuario, zero backend novo (client-side, reaproveita GET /api/v1/statistics(/daily)/bankroll/settings), 14 KPIs comparados, grafico de 2 series sobrepostas, 6 tabelas de comparacao por segmento. Plan Reviewer (REVISE, 3 MAJOR corrigidos no plano) + Delivery Reviewer + Test Suite Auditor: todos PASS. 7 subtasks, PRs #157-163 (sv-frontend), CI verde em todos. ./init.sh do app e da raiz verdes."
     }
   ]
 }

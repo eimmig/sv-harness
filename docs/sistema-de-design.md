@@ -256,6 +256,18 @@ do produto — replicar isto é tão importante quanto a paleta de cores.
 - Componente: um container de grid reutilizável (`app-panel-layout`, define colunas/breakpoints
   por página) + o componente de painel em si (`app-panel`, ver item 2 do inventário) — ambos
   standalone, ambos usando os tokens de espaçamento/raio já definidos acima.
+- **Linha/grid com várias colunas (ex.: "rótulo | valor A | valor B | delta") precisa se
+  auto-rotular ao colapsar pra 1 coluna em mobile, não só empilhar os valores nus** (achado real
+  de QA visual, `apps/web feat-037.6`, tela de comparativo de períodos): o cabeçalho de coluna
+  (que dá contexto aos valores em desktop) normalmente fica `display: none` abaixo de 600px por
+  não caber mais — sem substituto, o usuário via 2-3 números soltos empilhados sem saber qual
+  período/coluna cada um representava. Mecanismo reaproveitável: o componente da linha recebe os
+  rótulos de coluna já traduzidos como inputs (não hardcoda texto na regra CSS), grava cada um
+  como `[attr.data-mobile-label]` no elemento de valor correspondente, e o CSS só abaixo do
+  breakpoint mobile injeta `content: attr(data-mobile-label) ': '` via `::before` — o rótulo
+  correto (no idioma ativo) aparece só na largura onde o cabeçalho compartilhado desaparece, sem
+  duplicar informação em desktop. Ver `shared/comparison-metric-row` (`.ts`/`.html`/`.scss`) como
+  referência de implementação pra qualquer tabela/linha futura com o mesmo formato.
 
 ## Inventário de componentes (mapeados das capturas)
 

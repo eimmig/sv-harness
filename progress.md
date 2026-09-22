@@ -2618,3 +2618,40 @@ reprovou 1x por 3 achados reais — import não usado, teste sem assertion, `@Vi
 `PASS`. `./init.sh` do app e da raiz verdes; `npx playwright test` completo (80/80) sem
 regressão. **Fecha o último epic aberto do `feature_list.json` da raiz — os 30 epics estão
 `done`.**
+
+## `epic-031` fechado — `apps/web feat-037`, tela "Comparativo de períodos" (2026-09-22)
+
+Escopo novo, pedido do usuário (comparar 2 períodos distintos, ex.: 1º semestre 2026 vs 2025).
+3 decisões tomadas via `AskUserQuestion` no início da sessão: tela nova dedicada (não modo dentro
+de "Relatório do período" nem seção no dashboard); escopo de visualização amplo ("filtrar pelo
+que quiser, visualizar da maneira que quiser"); zero backend novo (client-side, reaproveitando
+`GET /api/v1/statistics(/daily)`/`bankroll/balance`/`settings` já existentes desde
+`epic-013/014/016/018`). Plan Reviewer (`REVISE`, 3 MAJOR corrigidos no plano antes de codificar):
+seed vazio dos 2 seletores de período independentes (flash de dado errado na 1ª carga);
+`shared/catalog-dashboard` não reaproveitável pra comparação de segmentos (possui filtro próprio
+e 1 dataset só, usado por 5 rotas — componente novo dedicado em vez de arriscar regressão ali);
+3 `kpi-card` por métrica fugia do padrão já documentado ("linha de lista"/"valor + variação",
+`docs/sistema-de-design.md`) — linha de comparação dedicada em vez disso.
+
+7 subtasks, cada uma com PR próprio e CI verde (decisão do usuário: rigor total do harness, não
+1 PR único no final) — PRs #157-164 (`sv-frontend`, subtask→story x7 + story→develop). 2 achados
+reais fora do escopo desta feature, corrigidos no caminho porque bloqueavam o próprio fluxo de
+PRs: (1) flake de CI intermitente (`period-report.spec.ts`/`register-bet.spec.ts`, vazamento de
+locale entre specs no mesmo worker do Vitest) — achado já previsto em `docs/testes.md`
+(`feat-029.3`), confirmado na prática e corrigido; (2) 4 apontamentos reais do SonarCloud
+(`typescript:S107` x2 — funções com mais de 7 parâmetros, agrupados em objeto por lado;
+`typescript:S3776` — complexidade cognitiva 23>15 em `segment-comparison-table`, extraído helper
+`compareMetric`; 1 `typescript:S5906` menor), só visíveis no gate `story→develop` (SonarCloud não
+roda nos PRs de subtask, por desenho). Achado real de QA visual corrigido: linhas de comparação
+sem rótulo abaixo de 600px (cabeçalho de coluna escondido nessa largura) —
+`shared/comparison-metric-row` ganhou auto-rotulação via `data-mobile-label`/`::before`.
+
+`Delivery Reviewer`/`Test Suite Auditor` (self-review, contra o diff completo
+`develop...feature/SV-529`): `PASS`/`PASS`. `./init.sh` do app e da raiz verdes. 286 testes
+unitários (cobertura 92%+) + 3 e2e novos; suíte Playwright completa 83/84 (1 falha pré-existente
+não relacionada, registrada em `apps/web/progress.md` — `e2e/search-statistics.spec.ts` quebrado
+desde `feat-036`, não bloqueia CI). Vault atualizado no mesmo commit de cada subtask:
+`docs/testes.md` (confirmação do achado de locale), `docs/sistema-de-design.md` (mecanismo de
+auto-rotulação mobile), `docs/services/web.md` (seção nova da página). Branches de trabalho
+(`feature/SV-529` + 7 `subtask/SV-53X`) deletadas após o merge — `develop` de `sv-frontend`
+atualizada, `main` não tocado (promoção fica a critério do usuário).

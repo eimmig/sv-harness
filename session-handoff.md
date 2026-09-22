@@ -3,56 +3,61 @@
 > Estado atual, não histórico. O diário cronológico é o `progress.md` — este arquivo é reescrito
 > a cada sessão para responder "o que a próxima sessão precisa saber agora".
 
-**Última atualização:** 2026-09-17
+**Última atualização:** 2026-09-22
 
 ## Objetivo atual
 
-**Todos os 30 epics do `feature_list.json` da raiz estão `done`**. **`apps/web feat-034` e
-`feat-036`** (backlog residual sem epic próprio) **também fechadas** — nenhum harness tem feature
-`not-started` conhecida no momento (conferir cada `feature_list.json` antes de assumir, ver
-"Próxima sessão" abaixo).
+**Todos os 31 epics do `feature_list.json` da raiz estão `done`** (`epic-031` fechado nesta
+sessão). Nenhum harness tem feature `not-started` conhecida no momento (conferir cada
+`feature_list.json` antes de assumir, ver "Próxima sessão" abaixo).
 
-## Concluído nesta sessão (2026-09-17)
+## Concluído nesta sessão (2026-09-22)
 
-- [x] `auth-service feat-018` fechada — fecha `epic-029`. `POST /api/v1/auth/change-password`.
-      Bug real corrigido: `UserJpaEntity.applyUpdate()` descartava `passwordHash`/
-      `mustChangePassword` silenciosamente desde `feat-017`.
-- [x] `apps/web feat-035` fechada — fecha `epic-030`. Tela `/change-password`. Bug real corrigido:
-      `FormGroup.reset()` não limpa a flag `submitted` da `FormGroupDirective` (Angular Material
-      `ErrorStateMatcher`).
-- [x] `apps/web feat-034` fechada — 4 achados ad-hoc de UX pós-deploy, sem epic próprio. Achado
-      crítico: `NativeDateAdapter.parse()` (Angular Material) é `Date.parse()` puro, sempre M/D/Y,
-      independente do locale ativo — uma máscara de digitação ordenada pelo locale trocava dia e
-      mês em silêncio, só revelado por um teste e2e real (não por unitário). Ver
-      `docs/CONVENTIONS.md` e `apps/web/progress.md` para o detalhe completo.
-- [x] Decisão do usuário via `AskUserQuestion`: `mustChangePassword` continua sem bloqueio real de
-      outras rotas — fecha o item aberto do `DECISIONS-LOG` de 2026-09-04.
-- [x] `apps/web feat-036` fechada (sessão seguinte, mesmo dia) — 6 achados ad-hoc de UX pós-deploy
-      em chat casual, **formalizados retroativamente** (código já escrito antes de passar pelo
-      harness — desvio reconhecido, plan_review rodado depois, achou e corrigiu 1 MAJOR real:
-      doc/CHANGELOG do `feat-026` desatualizados pela reversão da opção "não classificado" de
-      `betType`). `register-bet.betType` agora obrigatório, `shared/searchable-select` limpa o
-      texto default ao focar, rodapé do `app-side-nav` virou 1 menu de configurações (idioma em
-      acordeão + tema + trocar senha + sair, 2 bugs de CDK Overlay achados e corrigidos no
-      caminho), ícone de idioma do login parou de cortar (`fontSet` ausente, causa real — não
-      largura). Ver `apps/web/feature_list.json` (`plan_review`/`evidence` de `feat-036`) pro
-      detalhe completo, inclusive o achado de processo (componente duplicado recriado sem checar
-      se já existia).
+- [x] `epic-031` fechado — `apps/web feat-037`, tela "Comparativo de períodos"
+      (`/period-comparison`). Pedido do usuário, zero backend novo (client-side). 7 subtasks,
+      cada uma com PR próprio e CI verde (SV-529..536, PRs #157-164 em `sv-frontend`), `develop`
+      atualizada, `main` **não** tocado — promoção fica a critério do usuário. Detalhe completo
+      em `progress.md` (raiz) e `apps/web/progress.md`.
+- [x] 2 achados reais corrigidos no caminho, fora do escopo de `feat-037` mas bloqueando o
+      próprio fluxo de PRs dessa feature:
+      - Flake de CI intermitente (`period-report.spec.ts`/`register-bet.spec.ts`, vazamento de
+        `navigator.language`/`localStorage` entre specs no mesmo worker do Vitest) — achado já
+        previsto em `docs/testes.md` (`feat-029.3`), confirmado na prática e corrigido.
+      - 4 apontamentos reais do SonarCloud (2x função com mais de 7 parâmetros, 1x complexidade
+        cognitiva 23>15, 1x asserção genérica) — só aparecem no gate `story→develop`, não nos PRs
+        de subtask (SonarCloud não roda lá por desenho).
+- [x] Achado real de QA visual corrigido: linhas de comparação de `feat-037` sem rótulo abaixo de
+      600px — mecanismo reaproveitável (`data-mobile-label`/`::before`) documentado em
+      `docs/sistema-de-design.md`.
 
 ## Bloqueios / Riscos
 
-Nenhum conhecido no momento.
+- **`e2e/search-statistics.spec.ts` (apps/web) quebrado desde `feat-036`** (2026-09-17, não
+  `feat-037`): aquela feature substituiu o componente `language-selector` standalone pelo menu de
+  configurações do side-nav em páginas autenticadas, sem atualizar esse spec — ainda procura
+  `getByTestId('language-selector')`, que só existe na tela de login agora. Não bloqueia CI
+  (Playwright não roda no pipeline do GitHub, só localmente via `npx playwright test`), mas
+  qualquer sessão que rode a suíte e2e completa vai ver essa falha isolada. Fix provável: apontar
+  o teste pro fluxo real (`nav-settings-language-*`), não reintroduzir o componente antigo. Ver
+  `apps/web/progress.md` pro detalhe.
+- **Sobra não commitada do rename do vault** (`docs: reorganize vault with Portuguese
+  navigation`, commit `f39582a`, sessão anterior a esta): `docs/API-CONTRACTS.md`,
+  `ARCHITECTURE.md`, `CONVENTIONS.md`, `DATA-MODEL.md`, `Index.md`, `REQUIREMENTS.md`,
+  `STATISTICS.md` existem como cópias em **inglês, não rastreadas** (`git status` mostra `??`),
+  idênticas às versões em português já commitadas (`contratos-de-api.md` etc.) exceto por
+  wikilinks internos (`[[ARCHITECTURE]]` vs `[[arquitetura]]`). Não foram tocadas nesta sessão
+  (fora de escopo do trabalho pedido) — próxima sessão que mexer em docs deve perguntar ao
+  usuário se apaga essas 7 cópias órfãs ou se há algum motivo pra mantê-las.
 
 ## Próxima sessão — por onde começar
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. **Nenhum epic `not-started` na raiz, e `apps/web` sem backlog residual conhecido** — antes de
-   assumir que não há trabalho, conferir cada harness (`services/*/feature_list.json`,
-   `apps/web/feature_list.json`, `infra/feature_list.json`) por `"status": "not-started"`, já que
-   features ad-hoc sem epic próprio (mesmo precedente de `feat-032`/`033`/`034`) podem surgir a
-   qualquer momento a partir de achados do usuário em uso real.
-3. `NativeDateAdapter.parse()` (Angular Material, `apps/web`) é `Date.parse()` puro — nunca
-   respeita `MAT_DATE_LOCALE`/`setLocale()`, sempre lê M/D/Y para uma string com `/`. Qualquer
-   campo de data futuro em `apps/web` ligado a `matDatepicker` via texto livre deve reaproveitar
-   `core/date-mask.directive.ts` (`[appDateMask]`), não reinventar formatação ordenada pelo
-   locale.
+2. **Nenhum epic `not-started` na raiz** — antes de assumir que não há trabalho, conferir cada
+   harness (`services/*/feature_list.json`, `apps/web/feature_list.json`,
+   `infra/feature_list.json`) por `"status": "not-started"`, já que features ad-hoc sem epic
+   próprio (mesmo precedente de `feat-032`/`033`/`034`/`036`) podem surgir a qualquer momento a
+   partir de achados do usuário em uso real.
+3. `develop` de `sv-frontend` está à frente de `main` (feat-037 mesclada, main não). Se o usuário
+   pedir uma promoção/release, é decisão dele — não promover `develop→main` por conta própria.
+4. Ver "Bloqueios / Riscos" acima antes de tocar em `apps/web` e2e ou em qualquer arquivo
+   `docs/*.md` de nome em inglês.

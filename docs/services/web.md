@@ -548,6 +548,42 @@ de flex/grid nas telas com filtro em `flex-wrap`, e duplo de teste precisa de `s
 `errorMessage` (opcional) plugado em `search-statistics` (sportId/leagueId, `Validators.required`)
 — renderiza a mesma mensagem de antes, só que fora do `mat-form-field`.
 
+## Página "Comparativo de períodos" (`epic-031` da raiz, done)
+
+Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-22). Tela nova
+(`/period-comparison`), distinta do dashboard consolidado, de "Relatório do período" e de
+"Buscar Estatísticas" — compara 2 períodos escolhidos livremente pelo usuário (ex.: 1º semestre
+de 2026 vs 1º semestre de 2025), lado a lado. Zero endpoint novo — client-side, reaproveitando
+`GET /api/v1/statistics(/daily)`, `GET /api/v1/bankroll/balance`, `GET /api/v1/settings` (já
+existentes desde `epic-013/014/016/018`), cada um disparado 2x por `applyFilter()` (uma vez por
+período). 2 instâncias de `shared/period-preset-filter` (Período A/B, seeds já resolvidos em vez
+de vazios — ver [[testes]] para o achado real de flake corrigido no caminho) + o mesmo bloco de
+filtros comuns do dashboard (esporte/liga/mercado/casa de apostas/tipster), aplicado igualmente
+aos 2 lados.
+
+3 peças novas, todas dedicadas a esta tela (nenhuma reaproveita/adapta um componente existente
+que já tinha 5+ consumidores — decisão do Plan Reviewer, ver `plan_review` em
+`apps/web/feature_list.json` feature `feat-037`):
+
+- `shared/comparison-metric-row` — 14 linhas de KPI (rótulo | valor A | valor B | delta),
+  padrão "linha de lista"/"valor + variação" já documentado em [[sistema-de-design]], não 3
+  `kpi-card` por métrica. Só `netProfit`/`roi` recebem cor no delta (mesma discrição do
+  `kpi-card` em outras telas — um número indo pra cima/baixo não é inerentemente bom/ruim).
+- `shared/comparison-equity-chart` — 2 séries sobrepostas (Período A em `--color-brand`, Período
+  B em `--color-action-neutral`), eixo por índice de dia dentro de cada período (não data
+  calendário), sem reset — `core/chart-theme.ts:buildComparisonLineChartOption` estende o
+  builder de série única já existente. Curva do período mais curto some (não achata) além do
+  próprio tamanho.
+- `pages/period-comparison/segment-comparison-table` — ROI/lucro líquido comparados por item de
+  cada segmento (esporte/liga/mercado/tipster/casa de apostas/tipo de aposta), 6 instâncias.
+  União dos itens presentes em A OU B (não interseção); lado ausente mostra "Indeterminado", não
+  0 — um item pode só ter tido aposta liquidada em um dos 2 períodos.
+
+Achado real de QA visual corrigido no caminho: abaixo de 600px o cabeçalho de coluna
+(Período A/B/Diferença) some e uma linha de 4 colunas não cabe — `comparison-metric-row` ganhou
+auto-rotulação via `data-mobile-label`/`::before` só nessa largura (mecanismo reaproveitável,
+ver [[sistema-de-design]] seção "Layout em painéis").
+
 ## Ver também
 
 - [[auth-service]], [[bets-service]], [[stats-service]] — APIs consumidas via API Gateway.

@@ -271,6 +271,19 @@ código" em `docs/convencoes.md`).
   pega qual arquivo, sharding pode diferir entre a máquina local e o runner de CI) — todo spec
   novo que sobrescreve `navigator.language` precisa limpar no `afterEach`, mesmo que a suíte
   local passe sem o cleanup.
+  **Confirmado na prática em `feat-037.6` (2026-09-22)**: exatamente o caso previsto acima
+  aconteceu — `period-report.spec.ts` (a "vítima" citada nominalmente neste achado) quebrou
+  intermitente em CI com formatação `pt-BR` em vez de `en-US` (`"22,1%"` em vez de `"22.1"`),
+  vazado por `register-bet.spec.ts` (`beforeEach` fazia
+  `localStorage.setItem('stakevault.language', 'pt-BR')`, mesma classe de vazamento, variante
+  via `localStorage` em vez de `Object.defineProperty(navigator, 'language', ...)` — o `Language`
+  service (`core/language.ts`) lê os dois na mesma cadeia de fallback, então qualquer um dos dois
+  sem limpeza no `afterEach` produz o mesmo sintoma). Corrigido nos 2 arquivos: `register-bet.spec.ts`
+  ganhou o `localStorage.removeItem` que faltava, `period-report.spec.ts` parou de depender do
+  locale ambiente implícito e passou a pinar `navigator.language`/`localStorage` explicitamente
+  no próprio `beforeEach`/`afterEach` (mesmo padrão já usado por `history.spec.ts`/`overview.spec.ts`
+  etc.) — não depender do "locale ambiente assumido" é a correção mais robusta, não só limpar o
+  vazamento de quem sobrescreve.
 - **`ng serve` deixado rodando em background trava `npm ci`/`./init.sh` depois** (achado
   operacional real, `feat-023.3`): um `ng serve` iniciado numa sessão pra QA visual (screenshots
   reais contra o dev server, técnica usada em toda feature desta rodada) e nunca encerrado
