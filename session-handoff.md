@@ -40,14 +40,13 @@ sessão). Nenhum harness tem feature `not-started` conhecida no momento (conferi
   qualquer sessão que rode a suíte e2e completa vai ver essa falha isolada. Fix provável: apontar
   o teste pro fluxo real (`nav-settings-language-*`), não reintroduzir o componente antigo. Ver
   `apps/web/progress.md` pro detalhe.
-- **Sobra não commitada do rename do vault** (`docs: reorganize vault with Portuguese
-  navigation`, commit `f39582a`, sessão anterior a esta): `docs/API-CONTRACTS.md`,
-  `ARCHITECTURE.md`, `CONVENTIONS.md`, `DATA-MODEL.md`, `Index.md`, `REQUIREMENTS.md`,
-  `STATISTICS.md` existem como cópias em **inglês, não rastreadas** (`git status` mostra `??`),
-  idênticas às versões em português já commitadas (`contratos-de-api.md` etc.) exceto por
-  wikilinks internos (`[[ARCHITECTURE]]` vs `[[arquitetura]]`). Não foram tocadas nesta sessão
-  (fora de escopo do trabalho pedido) — próxima sessão que mexer em docs deve perguntar ao
-  usuário se apaga essas 7 cópias órfãs ou se há algum motivo pra mantê-las.
+
+**Resolvido nesta sessão**: as 7 cópias órfãs em inglês do rename do vault (`docs/API-CONTRACTS.md`,
+`ARCHITECTURE.md`, `CONVENTIONS.md`, `DATA-MODEL.md`, `Index.md`, `REQUIREMENTS.md`,
+`STATISTICS.md`, nunca rastreadas, idênticas às versões em português já commitadas) foram apagadas
+a pedido do usuário — não é mais um risco a monitorar. Também revertido nesta sessão:
+`infra/.env.example` tinha lixo colado por engano (JSON com senha temporária real vazada,
+`git checkout -- .env.example` resolveu, nada commitado).
 
 ## Próxima sessão — por onde começar
 
