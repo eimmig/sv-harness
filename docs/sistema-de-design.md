@@ -24,21 +24,34 @@ Duas camadas de referência, nesta ordem de autoridade (a mais recente refina a 
 divergem):
 
 1. **Identidade visual final "StakeVault"** (2026-08-01, mesma sessão, mais tarde): mockups HTML
-   exatos fornecidos pelo usuário — preservados verbatim em
-   `docs/design-references/dashboard-mockup.html`, `docs/design-references/splash-animation.html`
-   e `docs/design-references/splash-animation-artistic.html` (esta última adicionada depois pelo
-   usuário como uma versão mais elaborada, recomendada como alvo de implementação — ver item 17
-   do inventário) — mais orientação explícita de paleta e regra semântica de cor (ver abaixo).
-   Diferente das capturas do Uphold, este material é **texto/código-fonte exato**, não uma
-   captura de tela — os valores hex e a geometria SVG neste documento são citação direta, não
-   aproximação visual. Logo extraído desses mockups em quatro variantes SVG standalone:
-   `docs/design-references/logo-mark-{dark,light,solid}.svg` e `logo-bars-only.svg` (marca
-   simplificada, só as barras, para favicon/loaders/estados vazios — ver seção "Identidade
-   visual" abaixo). A imagem raster original de onde essas variantes foram extraídas/aproximadas
-   (ver ressalvas de precisão de cor abaixo) está preservada em
-   `docs/design-references/logo-concept-source.png` (movida de `D:\UTFPR\TCC\Graficos` em
-   2026-08-02) — só para provenance, não usar como asset de produção (as versões vetoriais acima
-   são o artefato final).
+   exatos fornecidos pelo usuário, mais orientação explícita de paleta e regra semântica de cor
+   (ver abaixo). Diferente das capturas do Uphold, este material era **texto/código-fonte exato**,
+   não uma captura de tela — os valores hex e a geometria SVG citados a partir dele eram citação
+   direta, não aproximação visual.
+2. **Reformulação de marca "StakeVault" → "Arka"** (`epic-032`, 2026-09-22/23): usuário forneceu
+   identidade visual nova completa, substituindo o material do item anterior — refina/supera a
+   camada 1 onde divergirem, mesmo critério de ordem de autoridade já usado entre as camadas 1 e
+   2 originais. Assets atuais, todos em `docs/design-references/`: `arka-icon.svg`/
+   `arka-app-icon-512.png` (favicon/app icon), `arka-mark-dark.svg`/`arka-mark-light.svg`
+   (renomeações/relabel dos antigos `logo-mark-dark.svg`/`logo-mark-light.svg` — mesma geometria/
+   cor, só o nome do arquivo mudou), `arka-bars-only.svg` (idem, ex-`logo-bars-only.svg`),
+   `arka-logo-horizontal-dark.svg`/`arka-logo-horizontal-light.svg` (lockup horizontal novo,
+   substitui o wordmark composto manualmente na seção "Wordmark" abaixo), `arka-splash.html`
+   (substitui os dois arquivos de splash antigos — ver item 17 do inventário),
+   `arka-tokens.css` (paleta/tokens de referência), `arka-bot-avatar.svg`/
+   `arka-bot-telegram-512.png` (avatar do bot Telegram — relevante para `telegram-integration`,
+   fora do escopo deste documento). **Removidos** (não existe mais equivalente direto):
+   `dashboard-mockup.html`, `splash-animation.html`, `splash-animation-artistic.html`,
+   `logo-mark-solid.svg`, `logo-concept-source.png` — o app icon/favicon com fundo preenchido
+   passa a ser `arka-app-icon-512.png`/`arka-icon.svg` em vez de uma variante `-solid` do mark.
+   **Paleta**: valores de `arka-tokens.css` adotados abaixo onde coincidem ou refinam a tabela já
+   existente, com duas exceções deliberadas, ambas mantidas (ver notas nas tabelas): o texto
+   secundário do modo escuro continua no valor já corrigido por acessibilidade (`feat-011.5`,
+   não o valor pré-correção que `arka-tokens.css` traz), e a cor de CTA/ação neutra continua
+   **azul** (`--color-action-neutral`), não o verde que `arka-tokens.css` usa em
+   `.arka-btn-primary` — decisão do usuário reconfirmada nesta sessão: a regra semântica de cor
+   abaixo (verde exclusivo de marca/lucro) continua valendo, `arka-tokens.css` é tratado como
+   referência de paleta/marca, não como especificação literal de qual cor vai em qual botão.
 2. **Layout em painéis e inventário de componentes de base**: capturas de tela do produto
    [Uphold](https://uphold.com/) (dashboard autenticado, compartilhadas pelo usuário na sessão de
    inicialização do harness, 2026-08-01, mais cedo) — **não** a página de marketing pública (que
@@ -47,10 +60,11 @@ divergem):
    camada 1 não cobre um detalhe (ex.: estrutura de grid em painéis), a descrição aqui continua
    sendo aproximação visual das capturas do Uphold, não citação exata.
 
-**Decisões explícitas do usuário**: identidade visual final é **StakeVault** (não mais
-placeholder — ver seção "Identidade visual" abaixo); paleta de cores é a do StakeVault (verde
-`#3EC46D`), não mais uma réplica do verde do Uphold; layout em painéis continua baseado no
-Uphold (não fornecido pelo mockup StakeVault, que é só a composição interna de um painel).
+**Decisões explícitas do usuário**: identidade visual final é **Arka** (renomeada de "StakeVault"
+em 2026-09-22/23, ver item 2 de "Fonte" acima — não mais placeholder, ver seção "Identidade
+visual" abaixo); paleta de cores é a da marca (verde `#3EC46D`), não mais uma réplica do verde do
+Uphold; layout em painéis continua baseado no Uphold (não fornecido pelos mockups de marca, que
+são só a composição interna de um painel).
 
 ## Modos claro e escuro (RNF02)
 
@@ -66,10 +80,12 @@ sobrepondo a preferência do SO quando o usuário escolher explicitamente.
 
 ## Paleta de cores
 
-Valores exatos do modo escuro (citação direta dos mockups StakeVault); modo claro derivado pela
+Valores exatos do modo escuro (citação direta dos mockups originais da marca, reconfirmados por
+`arka-tokens.css` no rebranding de 2026-09-23 — mesmo verde `#3EC46D`); modo claro derivado pela
 mesma regra de construção usada no restante do documento (fundo↔texto invertidos, mesmo verde de
-marca) — o usuário não forneceu um mockup claro do StakeVault, então o modo claro é a parte
-menos certificada desta tabela, revisitar se um mockup claro real aparecer depois.
+marca), com o verde de modo claro atualizado para `#26A65B` (valor de `arka-tokens.css`) — o
+usuário não forneceu um mockup claro original, então o modo claro continua a parte menos
+certificada desta tabela, revisitar se um mockup claro real aparecer depois.
 
 ### Modo escuro
 
@@ -80,7 +96,7 @@ menos certificada desta tabela, revisitar se um mockup claro real aparecer depoi
 | `--color-surface-elevated` | `#1D2A36` | Estados hover/ativo sobre superfície (badge "Em aberto") |
 | `--color-border` | `#24323F` | Divisores e bordas sutis (linhas do gráfico, separadores de lista) |
 | `--color-text-primary` | `#F2F7F5` | Texto principal (off-white) |
-| `--color-text-secondary` | `#8B99A2` | Texto secundário/muted (legendas, rótulos de KPI) — ver nota de contraste abaixo |
+| `--color-text-secondary` | `#8B99A2` | Texto secundário/muted (legendas, rótulos de KPI) — ver nota de contraste abaixo. **`arka-tokens.css` (2026-09-23) traz `#7A8A93` para este papel — não adotado**: é o valor pré-correção de acessibilidade descrito na nota abaixo (`4.47:1`, falha WCAG AA), tratado como desatualizado em vez de reabrir o achado já corrigido |
 | `--color-brand` | `#3EC46D` | Verde de marca — **só** logo, ícone ativo da nav, link ativo, e valores positivos (ver regra semântica abaixo) |
 | `--color-brand-strong` | `#26A65B` | Estado hover/pressed de elementos com `--color-brand` |
 | `--color-positive` | `--color-brand` (mesmo verde) | Lucro, variação percentual positiva, badge de aposta "won" |
@@ -104,7 +120,7 @@ menos certificada desta tabela, revisitar se um mockup claro real aparecer depoi
 > fundos escuros usados pelo token. `--color-text-secondary` do modo claro (`#5C6B72`) já passava
 > (5.5:1/4.69:1), não precisou de ajuste.
 
-### Modo claro (derivado, sem mockup StakeVault correspondente)
+### Modo claro (derivado, sem mockup original correspondente)
 
 | Token | Valor | Uso |
 |---|---|---|
@@ -113,8 +129,8 @@ menos certificada desta tabela, revisitar se um mockup claro real aparecer depoi
 | `--color-surface-elevated` | `#E7EEEB` | Estados hover/ativo |
 | `--color-border` | `#DCE3E0` | Divisores e bordas sutis |
 | `--color-text-primary` | `#0B1622` | Texto principal (mesmo navy do fundo escuro) |
-| `--color-text-secondary` | `#5C6B72` | Texto secundário/muted |
-| `--color-brand` | `#2FA85C` | Verde de marca, escurecido para contraste em fundo claro |
+| `--color-text-secondary` | `#5A6B75` | Texto secundário/muted (valor de `arka-tokens.css`, 2026-09-23 — próximo do anterior `#5C6B72`, já passava WCAG AA) |
+| `--color-brand` | `#26A65B` | Verde de marca, escurecido para contraste em fundo claro (valor de `arka-tokens.css`, 2026-09-23 — antes `#2FA85C`) |
 | `--color-brand-strong` | `#22803F` | Estado hover/pressed |
 | `--color-positive` | `--color-brand` | Lucro, variação positiva, badge "won" |
 | `--color-negative` | `#C73E3D` | Prejuízo, variação negativa, badge "lost", erro |
@@ -149,11 +165,12 @@ não verde — registrar uma aposta não é, em si, um resultado positivo ou neg
   marca (junto com Satoshi e General Sans, também gratuitas); mantida como escolha desta revisão
   por já estar integrada (`@fontsource/inter` ou Google Fonts) e ser a mais amplamente suportada
   das três. Satoshi/General Sans ficam como alternativas documentadas se uma sessão futura quiser
-  um visual mais próximo do lockup StakeVault especificamente — trocar exige só atualizar o
+  um visual mais próximo do lockup Arka especificamente — trocar exige só atualizar o
   import e esta nota, não é uma decisão de arquitetura.
-  - **Wordmark é exceção**: o lockup "StakeVault" (ver seção "Identidade visual" abaixo) usa peso
-    leve (400) em "Stake" e médio (500) em "Vault" dentro da mesma família — não recriar isso com
-    duas fontes diferentes, é só variação de peso.
+  - **Wordmark**: desde o rebranding de 2026-09-23, o lockup é o SVG pronto
+    `arka-logo-horizontal-{dark,light}.svg` (ver seção "Identidade visual" abaixo), não mais
+    construído com duas variações de peso de "Stake"/"Vault" na mesma família — não recriar
+    tipograficamente o nome, usar o SVG do lockup.
   - **Números tabulares** (`font-variant-numeric: tabular-nums`) em toda exibição de valores
     monetários/percentuais — obrigatório para preço/saldo não "dançarem" horizontalmente ao
     atualizar. Formatação de número/data respeita o locale ativo — o mockup de referência mostra
@@ -275,7 +292,7 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
 (`:host`) usando os tokens acima e as primitivas de Angular Material — ver
 [[convencoes]] seção "Frontend".
 
-1. **Shell/nav lateral de ícones** — coluna fixa estreita, logo StakeVault no topo (ver seção
+1. **Shell/nav lateral de ícones** — coluna fixa estreita, logo Arka no topo (ver seção
    "Identidade visual" abaixo), botões de ícone empilhados (ícone ativo = cor `--color-brand`),
    ícone "mais" no rodapé.
 
@@ -306,7 +323,7 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
 6. **Gráfico de linha** — traço na cor `--color-brand`, gradiente suave preenchendo a área abaixo
    até transparente (opacidade baixa, ~0.12), ponto de destaque no último valor. Três linhas de
    grade horizontais finas e sutis (`--color-border`, ~1px) — correção sobre a versão anterior
-   deste documento, que descrevia o gráfico do Uphold como sem grid; o mockup StakeVault (mais
+   deste documento, que descrevia o gráfico do Uphold como sem grid; o mockup original da marca (mais
    recente e mais específico deste produto) mostra grade sutil, adotada aqui como padrão.
    Biblioteca: **`ngx-echarts`** (wrapper Angular do Apache ECharts) — decisão de 2026-08-02,
    escolhida sobre `ng2-charts`/Chart.js e `ngx-charts` (Swimlane) por dar controle fino
@@ -336,14 +353,14 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
     linha de perfil com avatar circular de iniciais + nome/e-mail, rodapé com links legais e
     versão em texto muted.
 14. **Avatar/badge de iniciais** — círculo, fundo muted, iniciais em negrito (ex.: "RM" no
-    mockup StakeVault, canto superior direito). Primeira implementação real: `feat-011.4`,
+    mockup original da marca, canto superior direito). Primeira implementação real: `feat-011.4`,
     coluna Nome da tela de usuários do tenant (`users.ts`/`.html`, método `initials()` — primeiro
     + último nome, maiúsculo, no máximo 2 letras).
 15. **Grade de KPIs/estatísticas** — grid responsivo (`auto-fit`, `minmax(120px, 1fr)`) de
     tiles pequenos dentro de um painel, cada um com rótulo muted (12px) em cima e valor grande
     (20–24px, peso 500) embaixo; valores que são inerentemente positivos/negativos (lucro, ROI)
     usam `--color-positive`/`--color-negative`, valores neutros (banca atual, tamanho de
-    unidade) usam `--color-text-primary`. Visto no mockup StakeVault: "Banca atual", "Lucro",
+    unidade) usam `--color-text-primary`. Visto no mockup original da marca: "Banca atual", "Lucro",
     "ROI", "Unidade".
 16. **Badge de resultado de aposta** — pequeno rótulo com fundo tonal e texto na mesma cor
     (ex.: fundo verde escuro + texto verde, não fundo verde sólido + texto branco — mesma
@@ -351,54 +368,42 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
     [[contratos-de-api]]): `won` → tom `--color-positive`; `lost` → tom `--color-negative`;
     `pending`/`void` → tom `--color-text-secondary` sobre `--color-surface-elevated` (neutro,
     "Em aberto" no mockup). Usado nas linhas de histórico (RF08) e em qualquer lista de apostas.
-17. **Splash/loading animado** — duas referências em `docs/design-references/`, a segunda é a
-    recomendada como alvo de implementação:
-    - `splash-animation.html` (versão simples): anel via `stroke-dasharray`/`stroke-dashoffset`
-      animando até `0` (comprimento do círculo = `2πr`; raio `36` do mark ≈`227` — para formas
-      irregulares no futuro, calcular com `path.getTotalLength()` em JS em vez de à mão), raios
-      surgindo com a mesma técnica, barras crescendo com `transform: scaleY(0 → 1)` +
-      `transform-box: fill-box` + `transform-origin: bottom` (crescimento parte da base, não do
-      centro do SVG), nome aparecendo por fade simples.
-    - `splash-animation-artistic.html` (versão recomendada, adicionada depois pelo usuário —
-      "mais artística... ficaria mais legal para o carregamento", concordo): mesma base técnica,
-      mais refinada:
+17. **Splash/loading animado** — referência única `docs/design-references/arka-splash.html`
+    (2026-09-23, substitui as duas referências antigas `splash-animation.html`/
+    `splash-animation-artistic.html`, unificadas num só arquivo com a técnica mais elaborada da
+    versão artística e ciclo mais curto — `2.1s`, não mais `5.4s`, já resolvendo a ressalva que a
+    versão anterior deste documento registrava sobre o ciclo artístico ser mais longo que o
+    carregamento típico do app):
       - Anel de guia pontilhado (`--color-border`-ish, bem sutil) que gira continuamente em
-        segundo plano (14s, independente do ciclo principal de 5.4s) — funciona sozinho como o
+        segundo plano (`14s`, independente do ciclo principal de `2.1s`) — funciona sozinho como o
         "loop discreto" exigido pela regra de produção abaixo para carregamentos acima de ~3s,
         sem precisar de nenhuma animação extra.
       - Um "cometa" (ponto de luz) percorre o mesmo caminho do anel em sincronia com o
         `stroke-dashoffset`, dando a sensação de que é ele quem desenha o anel.
-      - Os raios começam girados (`rotate(-40deg)`) e giram até a posição final enquanto se
-        desenham — leitura de "girar o dial do cofre até destravar", não só raios aparecendo.
-      - Barras crescem com easing overshoot (`cubic-bezier(.2,1.3,.4,1)`, ultrapassa e volta) em
-        vez de easing linear — mais "vivo".
-      - Ao final da montagem, o ícone dá um pequeno "pop" (`scale` 1→1.05→1) e dois anéis de
-        pulso se expandem e desaparecem (efeito de confirmação/"encaixou") — linguagem visual de
-        microinteração de sucesso.
-      - Nome revelado por **varredura via `<mask>` SVG** (retângulo animado em `translateX`) +
-        leve `translateY`/fade, não um fade simples — texto "desliza para dentro" enquanto é
-        revelado da esquerda para a direita.
+      - Os raios giram até a posição final enquanto se desenham (`spin`/`dialin`) — leitura de
+        "girar o dial do cofre até destravar", não só raios aparecendo.
+      - Barras/raios crescem com easing overshoot (`cubic-bezier(.2,1.3,.4,1)`, ultrapassa e
+        volta) em vez de easing linear — mais "vivo".
+      - Ao final da montagem, um efeito de pulso/ondulação (`ripple`) se expande e desaparece
+        (confirmação/"encaixou") — linguagem visual de microinteração de sucesso.
+      - Nome revelado por **varredura via `<mask>` SVG** (`#arka-mask`), não um fade simples —
+        texto "desliza para dentro" enquanto é revelado.
       - **Já implementa `@media (prefers-reduced-motion: reduce)` corretamente** — desliga todas
         as animações e define os valores de estado final diretamente (`stroke-dashoffset: 0`,
-        `scaleY(1)`, opacidades finais, `translateX(0)`) em vez de tentar pausar uma animação em
-        andamento. Usar este arquivo como referência de implementação do requisito de
-        acessibilidade abaixo, não só descrição em prosa.
-    - Três regras de produção (recomendação explícita do usuário, valem para qualquer uma das
-      duas referências):
+        opacidades/posições finais) em vez de tentar pausar uma animação em andamento. Usar este
+        arquivo como referência de implementação do requisito de acessibilidade abaixo, não só
+        descrição em prosa.
+    - Três regras de produção (recomendação explícita do usuário, seguidas por `arka-splash.html`):
       - **Não usar loop infinito em produção** — rodar a sequência uma vez e travar no logo
         formado enquanto o app carrega de verdade; se o carregamento terminar antes da animação,
         deixá-la concluir e só então dar fade — animação cortada no meio lê como bug. Se o
-        carregamento passar de ~3s, entra um loop discreto (na versão artística, o giro lento do
-        anel de guia já cobre isso de graça).
+        carregamento passar de ~3s, entra um loop discreto (o giro lento do anel de guia já cobre
+        isso de graça — único elemento com `animation-iteration-count: infinite` no arquivo).
       - **Respeitar `prefers-reduced-motion`** — ver o bloco `@media` já pronto em
-        `splash-animation-artistic.html`.
+        `arka-splash.html`.
       - **CSS/SVG puro é suficiente** — poucos KB, anima na GPU; não introduzir Lottie ou outra
         biblioteca de animação só para isto (só compensaria para morphing complexo entre formas,
         que não é o caso aqui).
-    - **Atenção na implementação**: o ciclo completo da versão artística dura `5.4s` no arquivo
-      de referência — se isso for mais longo que o carregamento real típico do app, considerar
-      encurtar a sequência (não é obrigatório rodar os 5.4s inteiros; a regra de produção acima
-      já cobre terminar mais cedo se o carregamento acabar antes).
 
 ## Integração com Angular Material (M3)
 
@@ -415,7 +420,7 @@ partir de uma cor semente. Não duplicar um sistema de cor paralelo do zero:
 - Mapear `--color-surface`, `--color-background`, `--color-text-primary`/`secondary` para os
   papéis M3 equivalentes (`surface`, `background`, `on-surface`, `on-surface-variant`) via
   overrides do tema, em vez de deixar o Material gerar neutros genéricos — isso é o que garante
-  o navy/off-white específicos do StakeVault, não o cinza neutro padrão do M3.
+  o navy/off-white específicos do Arka, não o cinza neutro padrão do M3.
 - `--color-positive`/`--color-negative` são tokens **próprios da aplicação**, não papéis nativos
   do M3 (o papel `error` do M3 significa "algo deu errado", não "você perdeu dinheiro" — mesmo
   que a cor seja parecida, o significado é diferente; não reaproveitar `error` para prejuízo,
@@ -430,7 +435,7 @@ não uma cor hex solta — não existe função Sass pública pra gerar isso a p
 qualquer. Gerado via o schematic real do CLI:
 `ng generate @angular/material:m3-theme --primary-color "#3E8CC4" --tertiary-color "#3EC46D"`
 (grava `src/theme-colors.scss`, tons reais derivados do algoritmo M3 a partir das duas cores
-StakeVault — não uma das paletas nomeadas embutidas do Material, que divergiriam da marca).
+Arka — não uma das paletas nomeadas embutidas do Material, que divergiriam da marca).
 Overrides de `surface`/`background`/`on-surface`/`on-surface-variant` (`src/styles/_tokens.scss`)
 apontam pros custom properties `--color-*`, não valores fixos — os dois blocos de tokens (claro
 em `:root`, escuro em `:root[data-theme='dark']`) cobrem tanto o app quanto o Material ao mesmo
@@ -486,69 +491,77 @@ direto na grade de 12 meses do ano corrente; a barra de período no topo do cale
 calendar-period-button`) navega pra visão multi-ano quando o usuário precisa de outro ano.
 Reaproveitável em qualquer filtro futuro que precise de granularidade mês/ano.
 
-## Identidade visual — StakeVault
+## Identidade visual — Arka
 
-Nome e marca **definidos** (2026-08-01) — não é mais placeholder, substitui a seção anterior
-deste documento. "Bankroll" (nome genérico usado antes) não é mais referenciado em lugar nenhum.
+Nome e marca **definidos** (2026-08-01, como "StakeVault") — não é mais placeholder, substitui a
+seção anterior deste documento. "Bankroll" (nome genérico usado antes) não é mais referenciado em
+lugar nenhum. **Renomeada para "Arka" em 2026-09-22/23** (`epic-032`) — mesma geometria de marca,
+assets relabelados (ver item 2 de "Fonte" no início deste documento).
 
 ### Logo
 
 Anel (o "cofre") com quatro raios diagonais nos cantos, e três barras verticais ascendentes
 dentro (o elemento de gráfico/crescimento — é o que carrega o significado da marca). Geometria
-exata e as três variantes de cor em `docs/design-references/`:
+inalterada pelo rebranding — só os nomes de arquivo mudaram. Variantes em
+`docs/design-references/`:
 
-- `logo-mark-dark.svg` — anel/raios em `--color-brand` (verde), barras em `--color-text-primary`
-  (off-white) com opacidade ascendente `0.45 / 0.75 / 1` (a barra mais alta é a mais opaca) — uso
-  padrão sobre fundo escuro.
-- `logo-mark-light.svg` — anel/raios em navy, barras em tons ascendentes de verde — uso sobre
-  fundo claro. Cores aproximadas (o usuário não deu os hex exatos desta variante, só a imagem
-  composta) — revisitar com color picker se precisão importar.
-- `logo-mark-solid.svg` — fundo verde sólido com raio de borda, anel/raios/barras em navy — para
-  app icon/favicon em contexto que precisa de um quadrado preenchido (ex.: ícone de PWA,
-  thumbnail). Cores também aproximadas da imagem composta.
-- `logo-bars-only.svg` — **só as três barras**, sem o anel, cor única (`--color-brand`). Uso
-  explícito recomendado pelo usuário: favicon em tamanho pequeno, loaders, estados vazios — o
-  anel completo não lê bem abaixo de ~32px, as barras sozinhas continuam reconhecíveis e servem
-  como padrão gráfico reutilizável (ex.: marca d'água sutil num painel sem dados ainda).
+- `arka-mark-dark.svg` (ex-`logo-mark-dark.svg`) — anel/raios em `--color-brand` (verde), barras
+  em `--color-text-primary` (off-white) com opacidade ascendente `0.45 / 0.75 / 1` (a barra mais
+  alta é a mais opaca) — uso padrão sobre fundo escuro.
+- `arka-mark-light.svg` (ex-`logo-mark-light.svg`) — anel/raios em navy, barras em tons
+  ascendentes de verde — uso sobre fundo claro. Cores aproximadas (o usuário não deu os hex
+  exatos desta variante, só a imagem composta) — revisitar com color picker se precisão importar.
+- `arka-icon.svg` / `arka-app-icon-512.png` — mark sobre fundo preenchido, para app icon/favicon
+  em contexto que precisa de um quadrado com fundo (PWA, thumbnail) — substitui a antiga
+  `logo-mark-solid.svg` (removida, sem equivalente `-solid` direto neste conjunto).
+- `arka-bars-only.svg` (ex-`logo-bars-only.svg`) — **só as três barras**, sem o anel, cor única
+  (`--color-brand`). Uso explícito recomendado pelo usuário: favicon em tamanho pequeno, loaders,
+  estados vazios — o anel completo não lê bem abaixo de ~32px, as barras sozinhas continuam
+  reconhecíveis e servem como padrão gráfico reutilizável (ex.: marca d'água sutil num painel sem
+  dados ainda).
+- `arka-logo-horizontal-dark.svg` / `arka-logo-horizontal-light.svg` — lockup horizontal pronto
+  (mark + wordmark), novo em 2026-09-23 — ver seção "Wordmark" abaixo.
 
-**Achado real (`feat-011.1`, 2026-09-09)**: os 4 SVGs tinham um comentário XML/HTML
-(`<!-- ... -->`) antes do elemento raiz `<svg>` (documentação de proveniência). Isso nunca deu
-problema até agora porque os únicos dois consumidores existentes eram `<link rel="icon">`
-(favicon, não depende de tamanho intrínseco) e o SVG inline reconstruído à mão em `Splash`
-(não é um `<img>`, não passa pelo decoder de imagem do navegador). A primeira vez que um SVG
-desses foi usado via `<img src="...">` (logo na tela de login) o Chromium reportou
+**Achado real (`feat-011.1`, 2026-09-09, sobre os arquivos `logo-mark-*` originais)**: os 4 SVGs
+tinham um comentário XML/HTML (`<!-- ... -->`) antes do elemento raiz `<svg>` (documentação de
+proveniência). Isso nunca deu problema até agora porque os únicos dois consumidores existentes
+eram `<link rel="icon">` (favicon, não depende de tamanho intrínseco) e o SVG inline reconstruído
+à mão em `Splash` (não é um `<img>`, não passa pelo decoder de imagem do navegador). A primeira
+vez que um SVG desses foi usado via `<img src="...">` (logo na tela de login) o Chromium reportou
 `naturalWidth`/`naturalHeight` `0` mesmo com a requisição retornando 200 e `Content-Type:
 image/svg+xml` corretos — o `<img>` renderizava como ícone de imagem quebrada. Causa raiz
 confirmada isoladamente (arquivo de teste com/sem o comentário antes de `<svg>`): um comentário
 antes do elemento raiz impede o Chromium de calcular o tamanho intrínseco de um SVG carregado via
 `<img>`, mesmo o `<svg>` tendo `width`/`height` explícitos. Corrigido removendo o comentário
-inicial dos 4 arquivos (a proveniência já está documentada aqui no vault, não se perde
-informação) - geometria/cores dos SVGs não mudaram. Ao adicionar um SVG novo neste projeto para
-uso via `<img>` (não só `<link>`/inline), não colocar comentário antes do elemento `<svg>` raiz.
+inicial dos 4 arquivos — geometria/cores dos SVGs não mudaram. Ao adicionar um SVG novo neste
+projeto para uso via `<img>` (não só `<link>`/inline), não colocar comentário antes do elemento
+`<svg>` raiz — confirmar que `arka-mark-*.svg`/`arka-bars-only.svg` (relabels diretos) preservam
+essa correção; `arka-icon.svg` (novo) não tem comentário antes da raiz.
 
 ### Wordmark
 
-"Stake" + "Vault" na mesma família tipográfica (ver seção Tipografia), duas variações de peso
-para criar hierarquia sem depender de cor: "Stake" em peso leve (400), "Vault" em peso médio
-(500) e cor `--color-brand`. Funciona em monocromático (ex.: impressão, ícone de app sem cor) —
-não recriar a hierarquia com duas fontes diferentes.
+Desde 2026-09-23, o lockup é o SVG pronto `arka-logo-horizontal-{dark,light}.svg` — mark + nome
+"Arka" compostos horizontalmente, geometria/tipografia definidas no próprio arquivo, não mais
+reconstruído com duas variações de peso tipográfico do nome em CSS (abordagem antiga, usada para
+"Stake"+"Vault"). Funciona em monocromático (ex.: impressão, ícone de app sem cor).
 
 Tagline "GESTÃO DE BANCA" (maiúsculas, tracking largo, `--color-text-secondary`, 11px) é
 **string de UI comum, não parte fixa do lockup** — passa pelo mecanismo de i18n como qualquer
-outro texto (`en-US`: "BANKROLL MANAGEMENT"; `es`: "GESTIÓN DE BANCA"). O nome "StakeVault" em si
+outro texto (`en-US`: "BANKROLL MANAGEMENT"; `es`: "GESTIÓN DE BANCA"). O nome "Arka" em si
 **não é traduzido** — nome de marca, mesma convenção usada por produtos reais (nomes próprios não
 mudam com o idioma da interface).
 
 ### Onde usar cada variante
 
-- Nav lateral (item 1 do inventário): `logo-mark-dark.svg` (ou `light`, conforme o tema ativo) +
-  wordmark ao lado, tamanho pequeno (~30px, ver mockup de referência).
-- Splash/loading (item 17 do inventário): geometria do `logo-mark-dark.svg`, animada — usar
-  `docs/design-references/splash-animation-artistic.html` como alvo (`splash-animation.html` é a
-  versão simples, mantida como referência secundária) — ver a descrição técnica no inventário.
-- Favicon/app icon: `logo-mark-solid.svg` (contextos que precisam de fundo preenchido) ou
-  `logo-bars-only.svg` (contextos que precisam só do símbolo em tamanho pequeno).
-- Estados vazios/loaders inline: `logo-bars-only.svg`.
+- Nav lateral (item 1 do inventário): `arka-mark-dark.svg` (ou `light`, conforme o tema ativo) +
+  wordmark ao lado (ou `arka-logo-horizontal-{dark,light}.svg` direto, se o espaço permitir o
+  lockup completo em vez de mark+texto separados), tamanho pequeno (~30px, ver mockup de
+  referência).
+- Splash/loading (item 17 do inventário): geometria do `arka-mark-dark.svg`, animada — usar
+  `docs/design-references/arka-splash.html` como alvo.
+- Favicon/app icon: `arka-icon.svg`/`arka-app-icon-512.png` (contextos que precisam de fundo
+  preenchido) ou `arka-bars-only.svg` (contextos que precisam só do símbolo em tamanho pequeno).
+- Estados vazios/loaders inline: `arka-bars-only.svg`.
 
 ## QA visual e prototipagem: Impeccable, taste-skill e huashu-design — prioritárias (decisão de 2026-08-02, estendida em 2026-09-03)
 
@@ -560,7 +573,7 @@ auditoria/polish/prototipagem** do que for implementado, nunca como fonte de nov
 design:
 
 - **Este documento (`sistema-de-design.md`) continua sendo a única fonte de verdade de design** —
-  marca StakeVault, paleta, layout em painéis, tema, tipografia, já fechados. O taste-skill não
+  marca Arka, paleta, layout em painéis, tema, tipografia, já fechados. O taste-skill não
   pode gerar um design language paralelo, e o huashu-design não pode usar sua própria "filosofia
   de design"/review em 5 dimensões para *decidir* aparência — ambos duplicariam a fonte de
   verdade. Gerar prototipagem/mockup/slide com o huashu-design é permitido (é o ponto forte da
@@ -586,7 +599,7 @@ design:
 - Uso pretendido: comandos de auditoria (ex.: `/impeccable audit`, `/impeccable polish`) rodados
   contra componentes já implementados, comparando o resultado com o que este documento descreve
   (detectar "cara de IA genérica" — gradiente roxo-azul, cards aninhados, fontes padrão — que
-  não tem nada a ver com a identidade StakeVault). O taste-skill entra pelo mesmo motivo:
+  não tem nada a ver com a identidade Arka). O taste-skill entra pelo mesmo motivo:
   refinar layout/tipografia/animação de componentes já implementados, não desenhar do zero.
   huashu-design entra numa etapa diferente das outras duas — **antes** da implementação, não
   depois: gerar um protótipo HTML clicável ou mockup de uma tela nova a partir da paleta/tema

@@ -1,0 +1,150 @@
+/* =========================================================================
+   Arka — design tokens
+   Gestão de banca. Tema escuro por padrão.
+   ========================================================================= */
+
+:root {
+  /* ---- Marca ------------------------------------------------------------ */
+  --arka-green:        #3EC46D;  /* cor da marca, ações primárias */
+  --arka-green-hover:  #34B462;
+  --arka-green-active: #26A65B;
+
+  /* ---- Superfícies ------------------------------------------------------ */
+  --arka-bg:         #0B1622;  /* fundo da aplicação */
+  --arka-surface:    #16232F;  /* cards, painéis */
+  --arka-surface-2:  #1D2A36;  /* elevação sobre surface, chips neutros */
+  --arka-border:     #24323F;  /* divisórias, bordas de input */
+
+  /* ---- Texto ------------------------------------------------------------ */
+  --arka-text:       #F2F7F5;
+  --arka-text-muted: #7A8A93;
+  --arka-text-on-green: #0B1622;
+
+  /* ---- Semântica de resultado -------------------------------------------
+     IMPORTANTE: neste produto o verde carrega significado de lucro.
+     Não use --arka-green em botões neutros (salvar, filtrar, cancelar),
+     ou o usuário lê o botão como resultado positivo.
+     Para ações neutras use --arka-surface-2 com --arka-text.            */
+  --arka-win:        #3EC46D;  /* green / lucro */
+  --arka-win-bg:     #14342A;  /* fundo de chip de lucro */
+  --arka-loss:       #E24B4A;  /* red / prejuízo */
+  --arka-loss-bg:    #33191A;
+  --arka-void:       #7A8A93;  /* anulada, cashout, em aberto */
+  --arka-void-bg:    #1D2A36;
+
+  /* ---- Tipografia ------------------------------------------------------- */
+  --arka-font: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+  --arka-font-numeric: "Inter", ui-monospace, monospace;
+
+  /* Valores monetários e odds devem usar tabular-nums para as colunas
+     não dançarem enquanto os números atualizam. */
+  --arka-numeric-features: "tnum" 1, "cv01" 1;
+
+  --arka-text-xs:   12px;
+  --arka-text-sm:   13px;
+  --arka-text-base: 14px;
+  --arka-text-lg:   17px;
+  --arka-text-xl:   22px;
+  --arka-text-2xl:  30px;
+
+  --arka-tracking-tight: -0.4px;  /* wordmark e números grandes */
+  --arka-tracking-wide:  2.4px;   /* descritor, labels em caixa alta */
+
+  /* ---- Raio e espaçamento ----------------------------------------------- */
+  --arka-radius-sm:   6px;
+  --arka-radius-md:   8px;
+  --arka-radius-lg:  12px;
+  --arka-radius-xl:  14px;
+  --arka-radius-full: 999px;
+
+  --arka-space-1:  4px;
+  --arka-space-2:  8px;
+  --arka-space-3: 12px;
+  --arka-space-4: 16px;
+  --arka-space-5: 20px;
+  --arka-space-6: 24px;
+  --arka-space-8: 32px;
+
+  /* ---- Movimento --------------------------------------------------------
+     As mesmas curvas usadas no splash. Reaproveite nas transições da
+     interface para manter uma linguagem de movimento coerente.        */
+  --arka-ease-draw: cubic-bezier(.45, 0, .25, 1);   /* traços, barras de progresso */
+  --arka-ease-pop:  cubic-bezier(.2, 1.3, .4, 1);   /* entrada com peso (overshoot) */
+  --arka-ease-soft: cubic-bezier(.2, .9, .25, 1);   /* encaixe, rotação */
+  --arka-ease-out:  cubic-bezier(.3, 0, .2, 1);     /* varredura, reveal */
+
+  --arka-dur-fast:  160ms;
+  --arka-dur-base:  240ms;
+  --arka-dur-slow:  420ms;
+}
+
+/* Tema claro, caso você ofereça o toggle. */
+:root[data-theme="light"] {
+  --arka-bg:         #FFFFFF;
+  --arka-surface:    #F4F7F6;
+  --arka-surface-2:  #E8EEEC;
+  --arka-border:     #DCE4E2;
+  --arka-text:       #0B1622;
+  --arka-text-muted: #5A6B75;
+  --arka-green:      #26A65B;  /* escurecido para passar contraste em fundo claro */
+  --arka-win:        #1E8F4D;
+  --arka-win-bg:     #E3F5EA;
+  --arka-loss:       #C7332F;
+  --arka-loss-bg:    #FBE9E8;
+}
+
+/* -------------------------------------------------------------------------
+   Aplicação
+   ------------------------------------------------------------------------- */
+
+body {
+  background: var(--arka-bg);
+  color: var(--arka-text);
+  font-family: var(--arka-font);
+  font-size: var(--arka-text-base);
+}
+
+.arka-numeric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: var(--arka-numeric-features);
+}
+
+.arka-win  { color: var(--arka-win);  background: var(--arka-win-bg);  }
+.arka-loss { color: var(--arka-loss); background: var(--arka-loss-bg); }
+.arka-void { color: var(--arka-void); background: var(--arka-void-bg); }
+
+.arka-btn-primary {
+  background: var(--arka-green);
+  color: var(--arka-text-on-green);
+  border: 0;
+  border-radius: var(--arka-radius-md);
+  padding: var(--arka-space-3) var(--arka-space-5);
+  font: 500 var(--arka-text-base) var(--arka-font);
+  cursor: pointer;
+  transition: background var(--arka-dur-fast) var(--arka-ease-out);
+}
+.arka-btn-primary:hover  { background: var(--arka-green-hover);  }
+.arka-btn-primary:active { background: var(--arka-green-active); }
+
+/* Ação neutra: cinza, nunca verde. Veja a nota em "Semântica de resultado". */
+.arka-btn-ghost {
+  background: var(--arka-surface-2);
+  color: var(--arka-text);
+  border: 0;
+  border-radius: var(--arka-radius-md);
+  padding: var(--arka-space-3) var(--arka-space-5);
+  font: 400 var(--arka-text-base) var(--arka-font);
+  cursor: pointer;
+  transition: background var(--arka-dur-fast) var(--arka-ease-out);
+}
+
+.arka-card {
+  background: var(--arka-surface);
+  border-radius: var(--arka-radius-md);
+  padding: var(--arka-space-4);
+}
+
+:where(a, button, input, select):focus-visible {
+  outline: 2px solid var(--arka-green);
+  outline-offset: 2px;
+}

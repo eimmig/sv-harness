@@ -1673,3 +1673,50 @@ nenhuma pressão de negócio nova além da já avaliada e descartada em 2026-09-
   mesmo racional de erro genérico já usado no login, mas com exceção dedicada
   (`CurrentPasswordMismatchException`, não reaproveita `InvalidCredentialsException` — achado do
   `Plan Reviewer`, o texto localizado do login menciona tenant/e-mail e seria enganoso aqui).
+
+## 2026-09-23 — Vault raiz renomeado para Arka (`epic-032`, primeiro harness da reformulação de marca)
+
+**O que mudou**: `docs/sistema-de-design.md`, `docs/indice.md`, `docs/business/negocio.md` e
+`docs/technical/tokens-e-identidade-visual.md` tiveram as menções normativas a "StakeVault"
+trocadas por "Arka" — primeiro harness trabalhado da ordem sugerida em `epic-032`
+(`feature_list.json` raiz: "vault (raiz) primeiro, depois `apps/web`... por último os 3 serviços
+Java + `infra/`"). Entradas históricas datadas deste próprio `progress.md`/`DECISIONS-LOG.md` que
+citam "StakeVault" como o nome vigente **na época** não foram reescritas — só o `sistema-de-design.md`
+(nota normativa, não log cronológico) teve o nome de marca atualizado por completo, preservando
+citações pontuais a mockups históricos específicos como "mockup original da marca" em vez de
+inventar uma história que o produto sempre se chamou Arka.
+
+**Por quê**: usuário forneceu identidade visual nova completa (ver `docs/design-references/arka-*`)
+substituindo os assets antigos (`dashboard-mockup.html`, `splash-animation(-artistic).html`,
+`logo-mark-{dark,light,solid}.svg`, `logo-bars-only.svg`, `logo-concept-source.png` — todos
+removidos desta sessão). `arka-mark-{dark,light}.svg`/`arka-bars-only.svg` são relabels diretos
+dos antigos `logo-mark-{dark,light}.svg`/`logo-bars-only.svg` (mesma geometria/cor); não há
+equivalente direto de `logo-mark-solid.svg` — o papel de "ícone com fundo preenchido" passa a
+`arka-icon.svg`/`arka-app-icon-512.png`.
+
+**Decisão tomada nesta sessão (`AskUserQuestion`) — cor de CTA/ação neutra continua azul**:
+`arka-tokens.css` (novo arquivo de referência de paleta) define `.arka-btn-primary` com fundo
+**verde** (`--arka-green`) e não traz nenhum token de ação neutra separado. Isso contradiz a regra
+semântica de cor já documentada e implementada em todo `apps/web` desde a sessão de
+2026-08-01 ("Identidade visual visual final: StakeVault" — verde é exclusivo de marca/lucro,
+CTA neutra é azul, para o usuário não ler "botão verde = resultado positivo"). Perguntado ao
+usuário: **mantida a regra antiga** — azul (`--color-action-neutral`) continua sendo a cor de CTA
+neutra; `arka-tokens.css` é tratado como referência de paleta/marca (cor verde, tokens de
+superfície, radius, spacing), não como especificação literal de qual cor vai em qual botão.
+Mesmo racional aplicado ao texto secundário do modo escuro: `arka-tokens.css` traz `#7A8A93`
+para `--color-text-secondary`, que é exatamente o valor **pré-correção de acessibilidade**
+já achado e trocado em `feat-011.5` (`4.47:1`, abaixo do mínimo WCAG AA `4.5:1`) — mantido
+o valor já corrigido (`#8B99A2`), não reaberto o achado.
+
+**Impacto**:
+- Identificadores técnicos reais que ainda citam "stakevault" em código/config vigente (GroupId
+  Maven `com.stakevault.betting`, chave de `localStorage` `stakevault.language`, imagens Docker
+  `stakevault/<serviço>:local`, secret `stakevault-secrets` em `infra/k8s/`, domínio real
+  `stakevault.atlassian.net` do Jira) **não foram tocados nesta sessão** — são código/config real
+  em outros 6 repositórios (+ conta Atlassian real, fora do escopo de qualquer repositório),
+  ficam para as features granulares por harness que `epic-032` prevê (`apps/web`,
+  `telegram-integration`, os 3 serviços Java, `infra/`, nesta ordem). O domínio Atlassian em si
+  não é considerado escopo de rebranding de produto — é conta de terceiro, migrar exigiria ação
+  separada do usuário no admin do Atlassian, não decidido nesta sessão.
+- `epic-032` continua `not-started` no `feature_list.json` da raiz — só fecha quando todos os
+  harnesses impactados tiverem features granulares próprias `done`.

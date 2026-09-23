@@ -4,7 +4,7 @@ tags: [moc, business]
 
 # Negócio
 
-Mapa das capacidades de negócio do StakeVault. Cada nota responde a uma pergunta específica e aponta para as fontes técnicas que a implementam.
+Mapa das capacidades de negócio do Arka. Cada nota responde a uma pergunta específica e aponta para as fontes técnicas que a implementam.
 
 - [[tenant-e-usuarios]] — quem usa a plataforma e como organizações e usuários são isolados.
 - [[autenticacao-e-acesso]] — login, sessão, papéis e autorização.

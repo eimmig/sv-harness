@@ -6,7 +6,7 @@ tags: [technical, design, frontend]
 
 ## Direção
 
-StakeVault usa modos claro e escuro, verde de marca para estados positivos e azul neutro para ações. O layout usa painéis, com atenção a contraste, responsividade e hierarquia visual.
+Arka usa modos claro e escuro, verde de marca para estados positivos e azul neutro para ações. O layout usa painéis, com atenção a contraste, responsividade e hierarquia visual.
 
 ## Uso
 

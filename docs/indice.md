@@ -2,7 +2,7 @@
 tags: [moc]
 ---
 
-# Índice — Plataforma de Gestão de Bankroll
+# Índice — Arka
 
 Vault Obsidian deste projeto. Abra a pasta `docs/` como vault (não a raiz do repositório —
 código e arquivos de harness ficam fora do vault, ver [[arquitetura#Harness multinível]]).
@@ -13,7 +13,7 @@ Atalhos: [[mapa-de-navegacao]] · [[business/negocio|Negócio]] · [[services/se
 ## Visão geral
 
 - [[business/negocio|Mapa do negócio]] — entrada recomendada: capacidades, regras e jornadas
-  do StakeVault em notas pequenas e interligadas.
+  do Arka em notas pequenas e interligadas.
 - [[arquitetura]] — arquitetura geral, infraestrutura, fluxos de eventos, decisões que não
   devem ser reinterpretadas.
 - [[requisitos]] — requisitos funcionais, não funcionais e regras de negócio do TCC 1.
@@ -39,7 +39,7 @@ Atalhos: [[mapa-de-navegacao]] · [[business/negocio|Negócio]] · [[services/se
   contratos dos eventos `BetCreated` e `BetSettled` (schemas em `docs/contracts/`), confiança
   serviço-a-serviço.
 - [[observabilidade-e-configuracao]] — logs estruturados, correlation id, health checks, segredos.
-- [[sistema-de-design]] — marca StakeVault, tema (claro/escuro), paleta de cores, tipografia e
+- [[sistema-de-design]] — marca Arka, tema (claro/escuro), paleta de cores, tipografia e
   inventário de componentes de `apps/web` (layout em painéis baseado no Uphold, identidade
   visual própria) — assets em `docs/design-references/`.
 - [[pipeline-ci-cd]] — pipeline GitHub Actions por repositório (changelog, i18n, build, testes,

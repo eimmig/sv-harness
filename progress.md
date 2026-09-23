@@ -2691,3 +2691,51 @@ mês/ano (Plan Reviewer rejeitou reaproveitar `shared/period-preset-filter` — 
 semanticamente incompatível). Detalhe completo em `apps/web/feature_list.json`/`progress.md`.
 `./init.sh` verde (291 testes, 92.27% cobertura) + e2e completo (84/84). Sem story/branch/PR
 formal.
+
+## `epic-032` — vault raiz renomeado para Arka (2026-09-23)
+
+Próximo item elegível do backlog raiz (único `not-started` até então): reformulação de marca
+`StakeVault` → `Arka`, escopo cross-service dividido em feature(s) por harness durante o
+planejamento (sem harness único, sem `plan_review`/Jira próprios no nível de epic — mesmo padrão
+já usado pelos outros epics cross-service). Ordem sugerida na própria `description`: vault (raiz)
+primeiro. Trabalhado nesta sessão:
+
+- `docs/sistema-de-design.md` reescrito: seção "Fonte" ganhou um item novo documentando os assets
+  `arka-*` (relabels diretos de `logo-mark-{dark,light}.svg`/`logo-bars-only.svg`; sem
+  equivalente direto para `logo-mark-solid.svg`, substituída por `arka-icon.svg`/
+  `arka-app-icon-512.png`; `arka-splash.html` substitui os dois arquivos de splash antigos, ciclo
+  mais curto `2.1s` em vez de `5.4s`; `arka-logo-horizontal-{dark,light}.svg` é lockup novo,
+  substitui o wordmark reconstruído manualmente em CSS). Seções "Identidade visual"/"Logo"/
+  "Wordmark"/"Onde usar cada variante" e item 17 do inventário (splash) reescritos para os novos
+  assets. Paleta reconciliada contra `arka-tokens.css` (novo arquivo de referência) — valores
+  adotados onde coincidem/refinam a tabela existente.
+- `docs/indice.md`, `docs/business/negocio.md`, `docs/technical/tokens-e-identidade-visual.md`:
+  menções de marca trocadas para Arka.
+- **Achado real, levado ao usuário (`AskUserQuestion`) antes de prosseguir**: `arka-tokens.css`
+  define `.arka-btn-primary` com fundo **verde**, sem token de ação neutra separado — contradiz a
+  regra semântica de cor já implementada em todo `apps/web` desde 2026-08-01 (verde exclusivo de
+  marca/lucro, CTA neutra é azul). Decisão: **manter azul como CTA neutra**, tratar
+  `arka-tokens.css` só como referência de paleta/marca, não como especificação literal de botão.
+  Mesmo racional aplicado ao texto secundário do modo escuro: o `#7A8A93` de `arka-tokens.css` é
+  o valor pré-correção de acessibilidade já trocado em `feat-011.5` — mantido `#8B99A2`. Ambas as
+  decisões registradas em `docs/DECISIONS-LOG.md` (2026-09-23).
+- `docs/DECISIONS-LOG.md` ganhou entrada nova (2026-09-23) com o racional completo, incluindo a
+  lista de identificadores técnicos reais que **não** foram tocados nesta sessão por serem
+  código/config vigente de outros repositórios ou conta de terceiro (GroupId Maven
+  `com.stakevault.betting`, chave de `localStorage` `stakevault.language`, imagens Docker/secret
+  `k8s`, domínio real `stakevault.atlassian.net` do Jira) — ficam para as features granulares dos
+  harnesses seguintes (`apps/web`, `telegram-integration`, os 3 serviços Java, `infra/`, nesta
+  ordem, conforme a `description` de `epic-032`).
+- Entradas históricas (deste `progress.md` e de `DECISIONS-LOG.md`) que citam "StakeVault" como o
+  nome vigente na época **não foram reescritas** — só a nota normativa `sistema-de-design.md` teve
+  o nome de marca atualizado por completo.
+
+`feature_list.json` da raiz: `epic-032` passou de `not-started` para `in-progress`, evidência
+parcial registrada (fecha só quando todos os harnesses impactados tiverem features granulares
+`done`). Nenhum código de aplicação foi tocado — sessão inteiramente sobre o vault raiz. `./init.sh`
+da raiz revalidado (`exit 0`) — `api-gateway`/`bets-service` reportaram falha de build por
+processos Java remanescentes de uma sessão de load test paralela, não relacionado a este trabalho
+(usuário confirmou: sessão paralela em andamento, não mexer). Próximo passo: `apps/web` (harness
+seguinte da ordem sugerida) — auditoria de escopo (grep `stakevault` em todo `apps/web`, ~65
+arquivos já levantados na `description` do epic) + Plan Reviewer antes de abrir a feature
+granular.
