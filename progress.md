@@ -2793,3 +2793,38 @@ plan review — escopo mais estreito e mais mecânico que `apps/web`.
 `epic-032` (raiz) segue `in-progress` — vault raiz, `apps/web` e `telegram-integration` feitos,
 faltam os 4 serviços Java (`auth-service`/`bets-service`/`stats-service`/`api-gateway`) e
 `infra/`, nesta ordem.
+
+## 4 serviços Java — marca renomeada, 4o/5o/6o/7o harness de `epic-032` (2026-09-23, mesmo dia)
+
+Escopo real muito menor que os harnesses anteriores: em cada um dos 4 (`auth-service`,
+`bets-service`, `stats-service`, `api-gateway`), a única menção de marca fora do GroupId Maven
+`com.stakevault.betting` (identificador técnico real, pacote Java raiz — 150+ arquivos por
+serviço, já deferido pela decisão de 2026-09-23 registrada em `docs/DECISIONS-LOG.md`) é a linha
+`<description>` do `pom.xml` — um metadado de prosa, sem relação com o pacote. Plan Reviewer
+rodado uma vez (`auth-service feat-019`, READY, sem achado) cobrindo os 4 serviços de uma só vez
+(grep dedicado confirmou ausência de `spring.application.name`/`info.app`/`springdoc`/`swagger`
+customizado nos 4) — reaproveitado condensado nos outros 3, mesma estrutura de repositório/pom.xml
+confirmada idêntica. Delivery Reviewer (passe próprio) em cada um: PASS. `auth-service feat-019`
+(story SV-549, PRs #73-75), `bets-service feat-020` (story SV-552, PRs #72-74), `stats-service
+feat-021` (story SV-555, PRs #69-71), `api-gateway feat-016` (story SV-558, PRs #48-50) — todos
+CI+SonarCloud verdes.
+
+**Achado de ambiente real, não causado por nenhuma destas mudanças**: 8 processos `java.exe`
+órfãos de outro teste que o usuário estava rodando (2 por serviço, dos 4 Java) mantinham os jars
+antigos de `target/` abertos, e o Windows não deixa o Maven renomear um jar em uso — o passo
+`repackage` do `mvn verify` falhava localmente nos 4 (`Unable to rename ... .jar to .jar.original`)
+mesmo com os testes passando. Usuário confirmou via `AskUserQuestion` que eram processos de outro
+teste dele e pediu pra pular o build local em vez de derrubar-los. Verificação alternativa rodada
+nos 4: `mvn -q -DskipTests=false test` (para antes da fase `package`, onde o lock acontece) — EXIT=0
+em todos. O gate real (CI no GitHub Actions, ambiente Linux sem esse lock) rodou `mvn verify`
+completo com sucesso em cada PR `story->develop`, confirmando que a limitação era só do ambiente
+Windows local, não um defeito das mudanças.
+
+**Achado de processo corrigido antes de abrir os PRs**: `bets-service` e `stats-service` tinham,
+cada um, 1 commit local já concluído numa sessão anterior (features companion, fechadas sem PR
+formal por decisão do usuário na época) nunca publicado em `origin/develop` — sincronizados (push
+direto, fast-forward) antes de ramificar a feature de rebranding, pra não vazar aqueles commits
+alheios no diff desta feature.
+
+`epic-032` (raiz) segue `in-progress` — vault raiz, `apps/web`, `telegram-integration` e os 4
+serviços Java feitos. Falta só `infra/`, último harness na ordem sugerida.
