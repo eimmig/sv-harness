@@ -2771,3 +2771,25 @@ registrado mas não corrigido: ~24 arquivos de `apps/web` (fora dos 3 de metadad
 têm comentários citando nomes antigos em inglês de notas do vault — sobra da reorganização em
 português (`f39582a`), não relacionada a este rebranding, sinalizado ao usuário e no
 `DECISIONS-LOG` para os harnesses seguintes conferirem o mesmo padrão nos próprios repositórios.
+
+## `telegram-integration feat-011` — marca renomeada, 3o harness de `epic-032` (2026-09-23, mesmo dia)
+
+Fluxo completo por `telegram-integration`: `grep -ril "stakevault"` (case-insensitive) achou só 4
+arquivos no repositório inteiro — bem menos superfície que `apps/web` (65 arquivos). `CHANGELOG.md`
+e `feature_list.json` só citam a string em contexto histórico/técnico que não muda (links reais
+`stakevault.atlassian.net` do Jira, e `evidence` de uma feature já fechada); `n8n/README.md` +
+`n8n/telegram-bot.json` são o único ponto real de marca visível (nome/avatar do bot Telegram
+exibido na instância n8n) — exatamente o que a `description` de `epic-032` já previa para este
+harness. Plan Reviewer (passe próprio, READY) → `feat-011` com 3 subtasks → story SV-545 no Jira
+(PRs #42-44 subtask->story + #45 story->develop, `sv-telegram-integration-backend`, CI+SonarCloud
+verdes) → Delivery Reviewer (PASS, sem achado) → merge em `develop`.
+
+Aplicado desta vez, aprendido do gotcha de `apps/web feat-042` (wordmark partido em `<span>` que o
+grep original não pegava): rodado `grep -rniE "stake|vault"` além do `grep -i stakevault` simples,
+pra descartar o mesmo risco de substring partida — todos os hits remanescentes eram o domínio
+"stake" de apostas (`odd`/`stake`), sem relação com a marca. Nenhum achado novo além do previsto no
+plan review — escopo mais estreito e mais mecânico que `apps/web`.
+
+`epic-032` (raiz) segue `in-progress` — vault raiz, `apps/web` e `telegram-integration` feitos,
+faltam os 4 serviços Java (`auth-service`/`bets-service`/`stats-service`/`api-gateway`) e
+`infra/`, nesta ordem.
