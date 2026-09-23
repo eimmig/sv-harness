@@ -7,56 +7,61 @@
 
 ## Objetivo atual
 
-33 dos 33 epics `done` — `epic-032` (reformulação de marca StakeVault -> Arka) fechou nesta sessão,
-último dos originais. `epic-033` (novo, `not-started`) — CI: gerar versão automática ao merge para
-master, nos 7 repositórios; escopo ainda por decidir por harness (mecanismo de versionamento
-difere por stack: Maven/npm/pyproject/tag solta em `infra/`), nenhuma feature granular aberta
-ainda.
+34 dos 35 epics `done`. `epic-034` (novo, `not-started`) — extrair classe base compartilhada pra
+exceções de domínio localizadas (`LocalizedDomainException`) nos 4 serviços Java, achado real do
+`epic-033`; escopo ainda por planejar por harness.
 
 ## Concluído nesta sessão (2026-09-23)
 
-- [x] **`epic-032` fechado** — todos os 7 repositórios avaliados na ordem sugerida: vault raiz,
-      `apps/web feat-042`, `telegram-integration feat-011` (mudança real de UI/i18n/nome de bot),
-      4 serviços Java `auth-service feat-019`/`bets-service feat-020`/`stats-service feat-021`/
-      `api-gateway feat-016` (mudança real, `pom.xml <description>`), `infra/` (auditado, **sem**
-      mudança necessária - tudo lá é identificador técnico já deferido: nome de rede/projeto do
-      compose, usuário RabbitMQ, `Secret`/`Ingress` k8s, tags de imagem). Marca StakeVault -> Arka
-      completa em toda superfície visível a usuário/operador real; identificadores técnicos reais
-      (GroupId Maven, chave de `localStorage`, nomes de imagem/secret Docker/k8s, domínio Jira)
-      permanecem StakeVault por decisão explícita, registrada em `docs/DECISIONS-LOG.md` como
-      pendência conhecida pra uma rodada futura separada.
-- [x] **Impedimento real resolvido com o usuário**: 8 processos `java.exe` órfãos de outro teste
-      do usuário travavam o `repackage` do `mvn verify` local (Windows) nos 4 serviços Java.
-      Usuário confirmou via `AskUserQuestion` que eram processos de outro teste dele e autorizou
-      pular o build local em vez de derrubar-los — `mvn test` local (EXIT=0 nos 4) + o gate real
-      de CI (Linux, sem esse lock) rodando `mvn verify` completo fecharam a verificação.
-- [x] **Achado de processo corrigido**: `bets-service` e `stats-service` tinham 1 commit local
-      cada, de sessão anterior, nunca publicado em `origin/develop` — sincronizados antes de
-      ramificar, pra não vazar aqueles commits alheios no diff das features de rebranding.
-- [x] `epic-033` adicionado ao backlog da raiz (pedido do usuário) — `not-started`, sem feature
-      granular ainda em nenhum harness.
+- [x] **`epic-033` fechado** — CI gera versão (semver + tag + GitHub Release + bump de
+      manifesto + corte de `CHANGELOG.md`) a cada merge em `main`, nos 7 repositórios. Mecanismo
+      desenhado/validado em `auth-service feat-020` (Plan Reviewer + 2 subagentes independentes,
+      REVISE com 2 achados corrigidos antes de codificar), reaproveitado condensado nos outros 6.
+      Usa `ietf-tools/semver-action` + `versions-maven-plugin`/`npm version`/`uv version` + script
+      próprio de corte de changelog + `ncipollo/release-action`, autenticado via secret
+      `RELEASE_TOKEN` (PAT do dono, distribuído nos 7 repositórios) porque `main` tem branch
+      protection que rejeita o `GITHUB_TOKEN` padrão. **Verificação real de ponta a ponta feita
+      nos 7** (não só CI simulado) — cada um promovido `develop -> main` de verdade, tag `v0.1.0`
+      + Release confirmados. 3 achados reais só descobertos nessa verificação real (nenhum plan
+      review pega sem um push de verdade): `fallbackTag` do semver-action precisa de tag Git já
+      existente (bootstrap `v0.0.0` criado nos 7); `bets-service feat-021` reprovou o gate de
+      duplicação (residual de `feat-019`, sessão anterior nunca gateada) — corrigido de verdade
+      (`BetFields`/`BetDetails`) + `sonar.cpd.exclusions` documentado pro padrão intencional de
+      exceções de domínio; 3 achados MAJOR reais (`java:S5778`) em testes pré-existentes. Detalhe
+      completo em `progress.md` (raiz) e `docs/pipeline-ci-cd.md`.
+- [x] **`epic-034` adicionado** — achado do item acima: a duplicação real em `bets-service` vem
+      de um padrão (uma exceção por regra) repetido nos 4 serviços Java; classe base compartilhada
+      eliminaria a causa raiz. Inclui remover o `sonar.cpd.exclusions` de `bets-service` depois.
+- [x] **Impedimento real de ambiente resolvido com o usuário**: a cota de minutos do GitHub
+      Actions se esgotou por ~4h durante a sessão (nenhum dos 7 repositórios rodou CI nesse
+      período) — identificado comparando timestamps entre repositórios, resolvido pelo usuário no
+      billing da conta.
+- [x] `apps/web feat-044` adicionado ao backlog (pedido do usuário) — mover a splash de antes do
+      login pra depois (durante o carregamento inicial de dados da tela `/overview`), `not-started`.
 
 ## Bloqueios / Riscos
 
-Nenhum bloqueio novo dos itens fechados nesta sessão. Risco já documentado (não desta sessão,
-não relacionado a `epic-032`/`epic-033`): o `KUBE_CONFIG` de `epic-028` não alcança o cluster a
-partir de runners hospedados do GitHub Actions — promoções `develop -> main` dos 6 repositórios
-de aplicação continuam pausadas até o usuário decidir o caminho de rede (ver
+Nenhum bloqueio novo. Risco já conhecido, **não mais um bloqueio pra promoção de `main`**: o job
+`deploy` (`epic-028`) segue falhando nos 6 repositórios de aplicação porque o `KUBE_CONFIG` não
+alcança o cluster a partir de runners hospedados do GitHub Actions — usuário decidiu nesta sessão
+aceitar esse ruído (falha isolada, não bloqueia `release`/demais jobs) em vez de continuar
+pausando promoções `develop -> main` por causa disso. Continua sem solução de rede definida (ver
 `services/bets-service/session-handoff.md` e `docs/services/infra.md`).
 
 `e2e/search-statistics.spec.ts` (apps/web) segue quebrado desde `feat-036` (não relacionado a
-`epic-032`/`epic-033`) — ver `apps/web/session-handoff.md`/`progress.md` pro detalhe, não
-resolvido nesta sessão.
+`epic-032`/`epic-033`/`epic-034`) — não resolvido nesta sessão.
 
 ## Próxima sessão — por onde começar
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. **Nenhum epic `not-started` na raiz exceto `epic-033`** — conferir cada harness por features
-   ad-hoc sem epic próprio antes de assumir que não há trabalho (mesmo padrão já visto).
-3. **`epic-033` not-started** — se o usuário pedir pra avançar, plan review por harness primeiro
-   (mecanismo de versionamento não está decidido, ver `description` do epic na raiz): provável
-   ordem natural é `infra/` primeiro (decide o padrão geral, sem app própria) ou o serviço mais
-   simples primeiro, a critério de quem planejar.
-4. `develop` de `sv-frontend` segue à frente de `main` desde `epic-031` (decisão de promoção fica
-   com o usuário, não assumir). Mesma pausa vale pros 4 serviços Java + `telegram-integration`
-   (ver "Bloqueios" acima).
+2. **`epic-034` not-started** — se o usuário pedir pra avançar: plan review por harness (auditar
+   quantas exceções `LocalizedDomainException` cada um dos 4 serviços Java tem antes de assumir o
+   formato idêntico), aplicar em `bets-service` primeiro (já tem o achado documentado em
+   `services/bets-service/feature_list.json` feat-021), remover o `sonar.cpd.exclusions` de lá
+   depois.
+3. `apps/web feat-038`/`feat-040`/`feat-041`/`feat-044` — backlog ad-hoc sem epic próprio, ver
+   `apps/web/feature_list.json`.
+4. `SV-495` no Jira (story órfã de `apps/web`, 2026-09-16) — duplicata de `SV-500` (que fechou
+   `feat-033` de verdade) de uma tentativa de `jira_story.py` que falhou no meio (mesma classe de
+   bug corrigida manualmente para `SV-558` nesta sessão). Usuário ainda não decidiu se quer
+   cancelá-la — perguntar antes de mexer.

@@ -2855,3 +2855,58 @@ completa em toda superfície visível a usuário/operador real; identificadores 
 (GroupId Maven, chave de `localStorage`, nomes de imagem/secret Docker/k8s, domínio Jira)
 permanecem StakeVault por decisão explícita, registrados como pendência conhecida em
 `docs/DECISIONS-LOG.md` para uma rodada futura separada, caso o usuário decida completá-la.
+
+## `epic-033` — CI gera versão automática ao merge em main, nos 7 repositórios (2026-09-23, mesmo dia)
+
+Pedido do usuário durante a sessão de `epic-032`. Mecanismo desenhado e validado em
+`auth-service feat-020` (1º harness): `ietf-tools/semver-action` calcula a próxima versão a
+partir de Conventional Commits, `versions-maven-plugin`/`npm version`/`uv version` bump o
+manifesto do projeto (`infra/` sem manifesto, só tag+changelog), `.github/scripts/cut-changelog.py`
+corta o `CHANGELOG.md` (abre `[Unreleased]` novo, fecha a seção anterior com `[X.Y.Z] - data`),
+commit+push de volta pra `main` via secret `RELEASE_TOKEN` (PAT do dono — único jeito de bypassar
+a proteção de branch, já que o `GITHUB_TOKEN` padrão roda como `github-actions[bot]`, que não é
+admin), `ncipollo/release-action` cria tag Git + GitHub Release.
+
+Plan Reviewer (passe próprio) + 2 subagentes independentes (execution-simulation,
+adversarial/security) acharam 2 problemas reais antes de codificar: `ncipollo/release-action` sem
+`commit:` explícito apontaria pro commit ANTES do bump; `persist-credentials: true` deixaria o
+PAT gravado em disco durante o job inteiro. Corrigidos, plano reaproveitado condensado nos outros
+6 repositórios (`bets-service feat-021`, `stats-service feat-022`, `api-gateway feat-017`,
+`telegram-integration feat-012`, `apps/web feat-043`, `infra feat-008`).
+
+**3 achados reais adicionais, só descobertos na verificação real de ponta a ponta** (nenhum plan
+review pega isso sem um push de verdade em `main`):
+
+1. `fallbackTag` do `semver-action` precisa de uma tag Git que **já existe fisicamente** — o nome
+   sugere que basta uma string semver válida, mas o código-fonte da action (lido direto, não só o
+   README) confirma que ela só é usada se aparecer na listagem real de tags do repositório.
+   Nenhum dos 7 repositórios tinha tag nenhuma — bootstrap de uma tag `v0.0.0` anotada no commit
+   raiz de cada um, criada manualmente uma única vez.
+2. `bets-service feat-021` reprovou o gate de duplicação de código novo do SonarCloud (3.8%,
+   limite 3%) — resíduo de `feat-019` (sessão anterior, commit direto sem PR, nunca passado por
+   CI): `BetsController.create()`/`update()` repetiam a lista de 14 campos construindo
+   `CreateBetCommand`/`UpdateBetCommand`. Corrigido de verdade com `BetFields` (interface) +
+   `BetDetails` (record com os campos compartilhados, extraído uma única vez) — os Commands agora
+   compõem `BetDetails` em vez de achatar os campos. Duplicação residual (3.1%) rastreada até
+   `BetConcurrentlyModifiedException` (também `feat-019`) repetir o mesmo formato de ~18 outras
+   exceções de domínio — padrão intencional do projeto (uma exceção por regra), não duplicação
+   real. Resolvido com `sonar.cpd.exclusions` documentado; `epic-034` (raiz, novo) avalia extrair
+   uma classe base compartilhada nos 4 serviços Java pra eliminar a causa raiz.
+3. Mesma feature, 3 achados MAJOR reais (`java:S5778`) em testes pré-existentes — lambdas de
+   `assertThatThrownBy` com 2 invocações (`bet.id()` + `service.update(...)`), corrigidos
+   isolando o id numa variável local antes de cada asserção.
+
+Verificação real end-to-end confirmada nos 7 repositórios (não só CI simulado): push real
+`story -> develop -> main` em cada um, tag `v0.1.0` + GitHub Release "Latest" publicados, commit
+de release correto, sem loop de CI. Job `deploy` (pré-existente, `epic-028`) falhou como esperado
+em 6 dos 7 — `KUBE_CONFIG` não alcança o cluster a partir de runner hospedado, residual já
+documentado, não relacionado a este epic. `docs/pipeline-ci-cd.md` documenta o mecanismo completo
+e os achados reais.
+
+Achado de processo: durante a sessão, a cota de minutos do GitHub Actions se esgotou por ~4h
+(nenhum dos 7 repositórios rodou CI nesse período) — identificado comparando timestamps entre
+repositórios (todos pararam ao mesmo tempo, não é bug de nenhum workflow específico), resolvido
+pelo usuário no billing da conta. Achado de escopo: um commit direto do usuário
+(`fix(brand): restore missing dark mark and split wordmark colors`) foi feito em cima da branch
+`feature/SV-573` (apps/web) enquanto ela estava em uso nesta sessão — usuário confirmou via
+`AskUserQuestion` que era intencional, mergeado junto sem separar.
