@@ -560,6 +560,67 @@ um novo push (commit vazio ou qualquer outro) passa limpo. **Qualquer serviço q
 seu primeiro merge `develop` → `main` pode bater no mesmo problema** — verificar o dashboard do
 SonarCloud daquele projeto antes de assumir defeito de código.
 
+## Gerar versão (job `release`) ao merge em `main`
+
+Job adicional (`epic-033`, 2026-09-23), igual a `build-and-push-image`: roda em paralelo, fora dos
+6 passos numerados, `needs: pipeline`, `if: github.event_name == 'push' && github.ref_name ==
+'main'`. Presente nos 7 repositórios (os 6 de aplicação + `infra/`). A cada push em `main`:
+calcula a próxima versão semântica a partir de Conventional Commits desde a última tag
+(`ietf-tools/semver-action`), atualiza o manifesto de versão do projeto (`pom.xml` nos 4 serviços
+Java via `versions-maven-plugin:set`, `package.json` em `apps/web` via `npm version
+--no-git-tag-version --allow-same-version`, `pyproject.toml`/`uv.lock` em
+`telegram-integration` via `uv version X.Y.Z` — `infra/` não tem manifesto, pula esse passo),
+corta o `CHANGELOG.md` (`.github/scripts/cut-changelog.py`, duplicado em cada repositório como os
+outros scripts — renomeia `## [Unreleased]` pra `## [X.Y.Z] - <data>` e abre um `[Unreleased]`
+novo vazio, só a primeira ocorrência via `str.replace(..., 1)`, idempotente entre releases),
+commita+empurra pra `main` e cria a tag Git + GitHub Release (`ncipollo/release-action`) apontando
+pro commit certo.
+
+**Achado real 1 — `main` bloqueia o `GITHUB_TOKEN` padrão pra empurrar o commit de bump**: `main`
+tem branch protection com required status check `pipeline` (`enforce_admins: false`, confirmado
+via `gh api repos/<owner>/<repo>/branches/main/protection`); docs oficiais do GitHub: "Required
+status checks must have a successful, skipped, or neutral status before collaborators can make
+changes to a protected branch", e só admins pulam essa exigência quando `enforce_admins` está
+desligado. O `GITHUB_TOKEN` padrão do Actions roda como `github-actions[bot]`, que não é admin —
+um push de commit novo (sem check ainda rodado pra ele) seria rejeitado. Corrigido com um PAT
+classic (escopo `repo`) do próprio dono/admin, gerado manualmente (não é possível via API/CLI) e
+distribuído como secret `RELEASE_TOKEN` nos 7 repositórios (`gh secret set RELEASE_TOKEN --body
+"$TOKEN" -R <owner>/<repo>`) — usado só no `git push` final, embutido na URL
+(`https://x-access-token:${RELEASE_TOKEN}@github.com/...`), nunca persistido no credential helper
+(`actions/checkout` com `persist-credentials: false`). `ietf-tools/semver-action` e
+`ncipollo/release-action` usam o `github.token` padrão (leem tags/criam release, não são
+bloqueados por branch protection, que só vale pra commits em branch).
+
+**Achado real 2 — push com PAT pessoal dispara o workflow de novo**: ao contrário do
+`GITHUB_TOKEN` padrão (que não dispara um novo `push` mesmo empurrando código — proteção nativa
+contra loop, confirmada via docs oficiais do GitHub), um push autenticado com PAT pessoal **é**
+tratado como um push normal e reaciona o workflow. Corrigido incluindo `[skip ci]` na mensagem do
+commit de release (`chore(release): vX.Y.Z [skip ci]`) — um dos 5 marcadores nativos que o Actions
+reconhece pra pular o disparo (`[skip ci]`/`[ci skip]`/`[no ci]`/`[skip actions]`/
+`[actions skip]`, só em eventos `push`/`pull_request`).
+
+**Achado real 3 — `fallbackTag` do `semver-action` precisa de uma tag Git que já existe de
+verdade**: nenhum dos 7 repositórios tinha tag alguma (primeira execução em todos), e o passo
+"Calcular próxima versão" falhou com `Couldn't find the latest tag. Make sure you have at least
+one tag created or provide a fallbackTag!`. O nome do parâmetro sugere que basta passar uma string
+semver válida, mas **não é isso** — confirmado lendo o código-fonte da action (`index.js`,
+`gh api repos/ietf-tools/semver-action/contents/index.js`): `fallbackTag` só é usado se
+`semver.valid(fallbackTag)` for verdadeiro **e** aparecer na listagem real de tags do repositório;
+sem uma tag física, a chamada `compareCommitsWithBasehead` (API do GitHub) não consegue resolver o
+ref e falha de qualquer forma. Corrigido criando manualmente uma tag anotada `v0.0.0` no commit
+raiz de cada repositório (`git tag -a v0.0.0 <sha-do-primeiro-commit> -m "..."`, `git push origin
+v0.0.0`) — bootstrap de uma vez só, não repete depois que a primeira tag real existe.
+
+**Achado real 4 — duplicação de código novo pode ser falso positivo em exceções de domínio**:
+`bets-service feat-021` bateu no gate `new_duplicated_lines_density` (≤3%) por causa de
+`BetConcurrentlyModifiedException` (feature anterior, nunca passada por CI) repetir o mesmo
+formato de ~18 outras exceções do pacote `domain.model` (campo + `super()` + `messageKey()`/
+`httpStatusCode()`/`messageArgs()`, implementando `LocalizedDomainException`) — padrão
+intencional do projeto (uma exceção por regra), não cópia-e-cola real. Resolvido pontualmente com
+`-Dsonar.cpd.exclusions=**/domain/model/*Exception.java` no passo SonarCloud daquele repositório;
+`epic-034` (raiz) avalia extrair uma classe base compartilhada nos 4 serviços Java pra eliminar a
+causa raiz (e então remover essa exclusão).
+
 ## Ver também
 
 - [[convencoes]] — build tool por stack, i18n (formato dos arquivos de tradução validados no
