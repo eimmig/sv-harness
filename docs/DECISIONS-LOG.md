@@ -1720,3 +1720,24 @@ o valor já corrigido (`#8B99A2`), não reaberto o achado.
   separada do usuário no admin do Atlassian, não decidido nesta sessão.
 - `epic-032` continua `not-started` no `feature_list.json` da raiz — só fecha quando todos os
   harnesses impactados tiverem features granulares próprias `done`.
+
+**Adendo 2026-09-23, mesmo dia — `apps/web feat-042` fechada, gotcha real pros harnesses
+seguintes**: `grep -i stakevault` (usado para escopar o vault raiz e o plan review de
+`apps/web`) **não pega wordmark partido em spans/tokens separados** — `login.html` tinha
+`<span>Stake</span><span>Vault</span>` (mesmo padrão do `app-side-nav`, já corrigido), mas como
+nenhuma das duas metades contém a string `stakevault` inteira, o grep original não achou essa
+segunda ocorrência. Só apareceu no Delivery Reviewer, rodado contra o diff completo da feature,
+não no plan review inicial (que dependia só do grep). **Para os harnesses seguintes**
+(`telegram-integration`, `auth-service`, `bets-service`, `stats-service`, `api-gateway`,
+`infra/`): não confiar só em `grep -i stakevault` para escopar o plan review — também buscar por
+`Stake` e `Vault` isoladamente (e qualquer outra decomposição do nome, ex.: variáveis/testids
+que só usem parte do nome) antes de considerar o levantamento completo, e rodar Delivery
+Reviewer contra o diff completo antes de fechar cada feature, não só confiar no grep inicial.
+Achado adicional, não corrigido (fora de escopo do rebranding, registrado para decisão futura):
+~24 arquivos de `apps/web` têm comentários citando nomes antigos em inglês de notas do vault
+(`docs/DESIGN-SYSTEM.md`, `docs/API-CONTRACTS.md`, `docs/CONVENTIONS.md`, `docs/TESTING.md`,
+`docs/REQUIREMENTS.md`) — sobra da reorganização em português do vault (`f39582a`), não
+relacionada a este rebranding; só os 3 arquivos de metadados do próprio `apps/web`
+(`CLAUDE.md`/`DESIGN.md`/`PRODUCT.md`) foram corrigidos por serem os mesmos tocados pelo rename
+de marca. Os outros repositórios provavelmente têm o mesmo tipo de link quebrado em comentários —
+vale conferir durante o plan review de cada harness, não assumir que só afeta `apps/web`.

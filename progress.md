@@ -2739,3 +2739,35 @@ processos Java remanescentes de uma sessão de load test paralela, não relacion
 seguinte da ordem sugerida) — auditoria de escopo (grep `stakevault` em todo `apps/web`, ~65
 arquivos já levantados na `description` do epic) + Plan Reviewer antes de abrir a feature
 granular.
+
+## `apps/web feat-042` — marca renomeada, 2o harness de `epic-032` (2026-09-23, mesmo dia)
+
+Fluxo completo por `apps/web`: Plan Reviewer (READY WITH CONCERNS, 1 MAJOR corrigido no plano —
+não portar timing/técnica de `arka-splash.html`, `splash.ts`/`.scss` já é um port Angular fiel de
+5.4s, geometria do mark já idêntica) → `feat-042` com 7 subtasks → story SV-537 no Jira (PRs
+#165-172, `sv-frontend`, CI verde em todos, incluindo SonarCloud) → Delivery Reviewer (PASS, 1 P1
+achado e corrigido em tempo real) → Test Suite Auditor (CONCERNS→fechado, 1 P2 achado e corrigido)
+→ merge em `develop`.
+
+**Dois achados reais que o plan review não previu, ambos por rodar as skills de auditoria contra
+o diff completo em vez de confiar só no levantamento inicial por grep**:
+
+1. `login.html` tinha o mesmo wordmark partido em dois `<span>` ("Stake"/"Vault") que
+   `app-side-nav` já tinha corrigido — invisível ao `grep -i stakevault` original porque nenhuma
+   das duas metades contém a string inteira. Corrigido com o mesmo padrão (span único "Arka").
+2. Nenhum teste, em nenhum momento, jamais afirmou o nome de marca visível — os testes existentes
+   só provavam que um pipe de tradução renderizava *algum* valor de fixture que o próprio teste
+   fornecia, oráculo desacoplado do JSON real. `e2e/smoke.spec.ts` ganhou
+   `toHaveTitle(/Arka/)` (checagem nativa do Playwright, não um locator de cópia/CSS).
+
+Detalhe completo (achados, decisões, evidência) em `apps/web/feature_list.json` (`feat-042`) e
+`docs/DECISIONS-LOG.md` (raiz, adendo 2026-09-23) — o adendo também documenta o gotcha do grep
+partido para os harnesses seguintes (`telegram-integration`, 3 serviços Java, `infra/`) não
+repetirem.
+
+`epic-032` (raiz) segue `in-progress` — vault raiz e `apps/web` feitos, faltam
+`telegram-integration`, os 3 serviços Java e `infra/`, nesta ordem. Achado fora de escopo,
+registrado mas não corrigido: ~24 arquivos de `apps/web` (fora dos 3 de metadados já corrigidos)
+têm comentários citando nomes antigos em inglês de notas do vault — sobra da reorganização em
+português (`f39582a`), não relacionada a este rebranding, sinalizado ao usuário e no
+`DECISIONS-LOG` para os harnesses seguintes conferirem o mesmo padrão nos próprios repositórios.
