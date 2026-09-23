@@ -475,6 +475,17 @@ Outras telas (KPI cards de `overview`/`dashboard`/`period-report`/`search-statis
 sidebar, confirmar que o nome existe no Symbols Outlined antes de aplicar o `fontSet` — ícones de
 marca/social normalmente não existem lá.
 
+## Seletor de mês/ano (MatDatepicker `startView="year"`, `feat-039`, 2026-09-22)
+
+`shared/monthly-drawdown-chart`/`pages/dashboard/monthly-drawdown-grid` precisam de um filtro que
+seleciona só mês+ano (sem dia), travado em fronteira de mês inteiro — não o range de dias de
+`shared/period-preset-filter`. Padrão: `<input matInput readonly [matDatepicker]="picker">` +
+`<mat-datepicker #picker startView="year" (monthSelected)="...">`, fechando o picker manualmente
+no handler (`picker.close()`) em vez de deixá-lo descer pra visão de dia. `startView="year"` abre
+direto na grade de 12 meses do ano corrente; a barra de período no topo do calendário (`.mat-
+calendar-period-button`) navega pra visão multi-ano quando o usuário precisa de outro ano.
+Reaproveitável em qualquer filtro futuro que precise de granularidade mês/ano.
+
 ## Identidade visual — StakeVault
 
 Nome e marca **definidos** (2026-08-01) — não é mais placeholder, substitui a seção anterior

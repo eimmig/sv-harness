@@ -251,6 +251,39 @@ justificar um mecanismo de outbox. Teste de contrato valida cada mensagem public
 cópia vendorizada do schema correspondente (`src/test/resources/contracts/*.schema.json` — ver
 `docs/contratos-de-api.md` seção "Cópias vendorizadas do schema").
 
+## Edição de aposta ja registrada (`feat-019`, 2026-09-22)
+
+`PUT /api/v1/bets/{id}` — corrige campos de uma aposta já registrada (odd/stake/betDate/
+bettingHouseId/sportId/leagueId/marketId/tipsterId/team1Id/team2Id/description/betType/playType)
+sem excluir e recriar. Pedido real: captura via [[telegram-integration]] (OCR/heurística sem
+garantia) às vezes erra um campo extraído. Decisões do usuário: edição permitida tanto em `pending`
+quanto já liquidada (`won`/`lost`/`void`); stats-service reprocessa `FACT_BET` (evento republicado,
+não fica desatualizado).
+
+Transição de status via `PUT` é mais restrita que a de `PATCH /api/v1/bets/{id}/status` (`feat-005`,
+transição atômica dedicada à liquidação): só é permitido `pending -> pending` (edição pura) ou
+`liquidada -> liquidada`, igual ou trocando o valor (correção pós-liquidação, ex.: `won -> lost`).
+Cruzar a fronteira `pending <-> liquidada` via `PUT` é `422 invalid-status-transition` — liquidar
+continua exclusivo do `PATCH`. Correção pós-liquidação recalcula `profit` (RN02/RN03) com o
+stake/odd/status novos e atualiza o `BET_RESULT` já existente no lugar (`settledByUserId`/
+`settledAt` preservados do registro original) — RN01 (saldo consolidado, agregação ao vivo por
+`SUM(BET_RESULT.profit)`) reflete o valor corrigido na próxima leitura, sem nenhum passo de
+"reverter e reaplicar" separado.
+
+Escrita guardada por `UPDATE` atômico condicional (`WHERE id = :id AND status = :expectedStatus`,
+mesmo mecanismo de `transitionStatus`) — cobre a corrida real entre `PUT` e `PATCH /status`
+concorrentes no mesmo `betId` (sem essa guarda, `PUT` podia sobrescrever stake/odd depois de uma
+liquidação concorrente já ter calculado `profit` com o valor antigo). `0` linhas afetadas → `409
+bet-modified-concurrently`, cliente relê e tenta de novo.
+
+Republica `BetCreated` (permanece `pending`) ou `BetSettled` (permanece liquidada) reaproveitando
+os métodos já existentes do publisher — mesmo payload, sem mudança de schema.
+**Companion em [[stats-service]] `feat-020`**: `ProcessBetEventService.processCreated` só
+inseria `FACT_BET` se a linha não existisse — uma edição de aposta `pending` (2ª entrega do mesmo
+`betId`) era silenciosamente ignorada. Corrigido para também aceitar quando a linha existente
+ainda está `pending` (proteção original contra sobrescrever uma liquidação por mensagem fora de
+ordem mantida — `BetSettled` sempre vence).
+
 ## Correlation id no envelope de evento (gap conhecido, 2026-09-08)
 
 `api-gateway feat-006` implementou o filtro global de `X-Correlation-Id` (gera/propaga, injeta no

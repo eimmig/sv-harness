@@ -7,11 +7,29 @@
 
 ## Objetivo atual
 
-**Todos os 31 epics do `feature_list.json` da raiz estão `done`** (`epic-031` fechado nesta
-sessão). Nenhum harness tem feature `not-started` conhecida no momento (conferir cada
-`feature_list.json` antes de assumir, ver "Próxima sessão" abaixo).
+**Todos os 31 epics do `feature_list.json` da raiz estão `done`**. Nenhum harness tem feature
+`not-started` conhecida no momento (conferir cada `feature_list.json` antes de assumir, ver
+"Próxima sessão" abaixo). `bets-service feat-019` (`PUT /api/v1/bets/{id}`, ad-hoc, sem epic
+próprio) e seu companion `stats-service feat-020` fechados mais tarde no mesmo dia — ver
+`services/bets-service/progress.md`. `apps/web feat-039` (drawdown mensal + filtro de mês, ad-hoc)
+também fechada no mesmo dia — ver `apps/web/progress.md`.
 
 ## Concluído nesta sessão (2026-09-22)
+
+- [x] `bets-service feat-019` — `PUT /api/v1/bets/{id}`, edição de aposta pendente ou já
+      liquidada sem excluir/recriar. Plan Reviewer (`REVISE`, 2 BLOCKER corrigidos: gotcha
+      `Persistable`/`isNew` do JPA já documentado em `docs/convencoes.md` fazia `.save()` tentar
+      `INSERT` numa linha já existente; corrida real entre `PUT` e `PATCH /status` concorrentes
+      podia gravar `profit` inconsistente com stake/odd, corrigido com `UPDATE` atômico
+      condicional). Companion cross-service `stats-service feat-020` (`processCreated` aceita
+      reprocessar `FACT_BET` ainda `pending`). Ambos os `./init.sh` verdes. Sem story/branch/PR
+      formal (fluxo direto de pareamento).
+
+- [x] `apps/web feat-039` — drawdown mensal "só subia e saturava": 2 causas reais (padding de
+      dias futuros no mês corrente + smoothing/grid grosseiro do `chart-theme.ts`), validadas
+      rodando a stack real localmente contra o tenant de demonstração `demo-b583c3`. Filtro de
+      mês trocado de `<input type="month">` nativo para `MatDatepicker` mês/ano. `./init.sh`
+      verde (291 testes) + e2e completo (84/84). Sem story/branch/PR formal.
 
 - [x] `epic-031` fechado — `apps/web feat-037`, tela "Comparativo de períodos"
       (`/period-comparison`). Pedido do usuário, zero backend novo (client-side). 7 subtasks,

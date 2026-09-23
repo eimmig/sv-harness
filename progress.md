@@ -2655,3 +2655,39 @@ desde `feat-036`, não bloqueia CI). Vault atualizado no mesmo commit de cada su
 auto-rotulação mobile), `docs/services/web.md` (seção nova da página). Branches de trabalho
 (`feature/SV-529` + 7 `subtask/SV-53X`) deletadas após o merge — `develop` de `sv-frontend`
 atualizada, `main` não tocado (promoção fica a critério do usuário).
+
+## `apps/web` e2e pré-existente corrigido + `bets-service feat-019`/`stats-service feat-020` ad-hoc (2026-09-22, mesmo dia)
+
+Achado real corrigido, fora do escopo de `epic-031`: `e2e/search-statistics.spec.ts` (`apps/web`),
+quebrado desde `feat-036` (procurava `getByTestId('language-selector')`, componente que só existe
+mais na tela de login não-autenticada desde aquela feature) — apontado pro fluxo real do menu de
+configurações do side-nav. Suíte completa rodada de novo: achou o mesmo `TypeError` silencioso
+(`Dashboard.unidadesApostadas` lendo `dashboard.overall.totalStaked` undefined) em outros 3 specs
+que stubam `**/api/**` genericamente com `{}` só pra testar o shell (`side-nav.spec.ts`,
+`change-password.spec.ts`, `telegram-link.spec.ts`) — corrigido com um `route` específico pra
+`**/api/v1/statistics*` devolvendo o shape zero real. 84/84 testes verdes, sem nenhum erro de
+console.
+
+Duas features ad-hoc novas, sem epic próprio (mesmo precedente de `feat-032`/`033`/`034`/`036`):
+`bets-service feat-019` (`PUT /api/v1/bets/{id}`, edição de aposta já registrada, pedido real do
+usuário durante testes manuais de `telegram-integration`) e seu companion cross-service
+`stats-service feat-020`. Detalhe completo (decisões de escopo, achados do Plan Reviewer,
+correção de um gap pré-existente de `TeamNotFoundException` nunca tratada) em
+`services/bets-service/feature_list.json`/`progress.md` e `services/stats-service/feature_list.json`/
+`progress.md`. Ambos os `./init.sh` verdes (179/179 e 157/157 testes). Sem story/branch/PR formal
+nesta sessão — fluxo direto de pareamento, commit único cobrindo os 3 repositórios tocados
+(`apps/web`, `bets-service`, `stats-service`).
+
+## `apps/web feat-039` — drawdown mensal + filtro de mês (2026-09-22, mesmo dia)
+
+Terceira feature ad-hoc fechada no mesmo dia (mesmo precedente acima). Duas causas reais por trás
+de "a curva de drawdown mensal só sobe e satura": (1) `buildMonthlyDrawdown` plotava o mês
+corrente até o último dia do mês inteiro, mesmo pros dias ainda no futuro — achado só depois de
+rodar a stack local completa (4 serviços Java + `ng serve`) contra o tenant de demonstração
+`demo-b583c3` (2000 apostas reais/365 dias) e comparar screenshot antes/depois; (2)
+`smooth: true`/`splitNumber: 2` do `chart-theme.ts` escondiam reversões reais por suavização
+bezier e grid grosseiro. Filtro de mês trocado de `<input type="month">` nativo pra `MatDatepicker`
+mês/ano (Plan Reviewer rejeitou reaproveitar `shared/period-preset-filter` — dia-granular,
+semanticamente incompatível). Detalhe completo em `apps/web/feature_list.json`/`progress.md`.
+`./init.sh` verde (291 testes, 92.27% cobertura) + e2e completo (84/84). Sem story/branch/PR
+formal.
