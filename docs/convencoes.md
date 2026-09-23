@@ -96,6 +96,23 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   `application/problem+json` (ver [[contratos-de-api]]) com `title`/`detail` localizados (ver seção
   "Internacionalização (i18n)" abaixo) — a exception carrega uma chave de mensagem, não o texto
   final.
+- **`LocalizedRuntimeException` como base obrigatória de exceção de domínio nova** (extraída em
+  `bets-service feat-022`, achado real de `feat-021`: cada exceção de domínio repetia campo(s) +
+  construtor que monta a mensagem + `messageKey()`/`httpStatusCode()`/`messageArgs()`, reprovando
+  o gate de duplicação de código novo do SonarCloud a cada exceção nova — resolvido antes com
+  `sonar.cpd.exclusions`, workaround removido junto com este refactor). Toda exceção de domínio
+  nova (nos 4 serviços Java, mesma interface `LocalizedDomainException`) estende
+  `LocalizedRuntimeException` em vez de `RuntimeException` diretamente: construtor
+  `(String message, Object... args)` (ou `(String message, Throwable cause, Object... args)` para
+  quando houver causa) já guarda os args e implementa `messageArgs()` — a subclasse só sobrescreve
+  `messageKey()`/`httpStatusCode()`. Regras: (1) o campo `Object[] args` da base é `transient`
+  (evita `java:S1948` — `RuntimeException` é `Serializable`, `Object[]` não garante elementos
+  serializáveis) e `messageArgs()` devolve `args.clone()` (sem aliasing); (2) `messageKey()`
+  **nunca** sobe pra base, mesmo quando parece constante — pelo menos uma exceção real do projeto
+  monta a chave dinamicamente a partir de um campo (`CatalogAlreadyRegisteredException`); (3) uma
+  exceção que expõe accessor público além dos 3 da interface (ex.: `.slug()`, usado por código que
+  precisa do valor tipado, não só localizado) mantém campo próprio — não dá pra só delegar pro
+  `Object[]` da base sem cast.
 - **Migrations**: Flyway, arquivos em `src/main/resources/db/migration/`, nomeados
   `V{date_now}__descricao_em_snake_case.sql` (ex.: `V2026080119170000__create_user_table.sql`). Nunca editar uma
   migration já commitada — sempre criar uma nova.
