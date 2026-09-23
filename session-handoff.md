@@ -61,7 +61,6 @@ pausando promoções `develop -> main` por causa disso. Continua sem solução d
    depois.
 3. `apps/web feat-038`/`feat-040`/`feat-041`/`feat-044` — backlog ad-hoc sem epic próprio, ver
    `apps/web/feature_list.json`.
-4. `SV-495` no Jira (story órfã de `apps/web`, 2026-09-16) — duplicata de `SV-500` (que fechou
-   `feat-033` de verdade) de uma tentativa de `jira_story.py` que falhou no meio (mesma classe de
-   bug corrigida manualmente para `SV-558` nesta sessão). Usuário ainda não decidiu se quer
-   cancelá-la — perguntar antes de mexer.
+
+**Resolvido nesta sessão**: `SV-495` no Jira (story órfã duplicada de `apps/web feat-033`,
+2026-09-16) — usuário apagou manualmente. Não é mais pendência.
