@@ -2828,3 +2828,30 @@ alheios no diff desta feature.
 
 `epic-032` (raiz) segue `in-progress` — vault raiz, `apps/web`, `telegram-integration` e os 4
 serviços Java feitos. Falta só `infra/`, último harness na ordem sugerida.
+
+## `infra/` — auditoria final, epic-032 fechado (2026-09-23, mesmo dia)
+
+Último harness na ordem sugerida. `grep -ril "stakevault"` achou 19 arquivos (`.env`/
+`.env.example`, `docker-compose.yml`, `CLAUDE.md`, `feature_list.json`/`CHANGELOG.md`/
+`progress.md`, os 11 manifests `k8s/*.yaml`) - diferente de todos os harnesses anteriores,
+**nenhuma** ocorrência é prosa/metadado visível a um usuário final. Todas são identificadores
+técnicos já cobertos pela decisão de 2026-09-23 (`docs/DECISIONS-LOG.md`) ou da mesma classe: nome
+do projeto/rede do `docker-compose` (`stakevault`/`stakevault-infra`), usuário RabbitMQ
+(`RABBITMQ_USER=stakevault`), nome do `Secret` k8s (`stakevault-secrets`, referenciado por todos
+os `Deployments`), nome do `Ingress` (`stakevault-ingress`), tags de imagem
+(`stakevault/<serviço>:local`). `k8s/secret.yaml` (valores reais) confirmado gitignored - só o
+placeholder está no repositório. `grep -rniE "stake|vault"` adicional (mesmo cuidado do achado de
+`apps/web feat-042`) não achou nada novo.
+
+**Decisão: nenhuma mudança de código/config neste harness** - consistente com o próprio texto do
+`epic-032` ("cada harness que precisar de mudança real ganha feature granular própria"). Nenhuma
+feature aberta em `infra/feature_list.json`, nenhuma story no Jira. `./init.sh` do repositório e da
+raiz verdes (docs-only, sem mudança de código).
+
+**`epic-032` fechado** - todos os 7 repositórios avaliados: vault raiz, `apps/web` e
+`telegram-integration` (mudança real de UI/i18n/nome de bot), 4 serviços Java (mudança real de
+`pom.xml description`), `infra/` (auditado, sem mudança necessária). Marca StakeVault -> Arka
+completa em toda superfície visível a usuário/operador real; identificadores técnicos reais
+(GroupId Maven, chave de `localStorage`, nomes de imagem/secret Docker/k8s, domínio Jira)
+permanecem StakeVault por decisão explícita, registrados como pendência conhecida em
+`docs/DECISIONS-LOG.md` para uma rodada futura separada, caso o usuário decida completá-la.
