@@ -3088,3 +3088,17 @@ menu flutuante em Times).
 Pendente: **`feat-053`** (`ERR_CONNECTION_REFUSED` do `ng serve` na suíte completa) ocorreu 1 vez em ~18 rodadas,
 sob carga alta da máquina, e não reproduziu em 5 rodadas seguidas — mantida no backlog por decisão do
 usuário.
+
+## Limpeza de comentários nos 7 repositórios (2026-09-24)
+
+Pedido do usuário: remover, arquivo por arquivo, os comentários que justificam o código (convenção de
+zero comentário, `docs/convencoes.md`). Varredura com tokenização (strings, URLs e template literals
+preservados; docstrings Python via `ast`) em TS, SCSS, HTML, SVG, Java, Python, testes, scripts de
+CI e configuração. Ficaram só diretivas de ferramenta, rótulos curtos de config (passos do `ci.yml`,
+seções do `.gitignore`), linha de uso de script, boilerplate gerado do `pom.xml` e `.env.example`
+com uma linha por bloco. Migrations Flyway não foram tocadas: editar muda o checksum e quebra o
+`validateOnMigrate` em banco já migrado. PRs: sv-frontend #225, sv-api-gateway #57, sv-auth-backend
+#82, sv-bets-backend #81, sv-stats-backend #84, sv-telegram-integration-backend #49,
+sv-infra-backend #12. Dois blocos ficaram vazios sem o comentário e o SonarCloud (`java:S108`)
+reprovou: `409` do provisionamento passou a logar em debug (auth) e o `try/catch` vazio do teste
+virou `assertThatThrownBy` (bets).
