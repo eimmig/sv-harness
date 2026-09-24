@@ -349,6 +349,11 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
    tooltip mostram o ano — o tooltip `trigger: 'axis'` reaproveita a categoria do eixo, separar
    os dois exigiria `tooltip.formatter` próprio. O tooltip do ECharts é HTML (não canvas), então
    dá para verificá-lo em E2E com `hover()` no gráfico.
+   **Tooltip no tema ativo** (`apps/web feat-052`, 2026-09-24): `themedTooltip()` em
+   `core/chart-theme.ts`, espalhado nos 2 builders — fundo `--color-surface-elevated`, borda
+   `--color-border`, texto `--color-text-primary` (15,47:1 claro / 13,50:1 escuro). Sem isso o
+   ECharts usa caixa branca fixa, fora da paleta no tema escuro. Em E2E, a caixa raiz do tooltip é
+   a `div[style*="z-index: 9999999"]` dentro do gráfico (as `div` internas são transparentes).
 7. **Seletor de período (chips)** — linha horizontal de pílulas (1H/1D/1W/1M/1Y); ativa =
    `--color-surface-elevated` + texto de contraste médio; inativa = transparente + texto muted.
 8. **Controle segmentado (tabs tipo "Transact/Limit")** — switcher de duas opções em formato
