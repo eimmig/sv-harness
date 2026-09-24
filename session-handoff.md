@@ -3,14 +3,22 @@
 > Estado atual, não histórico. O diário cronológico é o `progress.md` — este arquivo é reescrito
 > a cada sessão para responder "o que a próxima sessão precisa saber agora".
 
-**Última atualização:** 2026-09-23 (mais tarde, mesmo dia)
+**Última atualização:** 2026-09-24
 
 ## Objetivo atual
 
 `epic-034` (`in-progress`) — extrair classe base compartilhada pra exceções de domínio localizadas
-nos 4 serviços Java. 1/4 fechado: `bets-service feat-022`. Faltam `auth-service`, `stats-service`,
-`api-gateway` — auditar quantas exceções cada um tem antes de aplicar (não assumir formato
-idêntico ao de `bets-service`).
+nos 4 serviços Java. 2/4 fechados: `bets-service feat-022`, `auth-service feat-021`. Faltam
+`stats-service`, `api-gateway` — auditar quantas exceções cada um tem antes de aplicar (não
+assumir formato idêntico aos 2 já feitos; `auth-service` já divergiu bastante de `bets-service`:
+tinha abstração parcial própria + 2 exceções fora do escopo por não implementarem
+`LocalizedDomainException`).
+
+**Lição de processo pra próxima sessão** (achado real em `auth-service feat-021`, ver evidence
+daquela feature): escrever `status:done` + `evidence` da feature NA branch da story, dentro do PR
+da última subtask, ANTES de abrir o PR `story->develop` — não depois. Um PR separado só com
+`feature_list.json` (sem mudança de produto) reprova o gate de `CHANGELOG.md` do CI, forçando
+push direto em `develop` (bypass de branch protection) pra fechar o harness.
 
 ## Concluído nesta sessão (2026-09-23)
 
