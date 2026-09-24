@@ -114,7 +114,8 @@ e [[convencoes]] para arquitetura/código.
   `preCount == settledCount` e `liveCount == 0`, e vice-versa): evita duplicar
   `SegmentedBetMetrics` só para omitir 2 campos redundantes-mas-inofensivos, mesma decisão
   registrada no `plan_review` daquela feature.
-  `betType` nunca é query param de filtro — só um agrupamento pronto, `dimensionId`/
+  Em `GET /api/v1/statistics` `betType` não é query param de filtro (em `/statistics/search`
+  passou a ser, ver `epic-035` acima) — aqui é só um agrupamento pronto, `dimensionId`/
   `dimensionName` carregam o próprio valor do enum em vez de um `uuid` (único segmento sem FK de
   catálogo por trás).
 - **`GET /api/v1/bankroll/balance` (`bets-service`, `epic-013` da raiz, 2026-09-10)**: saldo
@@ -179,10 +180,12 @@ e [[convencoes]] para arquitetura/código.
   opcionais, mesmo vocabulário de `GET /api/v1/statistics` mais `teamId` (novo — casa contra
   `team1Id` **ou** `team2Id` em `FACT_BET`, ver [[modelo-de-dados]] "`DIM_TEAM`"), `from`/`to` também
   `yyyy-MM-dd`:
-  `?sportId=<uuid>&leagueId=<uuid>&teamId=<uuid>&bettingHouseId=<uuid>&marketId=<uuid>&tipsterId=<uuid>&from=2026-01-01&to=2026-01-31`
+  `?sportId=<uuid>&leagueId=<uuid>&teamId=<uuid>&bettingHouseId=<uuid>&marketId=<uuid>&tipsterId=<uuid>&from=2026-01-01&to=2026-01-31&betType=live`
+  `betType` (`pre`|`live`, opcional, `epic-035`) restringe resumo e timeline ao tipo de aposta;
+  aceita maiúsculas ou minúsculas, valor desconhecido devolve `400`. Ecoado em `filters.betType`.
   ```json
   {
-    "filters": { "sportId": "...", "leagueId": "...", "teamId": null, "bettingHouseId": null, "marketId": null, "tipsterId": null, "from": null, "to": null },
+    "filters": { "sportId": "...", "leagueId": "...", "teamId": null, "bettingHouseId": null, "marketId": null, "tipsterId": null, "from": null, "to": null, "betType": null },
     "summary": {
       "betCount": 42, "totalStaked": 1000.00, "netProfit": 150.00,
       "roi": 0.15, "winRate": 0.55, "avgOdd": 1.87,

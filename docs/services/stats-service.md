@@ -273,6 +273,14 @@ ROI, taxa de acerto, odd média, drawdown máximo e Índice de Sharpe simplifica
 combinação exata, mais uma série temporal de lucro acumulado. Fórmulas e fundamentação teórica
 em [[estatisticas]] — não duplicadas aqui.
 
+**Filtro `betType` (`feat-024`, `epic-035` da raiz, 2026-09-24)**: query param opcional
+`betType=pre|live` restringe resumo e timeline ao tipo de aposta (apostas com `betType` nulo só
+aparecem sem o filtro). Aceita maiúsculas ou minúsculas via `adapter/in/web/BetTypeQueryParamConverter`
+(`Converter<String, BetType>` como `@Component`, registrado sozinho pelo Spring Boot no MVC) — o
+conversor padrão do Spring só casa o nome exato do enum (`PRE`), e o JSON do serviço usa `pre`/`live`.
+Valor desconhecido devolve `400`, igual a um UUID inválido. Substitui a tela `/bet-type-dashboard`
+de [[web]], que sai em `web feat-038`.
+
 Duas mudanças de schema que este endpoint pressupõe, sobre o modelo de `feat-002`/`feat-004`:
 
 - **`DIM_TEAM` nova** (ver [[modelo-de-dados]]): resolvida por nome (chave natural), não por id vindo
