@@ -3102,3 +3102,14 @@ com uma linha por bloco. Migrations Flyway não foram tocadas: editar muda o che
 sv-infra-backend #12. Dois blocos ficaram vazios sem o comentário e o SonarCloud (`java:S108`)
 reprovou: `409` do provisionamento passou a logar em debug (auth) e o `try/catch` vazio do teste
 virou `assertThatThrownBy` (bets).
+
+## Promoção develop -> main nos 7 repositórios (2026-09-24)
+
+`main` tinha o bump/corte de CHANGELOG da v0.1.0 que `develop` não tinha — todos os 7 conflitavam só
+no `CHANGELOG.md`. Back-merge primeiro (`chore/sync-main-into-develop`, `[Unreleased]` ficou só com o
+que não saiu na 0.1.0), depois PR `develop -> main` com CI+SonarCloud verdes. Releases geradas:
+sv-frontend v1.0.0 (major por `feat(web)!` da remoção do `/bet-type-dashboard`, feat-038),
+sv-auth/bets/stats v0.2.0, sv-api-gateway/sv-telegram-integration/sv-infra v0.1.1. Imagens
+publicadas; job `deploy` falhou nos 6 serviços pelo mesmo motivo já aceito (runner hospedado não
+alcança o cluster em `127.0.0.1:6443`). Próximo release: `develop` volta a precisar do back-merge do
+commit `chore(release)` de `main` antes de promover de novo.
