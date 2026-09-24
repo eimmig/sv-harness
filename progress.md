@@ -3081,7 +3081,10 @@ feature durante o trabalho (`feat-051`..`feat-054`). Todos sem epic na raiz (pre
 - **`feat-054`** (SV-638): erro de render numa tela congelava o overlay sobre o app (achado da
   investigação de `feat-051`); o `@if` do overlay subiu para `app.html`.
 
-Pendentes: **`feat-047`** (menu flutuante em Times) depende de decisão do usuário — não existe dashboard
-de times, e criar um exige segmento por time no `stats-service` (cross-service, epic novo);
-**`feat-053`** (`ERR_CONNECTION_REFUSED` do `ng serve` na suíte completa) ocorreu 1 vez em ~18 rodadas,
-sob carga alta da máquina, e não reproduziu em 5 rodadas seguidas.
+**`epic-036`** (decisão do usuário: cross-service, aposta conta para os 2 times) fechou `feat-047`:
+`stats-service feat-025` (SV-641, `byTeam` no bundle) + `web feat-047` (SV-644, `/teams-dashboard` e
+menu flutuante em Times).
+
+Pendente: **`feat-053`** (`ERR_CONNECTION_REFUSED` do `ng serve` na suíte completa) ocorreu 1 vez em ~18 rodadas,
+sob carga alta da máquina, e não reproduziu em 5 rodadas seguidas — mantida no backlog por decisão do
+usuário.
