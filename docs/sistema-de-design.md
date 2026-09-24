@@ -439,6 +439,12 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
       referência, para funcionar nos 2 temas. `z-index: 1100` (acima do `.cdk-overlay-container`
       do Material, 1000) e `inert` no `.app-shell` enquanto visível — bloqueia ponteiro e teclado.
       Estado/tempo em `core/loading.ts` (`Loading`), contagem via `core/loading-interceptor.ts`.
+      **Quem decide mostrar o overlay é o template do `App`** (`@if (loading.visible())` em
+      `app.html`, `apps/web feat-054`), não o próprio `LoadingOverlay`: o Angular atualiza o
+      template do `App` (onde também fica o `[inert]`), depois as views das rotas, e só por
+      último os componentes filhos. Com o `@if` dentro do componente filho, um erro de render em
+      qualquer tela abortava o ciclo antes de o overlay sumir e o app ficava preso atrás dele.
+      Não mover o `@if` de volta para dentro do componente (`app.spec.ts` cobre o caso).
     - **Tela já carregada não repete o loading (`apps/web feat-049`, 2026-09-24)**: GET a
       `/api/` fica em cache em memória (`core/http-cache.ts` + `core/http-cache-interceptor.ts`,
       antes do interceptor de loading na cadeia) — voltar a uma tela cujos dados já vieram não
