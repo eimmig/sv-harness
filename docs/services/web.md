@@ -567,6 +567,17 @@ de flex/grid nas telas com filtro em `flex-wrap`, e duplo de teste precisa de `s
 `errorMessage` (opcional) plugado em `search-statistics` (sportId/leagueId, `Validators.required`)
 — renderiza a mesma mensagem de antes, só que fora do `mat-form-field`.
 
+## Dashboard de times (`epic-036` da raiz, `feat-047`)
+
+Times passou a ter o mesmo menu flutuante Cadastrar/Dashboard dos outros catálogos (antes era link
+simples, porque não havia dashboard). `stats-service feat-025` expõe `byTeam` no bundle de
+`GET /api/v1/statistics` — **cada aposta conta para os 2 times**, então a soma das linhas passa do
+total (decisão do usuário). No web: `byTeam` em `StatisticsDashboard`, `'byTeam'` no union
+`CatalogSegment`, rota `/teams-dashboard` (`catalogDashboard.teamNameLabel`) e Times como último item
+de `resources` no `app-side-nav` (`nav-teams-menu`/`-register`/`-dashboard`); `catalogLinks` saiu.
+`shared/catalog-dashboard` trata segmento ausente na resposta como lista vazia — web e
+`stats-service` têm deploy independente, e o web não pode quebrar se chegar antes do backend.
+
 ## Página "Comparativo de períodos" (`epic-031` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-22). Tela nova
