@@ -603,6 +603,12 @@ Achado real de QA visual corrigido no caminho: abaixo de 600px o cabeçalho de c
 auto-rotulação via `data-mobile-label`/`::before` só nessa largura (mecanismo reaproveitável,
 ver [[sistema-de-design]] seção "Layout em painéis").
 
+No desktop, valores A/B e delta ficam à direita, como o cabeçalho de coluna (`feat-046`: os
+valores A/B estavam à esquerda, longe do rótulo). O E2E de alinhamento mede a borda direita do
+**texto** (`document.createRange().selectNodeContents(el).getBoundingClientRect()`), não o
+`boundingBox()` do elemento — item de grid ocupa a célula inteira, então o `boundingBox` bate
+com ou sem `text-align` e o teste passaria com o defeito.
+
 ## Ver também
 
 - [[auth-service]], [[bets-service]], [[stats-service]] — APIs consumidas via API Gateway.
