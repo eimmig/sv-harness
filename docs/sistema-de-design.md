@@ -343,6 +343,12 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
    da grade dava 1,30:1 (claro) / 1,22:1 (escuro), abaixo do mínimo WCAG de 4,5:1;
    `--color-text-secondary` dá 5,52:1 / 5,45:1. A grade continua sutil de propósito — só texto
    precisa de contraste de leitura.
+   **Data diária com ano quando a série passa de 1 ano** (`apps/web feat-048`, 2026-09-24):
+   `formatDay(value, locale, withYear)` + `spansMoreThanOneYear(primeiro, último)` em
+   `core/date-format.ts`. Até 1 ano o rótulo fica compacto (dia + mês); acima disso eixo e
+   tooltip mostram o ano — o tooltip `trigger: 'axis'` reaproveita a categoria do eixo, separar
+   os dois exigiria `tooltip.formatter` próprio. O tooltip do ECharts é HTML (não canvas), então
+   dá para verificá-lo em E2E com `hover()` no gráfico.
 7. **Seletor de período (chips)** — linha horizontal de pílulas (1H/1D/1W/1M/1Y); ativa =
    `--color-surface-elevated` + texto de contraste médio; inativa = transparente + texto muted.
 8. **Controle segmentado (tabs tipo "Transact/Limit")** — switcher de duas opções em formato
