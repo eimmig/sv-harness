@@ -335,6 +335,8 @@ abrir o PR da story:
   conta como assertion. Usar `expect(httpMock.match(...)).toHaveLength(0)`.
 - **`Web:S6819`** (MAJOR): `role="status"` num `div` — usar o elemento nativo `<output>`, que já
   tem esse papel implícito (Playwright continua achando por `getByRole('status')`).
+- **`typescript:S7755`** (MINOR, `feat-048`): último elemento por `arr[arr.length - 1]` — usar
+  `arr.at(-1)` e tratar o `undefined` do tipo com guarda, não com non-null assertion (`!`).
 
 ## Ver também
 
