@@ -112,7 +112,17 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   monta a chave dinamicamente a partir de um campo (`CatalogAlreadyRegisteredException`); (3) uma
   exceção que expõe accessor público além dos 3 da interface (ex.: `.slug()`, usado por código que
   precisa do valor tipado, não só localizado) mantém campo próprio — não dá pra só delegar pro
-  `Object[]` da base sem cast.
+  `Object[]` da base sem cast. (4) Visibilidade da base (`public` vs package-private) segue a
+  convenção já estabelecida no próprio serviço, não precisa ser uniforme entre os 4 — em
+  `auth-service feat-021` a base ficou package-private porque `SlugRelatedDomainException`
+  (abstração pré-existente que resolvia a duplicação só para 2 exceções relacionadas a slug) já
+  tinha esse precedente no mesmo pacote; nesse caso a abstração antiga passa a estender a nova
+  base em vez de ficar como um segundo mecanismo paralelo fazendo a mesma coisa. (5) Antes de
+  aplicar num serviço, auditar de verdade quantas exceções ele tem e se todas implementam
+  `LocalizedDomainException` — nem toda exceção do pacote `domain.model` implementa a interface
+  (`auth-service` tem 2 que não implementam, `TenantSchemaNotFoundException`/
+  `DownstreamProvisioningException`, capturadas internamente antes de chegar ao
+  `RestControllerAdvice` — corretamente fora do escopo do refactor).
 - **Migrations**: Flyway, arquivos em `src/main/resources/db/migration/`, nomeados
   `V{date_now}__descricao_em_snake_case.sql` (ex.: `V2026080119170000__create_user_table.sql`). Nunca editar uma
   migration já commitada — sempre criar uma nova.
