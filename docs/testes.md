@@ -294,6 +294,23 @@ código" em `docs/convencoes.md`).
   Encerrar o processo (`Get-NetTCPConnection -LocalPort 4300` pra achar o PID, no Windows) antes
   de rodar `npm ci` resolve. Prática correta: encerrar o `ng serve` assim que a QA visual daquele
   passo terminar, não deixar rodando "pro caso de precisar de novo" entre subtasks/features.
+- **E2E: o navegador do Playwright está em `en-US`, então o app abre em inglês** (`feat-051`):
+  `playwright.config.ts` não define `locale` e `Language` cai em `navigator.language`. Teste que
+  depende do idioma inicial pina `stakevault.language` via `addInitScript` e afirma o estado
+  inicial. Teclado em `mat-select`: esperar `aria-activedescendant` do combobox apontar para a
+  opção esperada antes de cada tecla — tecla enviada antes de o key manager ativar a opção
+  selecionada se perde (o teste de teclado do login falhava 22/40 com `--repeat-each=40`).
+- **E2E: estado transitório (overlay, spinner) se afirma com portão, não com tempo**
+  (`feat-051`): um atraso fixo no `page.route` deixa uma janela curta que some quando o `goto`
+  retorna tarde sob carga. Segurar a resposta numa `Promise` liberada só depois do `expect(...)
+  .toBeVisible()` (ver `e2e/overview.spec.ts`, teste de voltar à tela já carregada).
+- **E2E: stub genérico `'**/api/**'` → `{}` não serve `/statistics/daily`** (`feat-051`): o glob
+  `'**/api/v1/statistics*'` não casa `/statistics/daily` (`*` não atravessa `/`), então a série
+  diária cai no stub genérico e chega `{}` em vez de array. O `MonthlyProfitChart` lança
+  `daily.map is not a function` a cada change detection e o overlay de loading fica congelado
+  sobre o app (cliques interceptados, falha intermitente em testes seguintes do mesmo spec).
+  Todo spec que abre `/dashboard` com stub genérico mocka `'**/api/v1/statistics/daily*'` → `[]`.
+  A fragilidade do produto (um erro de render congelar o overlay) é `apps/web feat-054`.
 
 ## Python (telegram-integration)
 
