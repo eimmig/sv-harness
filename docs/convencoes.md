@@ -101,7 +101,9 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   construtor que monta a mensagem + `messageKey()`/`httpStatusCode()`/`messageArgs()`, reprovando
   o gate de duplicação de código novo do SonarCloud a cada exceção nova — resolvido antes com
   `sonar.cpd.exclusions`, workaround removido junto com este refactor). Toda exceção de domínio
-  nova (nos 4 serviços Java, mesma interface `LocalizedDomainException`) estende
+  nova (nos 4 serviços Java — `LocalizedDomainException` em `domain.model` de `auth`/`bets`/`stats`;
+  no `api-gateway`, que não tem camada de domínio, a interface equivalente é
+  `LocalizedFilterException` no pacote `filter`, e a base a implementa em vez da outra) estende
   `LocalizedRuntimeException` em vez de `RuntimeException` diretamente: construtor
   `(String message, Object... args)` (ou `(String message, Throwable cause, Object... args)` para
   quando houver causa) já guarda os args e implementa `messageArgs()` — a subclasse só sobrescreve
@@ -122,7 +124,11 @@ essa convenção, só entrega o `pom.xml` e o ponto de entrada.
   `LocalizedDomainException` — nem toda exceção do pacote `domain.model` implementa a interface
   (`auth-service` tem 2 que não implementam, `TenantSchemaNotFoundException`/
   `DownstreamProvisioningException`, capturadas internamente antes de chegar ao
-  `RestControllerAdvice` — corretamente fora do escopo do refactor).
+  `RestControllerAdvice` — corretamente fora do escopo do refactor). O inverso também existe:
+  classe que implementa a interface sem ser exceção (`stats-service`: `InvalidTenantIdHeader`/
+  `MissingTenantIdHeader`, singletons aninhados em `TenantSchemaFilter` só para montar o
+  `ProblemDetail`) fica fora — não há `RuntimeException` para substituir. Aplicado nos 4 serviços
+  (`bets` `feat-022`, `auth` `feat-021`, `stats` `feat-023`, `api-gateway` `feat-018`).
 - **Migrations**: Flyway, arquivos em `src/main/resources/db/migration/`, nomeados
   `V{date_now}__descricao_em_snake_case.sql` (ex.: `V2026080119170000__create_user_table.sql`). Nunca editar uma
   migration já commitada — sempre criar uma nova.

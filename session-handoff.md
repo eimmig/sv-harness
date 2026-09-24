@@ -7,59 +7,19 @@
 
 ## Objetivo atual
 
-`epic-034` (`in-progress`) — extrair classe base compartilhada pra exceções de domínio localizadas
-nos 4 serviços Java. 2/4 fechados: `bets-service feat-022`, `auth-service feat-021`. Faltam
-`stats-service`, `api-gateway` — auditar quantas exceções cada um tem antes de aplicar (não
-assumir formato idêntico aos 2 já feitos; `auth-service` já divergiu bastante de `bets-service`:
-tinha abstração parcial própria + 2 exceções fora do escopo por não implementarem
-`LocalizedDomainException`).
+Nenhum epic em andamento — `epic-001`..`epic-034` todos `done`. O que resta está só no backlog
+ad-hoc de `apps/web` (`feat-038`/`040`/`041`/`044`), sem epic próprio.
 
-**Lição de processo pra próxima sessão** (achado real em `auth-service feat-021`, ver evidence
-daquela feature): escrever `status:done` + `evidence` da feature NA branch da story, dentro do PR
-da última subtask, ANTES de abrir o PR `story->develop` — não depois. Um PR separado só com
-`feature_list.json` (sem mudança de produto) reprova o gate de `CHANGELOG.md` do CI, forçando
-push direto em `develop` (bypass de branch protection) pra fechar o harness.
+**Lição de processo** (sessões `auth-service feat-021` e desta): escrever `status:done` +
+`evidence` da feature **e** o `progress.md`/`session-handoff.md` do serviço NA branch da story,
+dentro do PR da última subtask, ANTES do PR `story->develop`. Depois do merge, qualquer PR só de
+harness/docs reprova o gate de `CHANGELOG.md` e força push direto em `develop`.
 
-## Concluído nesta sessão (2026-09-23)
+## Concluído nesta sessão (2026-09-24)
 
-- [x] **`epic-033` fechado** — CI gera versão (semver + tag + GitHub Release + bump de
-      manifesto + corte de `CHANGELOG.md`) a cada merge em `main`, nos 7 repositórios. Mecanismo
-      desenhado/validado em `auth-service feat-020` (Plan Reviewer + 2 subagentes independentes,
-      REVISE com 2 achados corrigidos antes de codificar), reaproveitado condensado nos outros 6.
-      Usa `ietf-tools/semver-action` + `versions-maven-plugin`/`npm version`/`uv version` + script
-      próprio de corte de changelog + `ncipollo/release-action`, autenticado via secret
-      `RELEASE_TOKEN` (PAT do dono, distribuído nos 7 repositórios) porque `main` tem branch
-      protection que rejeita o `GITHUB_TOKEN` padrão. **Verificação real de ponta a ponta feita
-      nos 7** (não só CI simulado) — cada um promovido `develop -> main` de verdade, tag `v0.1.0`
-      + Release confirmados. 3 achados reais só descobertos nessa verificação real (nenhum plan
-      review pega sem um push de verdade): `fallbackTag` do semver-action precisa de tag Git já
-      existente (bootstrap `v0.0.0` criado nos 7); `bets-service feat-021` reprovou o gate de
-      duplicação (residual de `feat-019`, sessão anterior nunca gateada) — corrigido de verdade
-      (`BetFields`/`BetDetails`) + `sonar.cpd.exclusions` documentado pro padrão intencional de
-      exceções de domínio; 3 achados MAJOR reais (`java:S5778`) em testes pré-existentes. Detalhe
-      completo em `progress.md` (raiz) e `docs/pipeline-ci-cd.md`.
-- [x] **`epic-034` adicionado** — achado do item acima: a duplicação real em `bets-service` vem
-      de um padrão (uma exceção por regra) repetido nos 4 serviços Java; classe base compartilhada
-      eliminaria a causa raiz. Inclui remover o `sonar.cpd.exclusions` de `bets-service` depois.
-- [x] **Impedimento real de ambiente resolvido com o usuário**: a cota de minutos do GitHub
-      Actions se esgotou por ~4h durante a sessão (nenhum dos 7 repositórios rodou CI nesse
-      período) — identificado comparando timestamps entre repositórios, resolvido pelo usuário no
-      billing da conta.
-- [x] `apps/web feat-044` adicionado ao backlog (pedido do usuário) — mover a splash de antes do
-      login pra depois (durante o carregamento inicial de dados da tela `/overview`), `not-started`.
-- [x] **`bets-service feat-022` fechado** (1o dos 4 harnesses do `epic-034`) — `LocalizedRuntimeException`
-      (classe base abstrata) extraída, as 19 exceções de `domain.model` refatoradas pra estendê-la
-      em vez de `RuntimeException` diretamente; comportamento observável (`messageKey`/
-      `httpStatusCode`/`messageArgs`/status HTTP) confirmado idêntico linha a linha no diff.
-      `sonar.cpd.exclusions` removido de `ci.yml` — gate real do SonarCloud (PR #80,
-      story->develop) confirmou que a duplicação continua abaixo do limite sem a exclusão, não só
-      por leitura estática. Delivery Reviewer/Test Suite Auditor/Persistence Auditor: PASS nos 3.
-      Padrão documentado em `docs/convencoes.md` pros outros 3 serviços Java reaproveitarem.
-      **Achado de processo registrado, não escondido**: o commit final que fecha a feature no
-      harness (status `done` + `evidence`) foi empurrado direto pra `develop` (bypass do branch
-      protection) em vez de via PR — só `feature_list.json` (harness, sem código), risco real
-      baixo, mas desvia da regra de "todo PR passa pela pipeline"; sinalizado em
-      `services/bets-service/feature_list.json` (evidence de `feat-022`) pra não repetir.
+- [x] **`epic-034` fechado** — `stats-service feat-023` (SV-588) e `api-gateway feat-018` (SV-591),
+      CI+SonarCloud verdes. Detalhe em `progress.md`. `docs/convencoes.md` corrigido (interface
+      do gateway é `LocalizedFilterException`).
 
 ## Bloqueios / Riscos
 
@@ -76,16 +36,6 @@ pausando promoções `develop -> main` por causa disso. Continua sem solução d
 ## Próxima sessão — por onde começar
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. **`epic-034` in-progress, 1/4 feito** — próximo: `auth-service`, `stats-service` ou
-   `api-gateway` (qualquer ordem, sem dependência entre eles). Plan review por harness antes de
-   codificar (auditar quantas exceções `LocalizedDomainException` cada um tem — não assumir o
-   mesmo formato de `bets-service` sem confirmar), seguindo o padrão já documentado em
-   `docs/convencoes.md` ("`LocalizedRuntimeException` como base obrigatória..."). Cada harness
-   ganha sua própria feature/story, seguindo o mesmo fluxo (Plan Reviewer -> `plan_review` ->
-   `jira_story.py` -> branches -> refactor -> remover `sonar.cpd.exclusions` -> Delivery
-   Reviewer/Test Suite Auditor/Persistence Auditor -> merge story->develop com gate completo).
-3. `apps/web feat-038`/`feat-040`/`feat-041`/`feat-044` — backlog ad-hoc sem epic próprio, ver
-   `apps/web/feature_list.json`.
-
-**Resolvido nesta sessão**: `SV-495` no Jira (story órfã duplicada de `apps/web feat-033`,
-2026-09-16) — usuário apagou manualmente. Não é mais pendência.
+2. `apps/web feat-038`/`040`/`041`/`044` — `038`/`040`/`041` nasceram como "registrar, não
+   implementar agora"; `044` tem 4 decisões de UX em aberto na `description`. Confirmar com o
+   usuário antes de implementar (ver `apps/web/session-handoff.md`).

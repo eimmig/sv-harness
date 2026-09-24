@@ -2998,3 +2998,35 @@ verificação local.
 
 `epic-034` (raiz): 2/4 harnesses fechados (`bets-service`, `auth-service`). Restam `stats-service`
 e `api-gateway`.
+
+## `epic-034` fechado — `stats-service feat-023` + `api-gateway feat-018` (2026-09-24)
+
+Os 2 harnesses restantes, auditados por leitura antes de planejar (não assumido formato igual):
+
+- **`stats-service feat-023`** (story SV-588, PRs #75/#76/#77): 5 exceções de `domain.model`
+  migradas, base `public` (todas as exceções do pacote são `public`, sem abstração prévia). Fora de
+  escopo: `InvalidBetEventException`/`UnknownBetEventTypeException` (estendem
+  `AmqpRejectAndDontRequeueException`) e `InvalidTenantIdHeader`/`MissingTenantIdHeader`
+  (aninhadas em `TenantSchemaFilter`, implementam a interface sem serem exceções). 157 testes
+  verdes, zero teste tocado; args cobertos ponta a ponta por testes de integração HTTP.
+- **`api-gateway feat-018`** (story SV-591, PRs #54/#55/#56): interface ali é
+  `LocalizedFilterException` (pacote `filter`, gateway sem camada `domain`) e nenhuma das 5
+  exceções usa `messageArgs` — base não elimina duplicação atual, aplicada por consistência com a
+  convenção normativa (MINOR aceito no plan review). 59 testes verdes, zero teste tocado.
+
+Plan Reviewer: READY WITH CONCERNS nos 2 (self-review, independência reduzida declarada — refactor
+mecânico). Delivery Reviewer/Test Suite Auditor (+ Persistence Auditor em `stats`): PASS.
+CI+SonarCloud verdes nos PRs `story->develop`.
+
+**Lição da sessão anterior aplicada**: `status:done` + `evidence` escritos na branch da story,
+dentro do PR da última subtask, antes do PR `story->develop` — nenhum push direto de
+`feature_list.json`. **Resíduo registrado**: os commits de `progress.md`/`session-handoff.md` dos 2
+serviços (docs-only) foram direto para `develop` (PR só de docs reprova o gate de `CHANGELOG.md`),
+mesmo precedente já aceito. Para zerar isso também, a próxima feature deve incluir essas 2 notas no
+PR da última subtask junto com a `evidence`.
+
+Vault: `docs/convencoes.md` corrigido — afirmava "mesma interface `LocalizedDomainException`" nos 4
+serviços (falso no gateway) e ganhou o caso inverso de exclusão (classe que implementa a interface
+sem ser exceção).
+
+`epic-034` `done` (4/4). Backlog de epics da raiz esgotado.
