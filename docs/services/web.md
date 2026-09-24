@@ -214,6 +214,16 @@ betTypeNameLabel`) — mesmo padrão dos outros 5 segmentos (`epic-019`), só qu
 "Cadastrar" no menu (não é um catálogo gerenciável, é um agrupamento fixo de 2 buckets). Entrada
 de nav ficou junto aos outros links de estatística (`secondaryLinks`), não no grupo de recursos.
 
+**Granularidade do gráfico de lucro (`web feat-041`, decisão do usuário 2026-09-24)**: período
+filtrado de até 31 dias (`from` e `to` preenchidos) plota um ponto por dia; acima disso, ou período
+aberto, um por mês (`monthly` do bundle). Sem nível semanal. No modo diário o dashboard acrescenta
+`GET /api/v1/statistics/daily` ao mesmo `forkJoin`, com os mesmos 7 filtros (RN08 — nova request por
+filtro, nada client-side); dias sem aposta liquidada entram como 0 (a resposta é esparsa). A
+granularidade segue o período **dos dados carregados** (`DashboardData.period`), não o filtro em
+edição, para rótulos nunca misturarem com dados de outra request. Consequência para testes: toda
+suíte E2E que abre `/dashboard` precisa mockar `/statistics/daily` — antes só o grid de drawdown
+pedia e falhava em silêncio; agora uma falha derruba o `forkJoin` do dashboard inteiro.
+
 ## Dashboard — grade de gráficos mensais de drawdown (`epic-020` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10, referência: print
