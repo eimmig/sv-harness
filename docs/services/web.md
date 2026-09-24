@@ -214,6 +214,15 @@ betTypeNameLabel`) — mesmo padrão dos outros 5 segmentos (`epic-019`), só qu
 "Cadastrar" no menu (não é um catálogo gerenciável, é um agrupamento fixo de 2 buckets). Entrada
 de nav ficou junto aos outros links de estatística (`secondaryLinks`), não no grupo de recursos.
 
+> **Tela removida em `web feat-038` (`epic-035` da raiz, decisão do usuário 2026-09-24)**: PRE/LIVE
+> virou filtro opcional de "Buscar Estatísticas" (`betType=pre|live` em
+> `GET /api/v1/statistics/search`, `stats-service feat-024`), no mesmo espírito dos outros
+> agrupamentos que não têm tela própria. Rota `/bet-type-dashboard` agora só redireciona para
+> `/search-statistics` (bookmark antigo; o app não tem rota wildcard), item de nav e a chave
+> `nav.betTypeDashboard` saíram, `'byBetType'` saiu do union `CatalogSegment`. `byBetType` do
+> bundle `GET /api/v1/statistics` continua consumido pela "Visão geral" e pelo "Comparativo de
+> períodos" (título da tabela agora em `periodComparison.byBetTypeTitle`).
+
 **Granularidade do gráfico de lucro (`web feat-041`, decisão do usuário 2026-09-24)**: período
 filtrado de até 31 dias (`from` e `to` preenchidos) plota um ponto por dia; acima disso, ou período
 aberto, um por mês (`monthly` do bundle). Sem nível semanal. No modo diário o dashboard acrescenta
