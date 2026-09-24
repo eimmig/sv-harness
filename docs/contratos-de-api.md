@@ -156,6 +156,13 @@ e [[convencoes]] para arquitetura/código.
   Implementado (`stats-service feat-017`) sem divergência: `byTipster` exclui apostas sem
   tipster atribuído (`tipsterId` opcional em `FACT_BET`, diferente de `leagueId`), mesmo padrão
   já usado por `byBetType`.
+- **`byTeam` novo em `GET /api/v1/statistics` (`stats-service feat-025`, `epic-036` da raiz,
+  2026-09-24)**: mesmo formato dos outros segmentos (array de `{dimensionId, dimensionName,
+  metrics}`), para o dashboard de times de [[web]] (`feat-047`). **Uma aposta conta para os 2
+  times** (`team1Id` e `team2Id` de `FACT_BET`, decisão do usuário) — por isso a soma de `byTeam`
+  excede o `overall` por desenho, diferente dos demais segmentos. Aposta sem time fica de fora;
+  aposta com o mesmo time nos 2 lados conta uma vez. Mesmos filtros do bundle, cache-aside com
+  chave `segment:team` (incluída no `evict()`).
 - **`GET /api/v1/statistics/daily` (`stats-service`, `epic-016` da raiz, página "Relatório do
   período" de [[web]], 2026-09-10)**: mesmos 7 filtros de `GET /api/v1/statistics`, granularidade
   diária em vez de mensal (mesma mecânica de agregação de `monthly`, `DIM_DATE` já tem

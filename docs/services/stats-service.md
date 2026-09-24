@@ -244,6 +244,15 @@ existentes (`SegmentedBetMetrics`), sem schema novo (`DIM_LEAGUE`/`DIM_TIPSTER` 
 > existentes, ponto sinalizado no plan review e coberto por teste de integração dedicado
 > (`RedisMetricsCacheRepositoryIntegrationTest`) para não regredir silenciosamente no futuro.
 
+## Segmento byTeam (`epic-036` da raiz, `feat-025`)
+
+`GET /api/v1/statistics` ganha `byTeam` para o dashboard de times de [[web]]. `aggregateByTeam`
+junta `DIM_TEAM` por `f.team1Id = tm.id OR f.team2Id = tm.id` — cada aposta entra na linha de cada
+um dos seus times (decisão do usuário), então a soma dos times passa do total. Uma linha de
+`DIM_TEAM` casa no máximo uma vez com cada aposta, logo `team1 = team2` conta uma vez só. Apostas
+sem time ficam de fora (mesmo padrão de `byTipster`). Chave de cache `segment:team`, removida pelo
+`evict()` junto das demais — coberto em `RedisMetricsCacheRepositoryIntegrationTest`.
+
 ## Quebra diária (`epic-016` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10, referência: print
