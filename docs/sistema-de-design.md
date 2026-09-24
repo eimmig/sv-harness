@@ -508,7 +508,12 @@ mantém o `fontSet` padrão (`app-side-nav.html`, binding condicional por `link.
 Outras telas (KPI cards de `overview`/`dashboard`/`period-report`/`search-statistics`, página
 `telegram-link`) continuam no Material Icons clássico sem mudança. Ao adicionar um ícone novo na
 sidebar, confirmar que o nome existe no Symbols Outlined antes de aplicar o `fontSet` — ícones de
-marca/social normalmente não existem lá.
+marca/social normalmente não existem lá. O inverso também vale (`apps/web feat-050`): fora da
+sidebar o nome tem que existir no Material Icons **clássico** — `target` (só Symbols) quebrou o
+card de odd média do dashboard, virou `local_offer`, o mesmo de Buscar Estatísticas. Os E2E de
+dashboard e de Buscar Estatísticas afirmam que todo `mat-icon` de `app-kpi-card` renderiza como
+glifo (`scrollWidth <= clientWidth` depois de `document.fonts.ready`; ligadura não resolvida
+vira texto mais largo que os 24px do ícone).
 
 ## Seletor de mês/ano (MatDatepicker `startView="year"`, `feat-039`, 2026-09-22)
 
