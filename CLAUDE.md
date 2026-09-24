@@ -273,6 +273,12 @@ qualquer escopo novo.
   erro nenhum. Antes de inserir um campo que pode já existir no objeto, `grep -c` o nome do campo
   dentro daquele bloco (ou reler o objeto inteiro) para confirmar que só há uma ocorrência depois
   da edição.
+- **Apontamento fora de escopo vira feature no backlog, não só nota** (pedido do usuário,
+  2026-09-24, depois de o contraste dos eixos dos gráficos ficar registrado só como "fora de escopo"
+  em `docs/sistema-de-design.md`): todo problema real encontrado durante uma feature e que não é
+  dela (bug pré-existente, acessibilidade, gap de teste, etc.) entra na hora como feature
+  `not-started` no `feature_list.json` do harness afetado — descrição com o achado e a origem,
+  `plan_review` vazio — além de citado na `evidence`. Nota no vault sozinha não entra no backlog.
 - **Harness se retroalimenta pela nota do vault, não por um log de lições à parte**: toda
   descoberta com valor além da sessão atual — bug cuja causa raiz não era óbvia, lacuna de
   especificação, edge case não coberto, gotcha de configuração/lib — vira edição na nota do

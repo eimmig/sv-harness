@@ -3054,3 +3054,10 @@ sessão anterior foi aplicada: `evidence`/`progress`/`handoff` entraram no PR da
 sem nenhum push direto em `develop` do web/stats nestas features.
 
 Todos os epics da raiz `done`; backlog de todos os harnesses esgotado.
+
+## `web feat-045` — contraste dos rótulos de eixo (2026-09-24, mesma sessão)
+
+Achado da QA visual de `feat-040`, antes registrado só como "fora de escopo" no vault. O usuário
+pediu a correção e uma regra nova: apontamento fora de escopo vira feature no `feature_list.json`
+(agora em `CLAUDE.md`, "Regras de trabalho"). Os rótulos passaram de `--color-border` (1,30:1) para
+`--color-text-secondary` (5,52:1). Story SV-614, PRs #195-#197, CI+SonarCloud verdes.

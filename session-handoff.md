@@ -22,6 +22,8 @@ conhecidas em `docs/testes.md` "CI e SonarCloud" — o Sonar só roda nesse gate
       `feat-040` (título/legenda/ajuda nos gráficos).
 - [x] **`epic-035` criado e fechado** — filtro PRE/LIVE na busca (`stats-service feat-024` +
       `web feat-038`), `/bet-type-dashboard` removida.
+- [x] **`web feat-045`** — contraste dos rótulos de eixo (achado da QA de `feat-040`).
+- [x] Regra nova do usuário no `CLAUDE.md`: apontamento fora de escopo vira feature no backlog.
 - Detalhe em `progress.md`.
 
 ## Bloqueios / Riscos
@@ -39,5 +41,4 @@ pausando promoções `develop -> main` por causa disso. Continua sem solução d
 ## Próxima sessão — por onde começar
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. Sem backlog pendente. Pendência observada e fora de escopo: rótulos de eixo dos gráficos usam
-   `--color-border` e ficam com pouco contraste (`docs/sistema-de-design.md` item 6).
+2. Sem backlog pendente em nenhum harness.
