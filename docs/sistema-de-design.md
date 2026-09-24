@@ -330,6 +330,15 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
    suficiente para reproduzir o gradiente customizado e o grid sutil acima sem CSS/SVG
    manual. Usado por todos os gráficos de RF10/RF11 (UI), não só o de linha — inclusive
    eventuais breakdowns em barra/pizza dos painéis de dashboard.
+   **Todo gráfico tem título, legenda e botão "?"** (`apps/web feat-040`, pedido do usuário
+   2026-09-24): o canvas fica dentro de `shared/chart-frame` — `h3` com o título, legenda HTML
+   (swatch por token CSS, segue o tema; nunca a legenda nativa do ECharts, para haver um só
+   mecanismo) e um botão `?` (`aria-expanded`/`aria-controls`) que mostra a explicação inline, em
+   vez de tooltip (funciona em toque e teclado). Textos em `charts.<gráfico>.{title,help,legend}`
+   nos 3 locales, derivados de [[estatisticas]]. Grade de mini-gráficos (drawdown mensal) usa um
+   frame só em volta da grade; cada mini mantém o título do mês. Gráfico novo entra já dentro do
+   frame. Conhecido e fora de escopo: rótulos de eixo usam `--color-border` e ficam com pouco
+   contraste.
 7. **Seletor de período (chips)** — linha horizontal de pílulas (1H/1D/1W/1M/1Y); ativa =
    `--color-surface-elevated` + texto de contraste médio; inativa = transparente + texto muted.
 8. **Controle segmentado (tabs tipo "Transact/Limit")** — switcher de duas opções em formato
