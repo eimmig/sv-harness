@@ -434,6 +434,19 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
       referência, para funcionar nos 2 temas. `z-index: 1100` (acima do `.cdk-overlay-container`
       do Material, 1000) e `inert` no `.app-shell` enquanto visível — bloqueia ponteiro e teclado.
       Estado/tempo em `core/loading.ts` (`Loading`), contagem via `core/loading-interceptor.ts`.
+    - **Tela já carregada não repete o loading (`apps/web feat-049`, 2026-09-24)**: GET a
+      `/api/` fica em cache em memória (`core/http-cache.ts` + `core/http-cache-interceptor.ts`,
+      antes do interceptor de loading na cadeia) — voltar a uma tela cujos dados já vieram não
+      faz requisição, então não há overlay. Chave: URL com query params + `Accept-Language`
+      (filtro novo = chave nova = requisição nova, RN08 preservada). Só resposta 2xx entra.
+      Qualquer requisição não-GET a `/api/` (inclui login) e `Auth.logout` limpam tudo — limpa
+      ao enviar e de novo na resposta/erro via `tap`, antes de o componente receber (não
+      `finalize`, que roda depois do `next`); GET que estava em voo durante a limpeza não grava
+      (contador de geração). TTL 5 min; nos 10s seguintes a uma limpeza nada é gravado, para não
+      fixar estatística ainda atrasada pela consistência eventual (`stats-service` via
+      RabbitMQ). Corpo servido via `structuredClone` (mutação no componente não altera o cache).
+      Limite aceito: aposta registrada pelo Telegram ou em outra aba só aparece no web depois do
+      TTL ou de uma mutação feita no próprio web.
 
 ## Integração com Angular Material (M3)
 
