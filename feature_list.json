@@ -407,9 +407,9 @@
       "name": "Filtro betType (PRE/LIVE) em Buscar Estatisticas substitui a tela bet-type-dashboard",
       "description": "Origem: apps/web feat-038 (achado do usuario em uso real, 2026-09-22). Decisao do usuario (2026-09-24, AskUserQuestion): PRE/LIVE vira filtro da tela Buscar Estatisticas (mesmo espirito dos outros filtros, que nao tem tela propria) e a tela /bet-type-dashboard sai (rota + item de menu). GET /api/v1/statistics/search nao aceitava betType (docs/contratos-de-api.md dizia 'betType nunca e query param de filtro') - por isso cross-service: (1) stats-service ganha query param opcional betType=pre|live em /statistics/search; (2) apps/web feat-038 adiciona o select na busca e remove a tela. api-gateway nao muda (rota /api/v1/statistics/** repassa query string). Contrato atualizado em docs/contratos-de-api.md junto com a feature de stats-service.",
       "dependencies": [],
-      "status": "in-progress",
+      "status": "done",
       "harness": "multiplos: services/stats-service (param betType) e apps/web (feat-038) - nesta ordem",
-      "evidence": ""
+      "evidence": "2 de 2 harnesses fechados em 2026-09-24. stats-service feat-024 (story SV-607, PRs #78/#79/#80 em sv-stats-backend, CI+SonarCloud verdes): GET /api/v1/statistics/search aceita betType=pre|live opcional (case-insensitive, BetTypeQueryParamConverter), restringindo resumo e timeline; sem o param, comportamento anterior; contrato em docs/contratos-de-api.md. apps/web feat-038 (story SV-610, PRs #191-#194 em sv-frontend, CI+SonarCloud verdes): select de tipo de aposta em Buscar Estatisticas, tela /bet-type-dashboard removida (rota redireciona pra busca, item de nav e chave nav.betTypeDashboard removidos). api-gateway sem mudanca (repassa query string de /api/v1/statistics/**)."
     }
   ]
 }

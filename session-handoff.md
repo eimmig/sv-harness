@@ -7,19 +7,22 @@
 
 ## Objetivo atual
 
-Nenhum epic em andamento — `epic-001`..`epic-034` todos `done`. O que resta está só no backlog
-ad-hoc de `apps/web` (`feat-038`/`040`/`041`/`044`), sem epic próprio.
+Nenhum trabalho em andamento — `epic-001`..`epic-035` todos `done`, e nenhum harness tem feature
+`not-started`. Próximo passo depende de pedido novo do usuário.
 
-**Lição de processo** (sessões `auth-service feat-021` e desta): escrever `status:done` +
-`evidence` da feature **e** o `progress.md`/`session-handoff.md` do serviço NA branch da story,
-dentro do PR da última subtask, ANTES do PR `story->develop`. Depois do merge, qualquer PR só de
-harness/docs reprova o gate de `CHANGELOG.md` e força push direto em `develop`.
+**Lição de processo** (continua valendo): escrever `status:done` + `evidence` da feature **e** o
+`progress.md`/`session-handoff.md` do serviço NA branch da story, dentro do PR da última subtask,
+ANTES do PR `story->develop`. Antes de abrir o PR da story, conferir as regras do SonarCloud já
+conhecidas em `docs/testes.md` "CI e SonarCloud" — o Sonar só roda nesse gate.
 
 ## Concluído nesta sessão (2026-09-24)
 
-- [x] **`epic-034` fechado** — `stats-service feat-023` (SV-588) e `api-gateway feat-018` (SV-591),
-      CI+SonarCloud verdes. Detalhe em `progress.md`. `docs/convencoes.md` corrigido (interface
-      do gateway é `LocalizedFilterException`).
+- [x] **`epic-034` fechado** — `stats-service feat-023` e `api-gateway feat-018`.
+- [x] **Backlog ad-hoc do web**: `feat-044` (overlay de carregamento), `feat-041` (lucro por dia),
+      `feat-040` (título/legenda/ajuda nos gráficos).
+- [x] **`epic-035` criado e fechado** — filtro PRE/LIVE na busca (`stats-service feat-024` +
+      `web feat-038`), `/bet-type-dashboard` removida.
+- Detalhe em `progress.md`.
 
 ## Bloqueios / Riscos
 
@@ -36,6 +39,5 @@ pausando promoções `develop -> main` por causa disso. Continua sem solução d
 ## Próxima sessão — por onde começar
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. `apps/web feat-038`/`040`/`041`/`044` — `038`/`040`/`041` nasceram como "registrar, não
-   implementar agora"; `044` tem 4 decisões de UX em aberto na `description`. Confirmar com o
-   usuário antes de implementar (ver `apps/web/session-handoff.md`).
+2. Sem backlog pendente. Pendência observada e fora de escopo: rótulos de eixo dos gráficos usam
+   `--color-border` e ficam com pouco contraste (`docs/sistema-de-design.md` item 6).

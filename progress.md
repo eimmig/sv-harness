@@ -3030,3 +3030,27 @@ serviços (falso no gateway) e ganhou o caso inverso de exclusão (classe que im
 sem ser exceção).
 
 `epic-034` `done` (4/4). Backlog de epics da raiz esgotado.
+
+## Backlog ad-hoc de `apps/web` + `epic-035` fechados (2026-09-24, mesma sessão)
+
+Usuário autorizou as 4 features ad-hoc do web (ordem: `feat-044` primeiro), com decisões via
+`AskUserQuestion`:
+
+- **`web feat-044`** (SV-594): splash de boot removida; montagem do logo virou overlay de
+  carregamento do app inteiro em toda chamada `/api/` acima de 250ms (`core/loading*`).
+- **`web feat-041`** (SV-599): gráfico de lucro do dashboard por dia em períodos de até 31 dias.
+- **`web feat-040`** (SV-603): todo gráfico dentro de `shared/chart-frame` (título, legenda, `?`).
+- **`epic-035`** (novo, cross-service, de `web feat-038`): o `/statistics/search` não aceitava
+  `betType`, então o usuário escolheu filtro no backend. `stats-service feat-024` (SV-607, param
+  `betType=pre|live`) + `web feat-038` (SV-610, filtro na busca, `/bet-type-dashboard` removida
+  com redirect).
+
+Achados reais registrados no vault: 2 regras do SonarCloud que só aparecem no gate
+`feature -> develop` (`typescript:S2699` com `httpMock.expectNone`, `Web:S6819` com
+`role="status"`) reprovaram as stories de `feat-044`/`feat-041`. Cada uma virou subtask de
+correção (`feat-044.4`, `feat-041.3`), sem bypass (`docs/testes.md` "CI e SonarCloud"). E2E que abre
+`/dashboard` precisa mockar `/statistics/daily` (`docs/services/web.md`). A lição de processo da
+sessão anterior foi aplicada: `evidence`/`progress`/`handoff` entraram no PR da última subtask,
+sem nenhum push direto em `develop` do web/stats nestas features.
+
+Todos os epics da raiz `done`; backlog de todos os harnesses esgotado.
