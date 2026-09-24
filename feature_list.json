@@ -410,6 +410,15 @@
       "status": "done",
       "harness": "multiplos: services/stats-service (param betType) e apps/web (feat-038) - nesta ordem",
       "evidence": "2 de 2 harnesses fechados em 2026-09-24. stats-service feat-024 (story SV-607, PRs #78/#79/#80 em sv-stats-backend, CI+SonarCloud verdes): GET /api/v1/statistics/search aceita betType=pre|live opcional (case-insensitive, BetTypeQueryParamConverter), restringindo resumo e timeline; sem o param, comportamento anterior; contrato em docs/contratos-de-api.md. apps/web feat-038 (story SV-610, PRs #191-#194 em sv-frontend, CI+SonarCloud verdes): select de tipo de aposta em Buscar Estatisticas, tela /bet-type-dashboard removida (rota redireciona pra busca, item de nav e chave nav.betTypeDashboard removidos). api-gateway sem mudanca (repassa query string de /api/v1/statistics/**)."
+    },
+    {
+      "id": "epic-036",
+      "name": "Dashboard de times e menu flutuante na tela de Times",
+      "description": "Origem: apps/web feat-047 (apontamento do usuario 2026-09-24: a tela de Times nao tem o menu flutuante 'Cadastrar/Dashboard' das outras). Nao existia dashboard de times: GET /api/v1/statistics nao tinha segmento por time. Decisao do usuario (2026-09-24, AskUserQuestion): epic cross-service, e uma aposta conta para os 2 times (team1 e team2). (1) stats-service ganha o segmento byTeam no bundle de GET /api/v1/statistics (mesmos filtros, cache-aside, evict junto com os demais); (2) apps/web feat-047 cria a tela de dashboard de times (mesmo componente catalog-dashboard) e troca o link simples de Times pelo menu flutuante. api-gateway nao muda (repassa /api/v1/statistics/**). Contrato atualizado em docs/contratos-de-api.md junto com a feature de stats-service.",
+      "dependencies": [],
+      "status": "in-progress",
+      "harness": "multiplos: services/stats-service (segmento byTeam) e apps/web (feat-047) - nesta ordem",
+      "evidence": ""
     }
   ]
 }
