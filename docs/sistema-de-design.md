@@ -337,8 +337,12 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
    vez de tooltip (funciona em toque e teclado). Textos em `charts.<gráfico>.{title,help,legend}`
    nos 3 locales, derivados de [[estatisticas]]. Grade de mini-gráficos (drawdown mensal) usa um
    frame só em volta da grade; cada mini mantém o título do mês. Gráfico novo entra já dentro do
-   frame. Conhecido e fora de escopo: rótulos de eixo usam `--color-border` e ficam com pouco
-   contraste.
+   frame.
+   **Rótulo de eixo em `--color-text-secondary`, grade em `--color-border`** (`apps/web feat-045`,
+   2026-09-24): os builders de `core/chart-theme.ts` recebem as duas cores separadas. Rótulo na cor
+   da grade dava 1,30:1 (claro) / 1,22:1 (escuro), abaixo do mínimo WCAG de 4,5:1;
+   `--color-text-secondary` dá 5,52:1 / 5,45:1. A grade continua sutil de propósito — só texto
+   precisa de contraste de leitura.
 7. **Seletor de período (chips)** — linha horizontal de pílulas (1H/1D/1W/1M/1Y); ativa =
    `--color-surface-elevated` + texto de contraste médio; inativa = transparente + texto muted.
 8. **Controle segmentado (tabs tipo "Transact/Limit")** — switcher de duas opções em formato
