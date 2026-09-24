@@ -430,7 +430,7 @@ superior em 2 direções, percorre cada lado, se encontra no ponto central infer
 volta, em loop enquanto a tela de login está visível. Implementado com 2 paths SVG
 espelho-simétricos (garante comprimento igual sem medir) dimensionados via `ResizeObserver`, não
 um tamanho fixo. Toda animação nova respeita `prefers-reduced-motion` (mesmo padrão já usado no
-splash: pula direto pro estado final em vez de pausar uma animação em andamento).
+overlay de carregamento, ver [[sistema-de-design]] item 17: pula direto pro estado final em vez de pausar uma animação em andamento).
 
 **Achados reais de QA visual** (screenshots reais contra o dev server, não só leitura de código):
 (1) o painel de opções do seletor de idioma (`mat-select`) herdava a largura do *trigger* atual,

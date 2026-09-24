@@ -404,6 +404,17 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
       - **CSS/SVG puro é suficiente** — poucos KB, anima na GPU; não introduzir Lottie ou outra
         biblioteca de animação só para isto (só compensaria para morphing complexo entre formas,
         que não é o caso aqui).
+    - **Uso em produção (`apps/web feat-044`, 2026-09-24, decisão do usuário)**: não existe
+      mais splash de boot — o login abre instantâneo. A montagem do logo é o **indicador de
+      carregamento do app inteiro** (`core/loading-overlay`, o app não tem spinner em lugar
+      nenhum): aparece sobre o app todo (sidebar incluída), com fundo translúcido
+      (`color-mix` de `--color-background`) + `backdrop-filter: blur`, sempre que uma chamada a
+      `/api/` passa de 250ms (chamada rápida não pisca; `/i18n/*.json` não conta). Uma vez
+      visível, a sequência de 2.1s termina antes do fade de 400ms (regra acima). Cores por
+      token (`--color-brand`/`--color-text-primary`/`--color-border`), não os hex fixos da
+      referência, para funcionar nos 2 temas. `z-index: 1100` (acima do `.cdk-overlay-container`
+      do Material, 1000) e `inert` no `.app-shell` enquanto visível — bloqueia ponteiro e teclado.
+      Estado/tempo em `core/loading.ts` (`Loading`), contagem via `core/loading-interceptor.ts`.
 
 ## Integração com Angular Material (M3)
 

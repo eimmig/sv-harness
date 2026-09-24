@@ -140,9 +140,9 @@ código" em `docs/convencoes.md`).
   janela expira, não no momento em que o teste é escrito — passa despercebido até alguém rodar a
   suíte num dia diferente. Corrigido congelando o relógio em vez de mudar a fixture (que não é o
   que o componente controla): `vi.useFakeTimers()` + `vi.setSystemTime(...)` no unitário
-  (`vi` de `'vitest'`, padrão já usado em `app.spec.ts`/`splash.spec.ts`), `page.clock.setFixedTime(...)`
+  (`vi` de `'vitest'`, padrão já usado em `app.spec.ts`/`loading.spec.ts`), `page.clock.setFixedTime(...)`
   no Playwright — **não** `page.clock.install()`, que também congela `setTimeout`/`requestAnimationFrame`
-  e travaria a introdução do splash e qualquer animação/temporizador real da página. Qualquer teste
+  e travaria o overlay de carregamento e qualquer animação/temporizador real da página. Qualquer teste
   novo que dependa de "hoje" (presets de período, filtros relativos a data) deve congelar o relógio
   desde o início, não hardcodar uma data e assumir que vai continuar batendo.
 - **`getByRole('gridcell', {name: 'N'})` não localiza um dia do `mat-datepicker` pelo número**
