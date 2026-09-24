@@ -3061,3 +3061,27 @@ Achado da QA visual de `feat-040`, antes registrado só como "fora de escopo" no
 pediu a correção e uma regra nova: apontamento fora de escopo vira feature no `feature_list.json`
 (agora em `CLAUDE.md`, "Regras de trabalho"). Os rótulos passaram de `--color-border` (1,30:1) para
 `--color-text-secondary` (5,52:1). Story SV-614, PRs #195-#197, CI+SonarCloud verdes.
+
+## `apps/web` — apontamentos do usuário e achados da sessão (2026-09-24, continuação)
+
+Backlog de `apps/web` com 5 apontamentos do usuário (`feat-046`..`feat-050`) e 4 achados que viraram
+feature durante o trabalho (`feat-051`..`feat-054`). Todos sem epic na raiz (precedente de
+`feat-032`..`feat-034`), cada um com story, subtasks, PRs e CI+SonarCloud verdes:
+
+- **`feat-046`** (SV-617): valores Período A/B do comparativo alinhados ao cabeçalho.
+- **`feat-048`** (SV-620): datas do gráfico de Buscar Estatísticas com ano quando a série passa de
+  1 ano. Gate da story reprovou por `typescript:S7755` → subtask de correção, regra em `docs/testes.md`.
+- **`feat-050`** (SV-624): ícone de odd média (`target` só existe em Material Symbols; `kpi-card` usa a
+  fonte clássica) → `local_offer`.
+- **`feat-049`** (SV-627): cache em memória de GET `/api/` — voltar a uma tela já carregada não repete
+  o overlay. Limpo por mutação/logout, TTL 5 min, 10s sem gravar após limpar (consistência eventual).
+- **`feat-052`** (SV-630): tooltip dos gráficos com tokens do tema (antes branco no tema escuro).
+- **`feat-051`** (SV-633): suíte E2E determinística — 3 causas (idioma `en-US` do navegador do
+  Playwright no teste de teclado, janela curta no E2E do overlay, stub `{}` em `/statistics/daily`).
+- **`feat-054`** (SV-638): erro de render numa tela congelava o overlay sobre o app (achado da
+  investigação de `feat-051`); o `@if` do overlay subiu para `app.html`.
+
+Pendentes: **`feat-047`** (menu flutuante em Times) depende de decisão do usuário — não existe dashboard
+de times, e criar um exige segmento por time no `stats-service` (cross-service, epic novo);
+**`feat-053`** (`ERR_CONNECTION_REFUSED` do `ng serve` na suíte completa) ocorreu 1 vez em ~18 rodadas,
+sob carga alta da máquina, e não reproduziu em 5 rodadas seguidas.
