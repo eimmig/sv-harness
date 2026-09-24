@@ -327,6 +327,15 @@ também consumidos pela pipeline de CI para a análise de qualidade/cobertura no
 aplicado localmente (`mvn verify`/`ng test`/`pytest-cov`), o Sonar não duplica esse gate, só
 reporta a métrica.
 
+Regras do SonarCloud que só aparecem no gate `feature -> develop` (PRs de subtask pulam o Sonar)
+e já reprovaram PRs reais de `apps/web` (`feat-044`/`feat-041`, 2026-09-24) — conferir antes de
+abrir o PR da story:
+
+- **`typescript:S2699`** (BLOCKER): teste cuja única verificação é `httpMock.expectNone(...)` não
+  conta como assertion. Usar `expect(httpMock.match(...)).toHaveLength(0)`.
+- **`Web:S6819`** (MAJOR): `role="status"` num `div` — usar o elemento nativo `<output>`, que já
+  tem esse papel implícito (Playwright continua achando por `getByRole('status')`).
+
 ## Ver também
 
 - [[DECISIONS-LOG]] — racional do modelo de tenant multiusuário e por que a fixture de teste de
