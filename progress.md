@@ -3122,3 +3122,11 @@ para faixa de 56px, estado por tela. Só `apps/web` (story SV-647, PRs #228-#231
 `docs/sistema-de-design.md` ("Painel de filtros recolhível"), `docs/testes.md` (mock de bundle
 de `/statistics` com todos os arrays), `docs/services/web.md`.
 
+## Sessão expirada volta ao login — `apps/web feat-057` (2026-09-25)
+
+Pedido do usuário (era o "loading antes do login"): token expirado salvo abria `/overview`, o
+overlay tocava e nada tratava o 401. Só `apps/web` (story SV-651, PRs #232-#234). O web passa a
+depender do `type` `invalid-token` do `api-gateway` — registrado em `docs/contratos-de-api.md`
+("Formato de erro"); renomear esse slug quebra o web. Vault também em
+`docs/sistema-de-design.md` (item 17) e `docs/services/web.md`.
+

@@ -269,6 +269,12 @@ Todos os serviços Java respondem erros como **RFC 7807** (`application/problem+
   fixada em `feat-004` (auth-service) pra `bets-service`/`stats-service` reaproveitarem sem
   redecidir status code header a header.
 
+- **Token expirado/inválido no gateway** (`api-gateway`, `PasetoAuthenticationFilter`): `401`
+  com `type` `https://docs/errors/invalid-token`. O [[web]] (`apps/web feat-057`) usa esse
+  `type` — não só o status — para encerrar a sessão e voltar ao login, porque outros `401`
+  chegam com token válido e são regra de negócio (ex.: `current-password-mismatch` em
+  `POST /api/v1/auth/change-password`). Renomear o slug `invalid-token` quebra o web.
+
 ## Documentação de API
 
 Cada serviço Java expõe **springdoc-openapi** (`/v3/api-docs`, UI em `/swagger-ui.html`) — não é

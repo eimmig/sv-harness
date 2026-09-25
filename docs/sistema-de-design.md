@@ -457,6 +457,10 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
       último os componentes filhos. Com o `@if` dentro do componente filho, um erro de render em
       qualquer tela abortava o ciclo antes de o overlay sumir e o app ficava preso atrás dele.
       Não mover o `@if` de volta para dentro do componente (`app.spec.ts` cobre o caso).
+      **Sessão expirada encerra o overlay na hora** (`apps/web feat-057`): `Loading.reset()`
+      zera contador e timers sem esperar a sequência mínima de 2,1s, e cada `begin()` devolve a
+      época corrente — o `end()` de uma requisição iniciada antes do `reset()` é ignorado, para
+      não apagar o overlay de uma requisição nova (ex.: o próprio login).
     - **Tela já carregada não repete o loading (`apps/web feat-049`, 2026-09-24)**: GET a
       `/api/` fica em cache em memória (`core/http-cache.ts` + `core/http-cache-interceptor.ts`,
       antes do interceptor de loading na cadeia) — voltar a uma tela cujos dados já vieram não

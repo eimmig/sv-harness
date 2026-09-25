@@ -630,6 +630,16 @@ Relatório do período, Comparativo de períodos, `catalog-dashboard`). Desenho 
 catálogo preenchidos na última busca; em Buscar Estatísticas o intervalo de datas (opcional lá)
 conta como um filtro. Nos dashboards o período sempre existe e não entra na conta.
 
+## Sessão expirada (`apps/web feat-057`)
+
+Pedido do usuário (2026-09-25): com token expirado salvo, o app abria `/overview`, o overlay de
+loading tocava e a tela ficava com erro atrás dele. O token é PASETO `v4.local` (cifrado, sem
+expiração legível no cliente), então a detecção é pela resposta: `core/auth-interceptor`, só em
+requisição que levou o token **atual**, trata `401` com `type` `.../invalid-token` (ver
+[[contratos-de-api]] "Formato de erro") — `Auth.expireSession()`, `Loading.reset()` e
+navegação para `/login`, que mostra o aviso `login.sessionExpired` até a próxima tentativa.
+`401` de regra de negócio (senha atual errada) não derruba a sessão.
+
 ## Ver também
 
 - [[auth-service]], [[bets-service]], [[stats-service]] — APIs consumidas via API Gateway.
