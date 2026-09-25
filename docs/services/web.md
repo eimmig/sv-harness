@@ -265,6 +265,30 @@ completa (não só o arquivo tocado) revelou e corrigiu uma regressão real pré
 `feat-021` (`e2e/register-bet.spec.ts` nunca ganhou o mock do catálogo de times que aquela
 feature acrescentou ao `forkJoin` do formulário) — ver [[testes]] para o padrão de falha geral.
 
+> **Substituído em `web feat-058` (`epic-037` da raiz, 2026-09-25)** — achado do usuário em uso
+> real, com captura de tela: os 2 parágrafos acima descrevem o desenho original (`epic-020`), hoje
+> superado nestes 2 pontos. (1) **Sem filtro próprio**: os 2 `<input type="month">` + botão
+> "Aplicar" batched foram removidos — `monthly-drawdown-grid` deixou de ter `OnInit`/`FormGroup`
+> e passou a receber `filter` (o `StatisticsFilter` completo já montado em `dashboard.applyFilter()`,
+> incluindo os filtros de segmento — antes ignorados por este componente), `bankrollNow` e
+> `unitPercent` como `input.required<...>()` do próprio `dashboard.ts`/`.html`, reagindo via
+> `effect()` sempre que o filtro geral da tela muda, em vez de exigir um segundo filtro dedicado.
+> `buildMonthlyDrawdown` deixou de assumir `from`/`to` alinhados a mês inteiro (o filtro geral pode
+> ser qualquer intervalo de dias, ex. um preset de 15 dias) — primeiro/último mês do intervalo
+> respeitam o dia real de `from`/`to`, meses no meio continuam inteiros; `resolveMonthRange` foi
+> removida (sem consumidor). Só o `daily` (fetch, via `effect()`) depende do `filter`; `months`/
+> `yRange` exibidos são `computed()` a partir de `daily`+`bankrollNow`+`unitPercent` — um
+> `bankrollNow`/`unitPercent` mudando sozinho (ex.: usuário salva unidade nova) não dispara mais
+> uma nova chamada a `GET /api/v1/statistics/daily`, só reconverte o resultado já carregado (ver
+> [[convencoes]] "Componente `@Input`-driven" para o padrão geral). (2) **Escala Y compartilhada**:
+> cada mini-gráfico auto-escalava o próprio eixo Y independente dos demais — o mês com lucro
+> acumulado menor (tipicamente o mês corrente, incompleto) ficava com um teto mais baixo e a curva
+> parecia maior/mais inclinada que a dos outros meses, quebrando a comparação visual que é o
+> propósito da grade. `computeSharedYRange` (`monthly-drawdown-metrics.ts`) calcula um min/max
+> único entre todos os meses renderizados (baseline em 0, arredondado pra fora em 1 casa decimal) e
+> `core/chart-theme.ts` (`buildLineChartOption`) ganhou `yMin`/`yMax` opcionais — setados só quando
+> fornecidos, então nenhum outro gráfico (`monthly-profit-chart`, etc.) muda de comportamento.
+
 ## Menu por cadastro — Cadastrar + Dashboard (`epic-019` da raiz, done)
 
 Escopo novo, fora do backlog original do TCC1 (pedido do usuário, 2026-09-10). Reestrutura a nav

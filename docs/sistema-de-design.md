@@ -555,16 +555,17 @@ dashboard e de Buscar Estatísticas afirmam que todo `mat-icon` de `app-kpi-card
 glifo (`scrollWidth <= clientWidth` depois de `document.fonts.ready`; ligadura não resolvida
 vira texto mais largo que os 24px do ícone).
 
-## Seletor de mês/ano (MatDatepicker `startView="year"`, `feat-039`, 2026-09-22)
+## Seletor de mês/ano (MatDatepicker `startView="year"`) — removido em `web feat-058`
 
-`shared/monthly-drawdown-chart`/`pages/dashboard/monthly-drawdown-grid` precisam de um filtro que
-seleciona só mês+ano (sem dia), travado em fronteira de mês inteiro — não o range de dias de
-`shared/period-preset-filter`. Padrão: `<input matInput readonly [matDatepicker]="picker">` +
-`<mat-datepicker #picker startView="year" (monthSelected)="...">`, fechando o picker manualmente
-no handler (`picker.close()`) em vez de deixá-lo descer pra visão de dia. `startView="year"` abre
-direto na grade de 12 meses do ano corrente; a barra de período no topo do calendário (`.mat-
-calendar-period-button`) navega pra visão multi-ano quando o usuário precisa de outro ano.
-Reaproveitável em qualquer filtro futuro que precise de granularidade mês/ano.
+Introduzido em `feat-039` (2026-09-22) para `pages/dashboard/monthly-drawdown-grid` (filtro de
+mês+ano dedicado desta seção, travado em fronteira de mês inteiro). Removido em `feat-058`
+(`epic-037` da raiz, 2026-09-25) quando a grade passou a reaproveitar o filtro geral do dashboard
+(`shared/period-preset-filter`) em vez de um filtro próprio — ver [[web]] "Dashboard — grade de
+gráficos mensais de drawdown". Sem consumidor no código a partir desta data (`grep -r
+'startView="year"'` não acha mais nenhum). Se um filtro futuro precisar de novo de granularidade
+só mês/ano (sem dia), o padrão técnico (`<mat-datepicker startView="year"
+(monthSelected)="...picker.close()...">`) continua válido — não reintroduzir sem necessidade real,
+só como referência.
 
 ## Identidade visual — Arka
 

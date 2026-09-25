@@ -3130,3 +3130,21 @@ depender do `type` `invalid-token` do `api-gateway` — registrado em `docs/cont
 ("Formato de erro"); renomear esse slug quebra o web. Vault também em
 `docs/sistema-de-design.md` (item 17) e `docs/services/web.md`.
 
+## `epic-037` fechado — drawdown mensal: escala Y compartilhada + filtro geral (2026-09-25)
+
+Pedido do usuário em uso real, com captura de tela: 2 achados no mesmo componente (dashboard >
+aba "Drawdown mensal"). (1) cada mini-gráfico mensal auto-escalava o próprio eixo Y, mês com
+lucro acumulado menor (tipicamente o corrente, incompleto) ficava com teto mais baixo e a curva
+parecia maior/mais inclinada que a dos outros meses — quebrava a comparação visual que é o
+propósito do gráfico. (2) `monthly-drawdown-grid` tinha datepicker/botão próprios (só from/to,
+ignorava os filtros de segmento) redundante com o filtro geral do dashboard — usuário filtrava
+duas vezes. Só `apps/web` (story SV-654, PRs #235-#238, `feat-058`). Sem mudança de backend —
+`GET /api/v1/statistics/daily` já aceitava os filtros necessários. `Test Suite Auditor` achou 2
+lacunas reais de teste (a correção central — saldo/unitPercent mudando sozinhos não deveriam
+refazer o fetch — não tinha prova; só 1 direção do corte `to`/hoje combinado testada) e mandou
+fechar antes do veredito, não só registrar como residual. Vault: `docs/services/web.md`,
+`docs/estatisticas.md`, `docs/sistema-de-design.md` (descreviam o filtro próprio/date-picker
+mês-ano como desenho atual, agora marcados como substituídos) e `docs/convencoes.md` (2
+mecanismos novos reaproveitáveis: escala Y compartilhada entre instâncias de `ngx-echarts`, e
+separação `effect`-de-fetch vs. `computed`-de-render em componente `@Input`-driven).
+

@@ -244,15 +244,18 @@ selecionado, agrupado por mês no cliente — nenhum endpoint novo, nenhum campo
 
 **Revisado 2026-09-10, mesma sessão**: navegação por 2 date pickers (início/fim), não mais por
 ano fixo com setas — a quantidade de mini-gráficos é **dinâmica** (1 por mês coberto pelo
-intervalo, não fixo em 12). O intervalo trava em fronteira de mês, não no dia exato clicado:
+intervalo, não fixo em 12).
 
-```
-from = dia 01 do mês do date picker inicial
-to   = último dia do mês do date picker final (30/31 conforme o mês)
-```
-
-Continua distinto dos presets de período de `epic-015` (Hoje/semana/mês etc.) — filtro de *range
-de meses* dedicado desta seção, não reaproveitado.
+**Substituído em `web feat-058` (`epic-037` da raiz, 2026-09-25)** — os 2 date pickers dedicados
+desta seção (parágrafo acima) foram removidos: a grade passou a reaproveitar o filtro geral do
+dashboard (`epic-015`, presets + range customizado + filtros de segmento), evitando pedir o
+período duas vezes. Consequência para o intervalo `from`/`to` usado na fórmula acima: deixou de
+travar em fronteira de mês por construção (o filtro geral pode ser qualquer intervalo de dias, não
+só meses inteiros) — o primeiro e o último mês da grade plotam só os dias reais dentro de
+`from`/`to` (ex. um preset de 15 dias cruzando 2 meses mostra 2 mini-gráficos parciais, não 2
+meses inteiros), meses inteiramente no meio do intervalo continuam completos. Ver [[web]] "Dashboard
+— grade de gráficos mensais de drawdown" para o detalhe técnico completo, incluindo a escala Y
+compartilhada entre os mini-gráficos (achado do usuário, mesma feature).
 
 Apesar do rótulo popular "gráfico de drawdown" (nome dado pelo usuário, mantido na UI), esta
 curva **não é o `drawdownMaximo`** já definido na seção "Métricas novas da tela 'Buscar

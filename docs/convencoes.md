@@ -777,6 +777,27 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
   para a implementação de referência - qualquer novo teste que renderize um componente com
   `NgxEchartsDirective` real (não só os gráficos de `feat-006`, qualquer futuro RF10/RF11) precisa
   do mesmo stub.
+- **Escala Y compartilhada entre instâncias irmãs de `ngx-echarts`** (mecanismo introduzido em
+  `apps/web feat-058.1`, 2026-09-25, corrigindo a grade de mini-gráficos de `monthly-drawdown-grid`
+  onde cada instância auto-escalava o próprio eixo Y, fazendo o mês com lucro acumulado menor
+  parecer maior/mais inclinado que os demais): `buildLineChartOption`/`LineChartStyleOptions`
+  (`core/chart-theme.ts`) aceitam `yMin`/`yMax` opcionais, setados em `yAxis.min`/`max` só quando
+  fornecidos — sem eles o comportamento auto-scale de sempre continua (nenhum outro consumidor
+  precisa mudar). O min/max compartilhado é calculado uma vez (ver `computeSharedYRange` em
+  `shared/monthly-drawdown-chart/monthly-drawdown-metrics.ts`, arredondado pra fora em 1 casa
+  decimal pra não gerar rótulo de eixo com dízima) e passado como `input()` pra cada instância do
+  gráfico. Reaproveitar este padrão em qualquer grade futura de gráficos comparáveis lado a lado
+  (RF10/RF11) em vez de deixar cada instância auto-escalar.
+- **Componente `@Input`-driven: separar o `effect()` que dispara a busca do `computed()` que
+  deriva o que é exibido** (mesma feature, `feat-058.2`): quando um componente recebe filtro +
+  outros dados já carregados pelo pai via `input.required<...>()`, só os campos que realmente
+  mudam a query HTTP devem estar dentro do `effect()` de fetch — campos usados só pra converter a
+  resposta já carregada (ex.: saldo/percentual de unidade convertendo `netProfit` em unidades)
+  pertencem a um `computed()` separado a partir do dado bruto já em signal. Bug real evitado por
+  essa separação: colocar todos os inputs no mesmo `effect()` de fetch dispara uma requisição HTTP
+  nova toda vez que QUALQUER um deles muda, mesmo quando só o dado já carregado precisava ser
+  recalculado (ex.: usuário salva um novo `unitPercent` — não deveria refazer a chamada de
+  `/statistics/daily`, só reconverter o resultado já em memória).
 - **QA visual (Impeccable/taste-skill)**: ferramentas de design guidance para agentes de IA,
   usadas só como auditoria/polish de componentes já implementados contra [[sistema-de-design]] —
   nunca como fonte de novas decisões de design (esse documento já é a fonte de verdade). Ver
