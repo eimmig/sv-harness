@@ -3113,3 +3113,12 @@ sv-auth/bets/stats v0.2.0, sv-api-gateway/sv-telegram-integration/sv-infra v0.1.
 publicadas; job `deploy` falhou nos 6 serviços pelo mesmo motivo já aceito (runner hospedado não
 alcança o cluster em `127.0.0.1:6443`). Próximo release: `develop` volta a precisar do back-merge do
 commit `chore(release)` de `main` antes de promover de novo.
+
+## Painel de filtros recolhível — `apps/web feat-055` (2026-09-25)
+
+Pedido do usuário: mais espaço para os gráficos. Painel de filtros das telas de dashboard recolhe
+para faixa de 56px, estado por tela. Só `apps/web` (story SV-647, PRs #228-#231); sem epic de raiz
+(feature de UI isolada, mesmo precedente de `feat-044`..`feat-054`). Vault:
+`docs/sistema-de-design.md` ("Painel de filtros recolhível"), `docs/testes.md` (mock de bundle
+de `/statistics` com todos os arrays), `docs/services/web.md`.
+

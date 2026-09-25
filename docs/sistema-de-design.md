@@ -261,6 +261,18 @@ do produto — replicar isto é tão importante quanto a paleta de cores.
     entre eles em vez de forçar rolagem vertical longa (regra de Shneiderman "reduzir a carga de
     memória de curto prazo", ver [[web]]) — decisão final de qual abordagem cabe a cada feature
     de UI, não fixada aqui.
+- **Painel de filtros recolhível** (`apps/web feat-055`): nas telas de dashboard (Dashboard,
+  Buscar Estatísticas, Relatório do período, Comparativo de períodos e os 6 dashboards por
+  cadastro), o painel de filtros é `<app-panel [collapsible]="true" collapseKey="...">` dentro de
+  `<app-panel-layout columns="auto 1fr" tabletColumns="auto 1fr">` — a largura sai do próprio
+  painel (320px aberto, faixa de 56px recolhido), não da coluna do grid. Recolhido: ícone de
+  filtro, título na vertical e, onde há selects, badge azul (`--color-action-neutral`, nunca
+  verde) com quantos filtros entraram na última busca — o número também vai no `aria-label` do
+  botão. O corpo fica no DOM com `hidden` (não `@if`), então selects e período preservam o
+  estado. Estado por tela em `localStorage` (`stakevault.panelCollapsed.<key>`; por segmento nos
+  dashboards por cadastro). No mobile vira barra horizontal curta. Painel sem título nunca fica
+  recolhido (não teria botão para reabrir). `PanelLayout.tabletColumns` substitui o
+  `repeat(2, 1fr)` do tablet só onde a página pede.
 - **Composição sugerida por página** (default razoável, cada feature RF03/04/08/10/11 UI decide
   o número exato de painéis quando for implementada — isto aqui não é obrigatório, é ponto de
   partida):

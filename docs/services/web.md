@@ -620,6 +620,16 @@ valores A/B estavam à esquerda, longe do rótulo). O E2E de alinhamento mede a 
 `boundingBox()` do elemento — item de grid ocupa a célula inteira, então o `boundingBox` bate
 com ou sem `text-align` e o teste passaria com o defeito.
 
+## Painel de filtros recolhível (`apps/web feat-055`)
+
+Pedido do usuário (2026-09-25): liberar largura para os gráficos. Entre painel recolhível, barra
+de filtros no topo e gaveta sob demanda, o usuário escolheu o painel recolhível — mantém o layout
+em painéis. Vale para as 5 telas com painel de filtros de 320px (Dashboard, Buscar Estatísticas,
+Relatório do período, Comparativo de períodos, `catalog-dashboard`). Desenho e regras em
+[[sistema-de-design]] ("Layout em painéis", "Painel de filtros recolhível"). Badge: selects de
+catálogo preenchidos na última busca; em Buscar Estatísticas o intervalo de datas (opcional lá)
+conta como um filtro. Nos dashboards o período sempre existe e não entra na conta.
+
 ## Ver também
 
 - [[auth-service]], [[bets-service]], [[stats-service]] — APIs consumidas via API Gateway.

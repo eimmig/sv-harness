@@ -311,6 +311,12 @@ código" em `docs/convencoes.md`).
   sobre o app (cliques interceptados, falha intermitente em testes seguintes do mesmo spec).
   Todo spec que abre `/dashboard` com stub genérico mocka `'**/api/v1/statistics/daily*'` → `[]`.
   A fragilidade do produto (um erro de render congelar o overlay) é `apps/web feat-054`.
+- **E2E: bundle de `/statistics` precisa de todos os arrays de segmento** (`feat-055`): um mock
+  sem `byBetType` (ou outro `by*`) faz a tabela de segmentos do Comparativo lançar
+  `Cannot read properties of undefined (reading 'map')` a cada change detection. O sintoma não é
+  erro visível: cliques seguintes "não fazem nada" (o handler roda, mas a view não atualiza).
+  Mock de bundle sempre com `bySport`, `byLeague`, `byMarket`, `byTipster`, `byBettingHouse`,
+  `byTeam`, `byBetType` e `monthly`, mesmo vazios.
 
 ## Python (telegram-integration)
 
