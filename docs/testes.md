@@ -317,6 +317,16 @@ código" em `docs/convencoes.md`).
   erro visível: cliques seguintes "não fazem nada" (o handler roda, mas a view não atualiza).
   Mock de bundle sempre com `bySport`, `byLeague`, `byMarket`, `byTipster`, `byBettingHouse`,
   `byTeam`, `byBetType` e `monthly`, mesmo vazios.
+- **E2E: `ECONNREFUSED` intermitente na suite completa vem de `localhost` dual-stack no Windows**
+  (`feat-053`, achado durante `feat-051`): o hosts file do Windows resolve `localhost` tanto pra
+  `127.0.0.1` quanto `::1`; o dev server do Angular (`ng serve --host localhost`, default) só
+  escuta numa família, e sob carga paralela (16 workers) o Chromium às vezes tenta a outra e leva
+  `net::ERR_CONNECTION_REFUSED` — 1 falha a cada ~9 rodadas completas, não reproduz isolado.
+  Correção: `playwright.config.ts` pina `use.baseURL`, `webServer.url` e `webServer.command`
+  (`--host 127.0.0.1`) em `127.0.0.1`, removendo a ambiguidade — não é limite de workers nem de
+  timeout. Validado com 10 rodadas completas seguidas (101/101, 0 `ECONNREFUSED`). Rodando
+  `ng serve --port 4300` manualmente pra aproveitar `reuseExistingServer`, usar a mesma flag
+  `--host 127.0.0.1`.
 
 ## Python (telegram-integration)
 
