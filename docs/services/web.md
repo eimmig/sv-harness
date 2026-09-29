@@ -33,9 +33,14 @@ sido exercitado por um browser real até então) para o navegador não bloquear 
 Decisão de 2026-08-02 (ver [[DECISIONS-LOG]] "Modelo de tenant multiusuário") muda o que a UI
 de autenticação precisa cobrir — nenhuma das telas abaixo é autocadastro público:
 
-- **Login**: três campos — identificador/slug da organização (tenant), e-mail, senha. Necessário
-  porque e-mail só é único dentro do schema do tenant, não globalmente (ver [[auth-service]]) —
-  sem o slug, `auth-service` não sabe em qual schema validar a senha.
+- **Login**: dois campos — e-mail, senha. **Desde `apps/web feat-062`/`auth-service feat-023`**
+  (2026-09-29, ver [[DECISIONS-LOG]] "Login volta a 2 campos") o terceiro campo (slug/identificador
+  da organização) deixou de existir: `auth-service` deriva o tenant do domínio do próprio e-mail,
+  garantido por construção desde que todo usuário passou a ter e-mail sempre
+  `username@<slug>` (ver seção "Gestão de usuários do tenant" abaixo). `core/auth.ts` deriva o
+  mesmo `tenantSlug` client-side (`email.split('@')[1]`) pro objeto `Session` local — o backend
+  nunca devolveu esse valor na resposta de login, o dado já estava disponível no próprio e-mail
+  digitado.
 - **Sem tela pública de "criar conta"**: criação de **tenant** (e do primeiro usuário, o admin
   daquele tenant) é uma rota administrativa restrita ao operador da plataforma, **fora do
   escopo deste app por completo** — operador chama a API diretamente (`X-Admin-Api-Key`, ver
@@ -50,7 +55,14 @@ de autenticação precisa cobrir — nenhuma das telas abaixo é autocadastro p�
   demais, não o operador da plataforma. Lista os usuários do tenant e permite criar novos
   (`role = member`) — usa o mesmo layout em painéis (ver [[sistema-de-design]] item 13, "Lista de
   configurações/menu", como base) e a mesma regra semântica de cor (ação de criar usuário é
-  neutra/azul, não verde).
+  neutra/azul, não verde). **Campo de criação é `username` (parte local), não `email` livre,
+  desde `feat-062`**: o formulário pede só o nome de usuário e mostra um hint com o sufixo
+  `@<slug do tenant>` que será completado pelo `auth-service` (`TenantSchemaName.emailFor()`,
+  ver [[auth-service]]) — garante por construção que o e-mail final é sempre resolvível pro
+  tenant certo, pré-requisito do login de 2 campos acima. **Achado real de QA visual**: o texto
+  do hint (`mat-hint`) precisa caber numa linha só — o wrapper de subscript do Angular Material
+  só reserva altura pra 1 linha, e um hint que quebra em 2 linhas sobrepõe o campo seguinte do
+  formulário (não é um erro de CSS a corrigir, é uma restrição de conteúdo: manter o texto curto).
 
 ## Regras de design do formulário de apostas
 
