@@ -456,9 +456,9 @@
       "dependencies": [
         "epic-002"
       ],
-      "status": "in-progress",
+      "status": "done",
       "harness": "multiplos: services/auth-service (feat-023) e apps/web (feat-062) - nesta ordem",
-      "evidence": ""
+      "evidence": "Fechado em 2026-09-29. services/auth-service feat-023 (story SV-696, PRs #88/#89/#90): POST /api/v1/users troca email por username (servidor monta o e-mail completo via TenantSchemaName.emailFor()); POST /api/v1/auth/login perde o campo slug (deriva do dominio do proprio e-mail). apps/web feat-062 (story SV-700, PRs #261/#262/#263): login vira 2 campos, tela de criacao de usuario passa a pedir username, com hint mostrando o sufixo @<slug>. Sistema ainda nao em producao, mudanca de contrato aceita pelo usuario. Vault atualizado nos 2 harnesses: docs/DECISIONS-LOG.md, docs/requisitos.md, docs/contratos-de-api.md, docs/services/auth-service.md, docs/services/web.md."
     }
   ]
 }
