@@ -314,6 +314,29 @@ branch nomeada - não sofre desse problema). **`bets-service` (`feat-015`) e `we
 já aplicaram essa correção proativamente desde o primeiro commit do job**, quando ganharam
 build+push de imagem em 2026-09-10/11 - sem repetir o ciclo de descoberta.
 
+**Oitava armadilha, achada por apontamento do usuário via SonarCloud real (2026-09-29,
+`auth-service feat-022`)**: mesmo com o passo 6 funcionando (Sexta/Sétima armadilha), 2 issues
+`java:S110` (profundidade de herança) ficaram abertos por dias sem o gate pegar. Causa: a
+análise de Pull Request do SonarCloud atribui "novo código" por linha alterada (blame) — quando
+um PR muda só a classe-mãe (aqui, `SlugRelatedDomainException` passou a estender uma base nova),
+o efeito cascata numa subclasse cujo arquivo não foi tocado pelo diff (`InvalidTenantSlugException`/
+`TenantAlreadyProvisionedException`) não aparece na visão de PR, só na análise de branch completa
+— e o passo 6 nunca rodava em `push` (Sétima armadilha, acima), então nada consultava a branch
+depois do merge. **Não é bug do harness, é limitação de regra estrutural + escopo de diff do
+SonarCloud** — não existe correção que faça o PR "ver" esse tipo de achado antes do merge.
+
+Verificado ao vivo antes de decidir a correção: `GET /api/issues/search?branch=main` e
+`GET /api/qualitygates/project_status?branch=main` respondem `200` normalmente (branch `main` já
+tem leak period estabelecido); o mesmo para `branch=develop` responde `403` (`"Organization is not
+allowed to access data from non main branches"` — confirma que a Segunda armadilha nunca foi
+resolvida para `develop`, só contornada pulando o passo inteiro). **Correção**: os passos 5 e 6
+passam a rodar também em `push` para `main` (não `develop` — continua estruturalmente impossível
+no plano gratuito), com `continue-on-error: true` nesses 2 passos quando o evento é `push` — o job
+`pipeline` não falha (preserva `build-and-push-image`/`deploy`/`release`, que dependem dele via
+`needs:`), mas o achado fica visível no run em vez de nunca ser checado. Replicar nos outros 5
+repositórios de aplicação: **só** a parte "push pra `main`" — nunca tentar habilitar em push pra
+`develop`, que segue permanentemente bloqueado pela API.
+
 ## Setup pendente (uma vez por repositório, quando cada um for criado)
 
 Repetir para cada um dos 6 serviços de aplicação (`infra/` só precisa do passo 1 — não usa
