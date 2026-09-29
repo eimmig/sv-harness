@@ -827,6 +827,23 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
   `display` (table-cell normal) e mover o flex para um `<div>` interno que envolve o conteúdo
   condicional. Verificar sempre que uma célula de tabela tiver `display: flex`/`grid` aplicado
   direto nela, especialmente quando o conteúdo é condicional por linha.
+- **`grid-template-columns: repeat(auto-fit, minmax(...))` estica o(s) item(ns) existente(s) pra
+  preencher trilhas nunca usadas em nenhuma linha do grid — `auto-fill` não** (achado real,
+  `apps/web feat-061.1`, 2026-09-29, grade de mini-gráficos de drawdown mensal): confirmado
+  empiricamente (medição via Playwright, com e sem o fix) — uma trilha só colapsa quando fica
+  vazia em **todas** as linhas do grid (a estrutura de colunas é compartilhada entre linhas, uma
+  trilha usada por qualquer linha anterior permanece "viva" pras demais), então o sintoma só
+  aparece quando o total de itens é menor que a capacidade de colunas do container em toda a
+  grade (ex.: 1 item só, container com espaço pra 2 colunas) — nesse caso a coluna nunca usada
+  colapsa de verdade e o `1fr` das trilhas restantes recebe TODO o espaço livre (medido: item
+  sozinho esticando pra 100% da largura do container, contra a metade reservada normal com
+  `auto-fill`). Uma hipótese inicial de que uma ÚLTIMA LINHA incompleta (ex.: 3 itens numa grade
+  de 2 colunas: 2 completos + 1 sozinho) reproduziria o mesmo bug **não se sustentou** — medido
+  que os itens ficam com a mesma largura, porque a coluna da linha incompleta já está em uso pela
+  linha anterior completa. Preferir `auto-fill` sempre que o objetivo for itens de tamanho
+  consistente (a intenção quase sempre num grid responsivo de cards/gráficos); `auto-fit` só é
+  correto quando esticar o(s) item(ns) restante(s) pra preencher o espaço é o comportamento
+  desejado.
 
 ## Python (telegram-integration)
 
