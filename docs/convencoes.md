@@ -798,6 +798,18 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
   nova toda vez que QUALQUER um deles muda, mesmo quando só o dado já carregado precisava ser
   recalculado (ex.: usuário salva um novo `unitPercent` — não deveria refazer a chamada de
   `/statistics/daily`, só reconverter o resultado já em memória).
+- **Toda data nova exibida na UI passa por `core/date-format.ts`, nunca por interpolação crua da
+  string da API** (achado real, `apps/web feat-066`, 2026-09-29, `period-report.html` era o
+  único lugar do app que ainda fazia `{{ row.date }}` direto): `formatDay` (dia + mês abreviado
+  por extenso, ex. "05 mar") é pra contexto espaçado com poucos pontos (eixo/tooltip de
+  gráfico); `formatDayNumeric` (dd/MM numérico, adicionada nesta feature) é pra tabela densa de
+  várias linhas, onde o nome do mês por extenso ocupa espaço demais. As duas reaproveitam o
+  `parseDay` interno (`value.split('-')` + `new Date(Y, M-1, D)` local) em vez de `new
+  Date(stringISO)` — necessário pra uma string `yyyy-MM-dd` sem horário, que `new Date()`
+  interpretaria como UTC-meia-noite e poderia renderizar o dia anterior num fuso negativo (ver
+  `formatDateTime`, que usa `new Date(value)` direto porque a string ali **tem** horário/timezone
+  explícito, caso diferente). Ano no rótulo é sempre condicional via `spansMoreThanOneYear` (não
+  hardcoded) — mesmo padrão já usado em `equity-curve-chart.ts`.
 - **QA visual (Impeccable/taste-skill)**: ferramentas de design guidance para agentes de IA,
   usadas só como auditoria/polish de componentes já implementados contra [[sistema-de-design]] —
   nunca como fonte de novas decisões de design (esse documento já é a fonte de verdade). Ver
