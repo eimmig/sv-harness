@@ -802,6 +802,19 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
   usadas só como auditoria/polish de componentes já implementados contra [[sistema-de-design]] —
   nunca como fonte de novas decisões de design (esse documento já é a fonte de verdade). Ver
   [[sistema-de-design]] seção "QA visual" para o racional completo e status de instalação.
+- **`display: flex` direto numa `<td>` faz a célula parar de esticar até a altura da `<tr>`**
+  (achado real, `apps/web feat-064.1`, 2026-09-29, tabela de Histórico): confirmado
+  empiricamente (medição via Playwright do `boundingBox`, com e sem o fix, não só leitura de
+  código) — uma `<td>` com `display: flex` some do algoritmo normal de layout de tabela (o
+  browser gera uma caixa anônima table-cell ao redor dela, ver
+  [CSS Display Module §2.6](https://www.w3.org/TR/css-display-3/#unbox)) e passa a se
+  dimensionar pelo próprio conteúdo em vez de esticar até a altura da linha inteira. Numa `<td>`
+  vazia (conteúdo condicional que só renderiza para um dos estados, ex.: botões de ação visíveis
+  só quando a aposta está pendente) isso mede 17px de altura contra 41px da `<tr>` — um buraco
+  vertical dentro da própria linha, não visível só lendo o CSS. Correção: manter a `<td>` sem
+  `display` (table-cell normal) e mover o flex para um `<div>` interno que envolve o conteúdo
+  condicional. Verificar sempre que uma célula de tabela tiver `display: flex`/`grid` aplicado
+  direto nela, especialmente quando o conteúdo é condicional por linha.
 
 ## Python (telegram-integration)
 
