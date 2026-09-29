@@ -66,7 +66,14 @@ Antes de escrever código:
    do serviço também.
 8. Dentro da pasta do serviço, revise os últimos commits (`git log --oneline -5`). A raiz
    também é um repositório (`sv-harness`), mas o histórico relevante para implementar uma
-   feature é o do serviço — o da raiz só registra mudanças de docs/harness.
+   feature é o do serviço — o da raiz só registra mudanças de docs/harness. **Rode `git status`
+   antes de ler ou editar `feature_list.json`/`progress.md` daquele serviço** — achado real,
+   2026-09-29 (`docs/DECISIONS-LOG.md`): 7 achados reais de UX ficaram dias em working tree sujo,
+   nunca commitados por uma sessão anterior, invisíveis pra qualquer sessão seguinte que não
+   checasse `git status` antes de editar — quase descartados como "corrupção" por uma sessão que
+   leu esse estado sem primeiro confirmar que batia com `HEAD`. Working tree divergente de `HEAD`
+   nesses arquivos é sinal de parar e investigar (`git diff`/`git stash list`) antes de editar,
+   nunca presumir que working tree == último commit sem checar.
 9. **Antes de escrever qualquer código**: rode o `Plan Reviewer` (claude-code-skills, Review
    Suite) contra o plano de implementação da feature escolhida — prioritário sobre simplesmente
    começar a codificar a partir da leitura do `feature_list.json`. Ver `docs/AGENT-SKILLS.md`

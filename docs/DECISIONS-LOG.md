@@ -1741,3 +1741,68 @@ relacionada a este rebranding; só os 3 arquivos de metadados do próprio `apps/
 (`CLAUDE.md`/`DESIGN.md`/`PRODUCT.md`) foram corrigidos por serem os mesmos tocados pelo rename
 de marca. Os outros repositórios provavelmente têm o mesmo tipo de link quebrado em comentários —
 vale conferir durante o plan review de cada harness, não assumir que só afeta `apps/web`.
+
+## 2026-09-29 — `tools/load_test_bets.py` (raiz): 19 apontamentos do SonarCloud aceitos, não corrigidos
+
+Achado do usuário, parte de `epic-038`: o projeto `eimmig_sv-harness` (raiz) tinha 19 issues
+abertos no SonarCloud — 17x `python:S2245` (gerador pseudoaleatório), 1x `python:S5332` (HTTP
+inseguro), 1x `pythonsecurity:S8703` (SSRF via argumento de CLI chegando a um sink HTTP) — todos
+em `tools/load_test_bets.py`, script de carga usado manualmente contra um ambiente escolhido pelo
+próprio operador (`--gateway-base`/`--auth-base`).
+
+**Decisão: aceitar os 19, não reescrever o script.** `random` gera só dado de teste fictício
+(datas, valores, escolhas de time/mercado), sem uso criptográfico — trocar por `secrets` seria
+över-engineering sem benefício real (regra "não adicionar validação/robustez para cenário que
+não pode acontecer"). O "SSRF" apontado é o próprio propósito da ferramenta: um operador de
+confiança aponta o script pro ambiente que ele mesmo controla via CLI — não é input de usuário
+remoto não confiável, nunca roda como serviço exposto. Resolvidos via API do SonarCloud
+(`POST /api/issues/{key}/do_transition`, `transition=accept`) com comentário explicando o
+racional em cada issue, em vez de deixar "open" pra sempre sem revisão. `raiz` (`sv-harness`) não
+tem `feature_list.json` granular nem aparato de Jira (só índice de epics) — corrigido/aceito
+direto, sem story/subtask, documentado aqui e na evidência de `epic-038`.
+
+Nenhum código foi alterado em `tools/load_test_bets.py` — só o estado das issues no SonarCloud.
+
+## 2026-09-29 — 7 achados reais de UX ficaram sem commit por dias, quase perdidos como "corrupção"
+
+Achado crítico de processo, descoberto no mesmo dia de `epic-038`. Ao trabalhar em `apps/web
+feat-059` (parte do epic acima), um `git diff` anormal (939 remoções numa mudança de 2 linhas de
+CI) revelou que `apps/web/feature_list.json` tinha, momentos antes, sido lido/editado num estado
+que não batia com `develop` real — `feat-046` (evidência completa, PR real) aparecia como
+`not-started` vazio, e `feat-057`/`feat-058` (também reais, PRs mergeados) não existiam no array.
+
+**Diagnóstico inicial, incompleto**: tratado como corrupção — working tree local sujo, sobra
+nunca commitada de uma sessão anterior. Branches descartadas, feature refeita a partir do
+`develop` real (confirmado 58 features, tudo íntegro). Reportado ao usuário como "corrupção sem
+perda de dado real".
+
+**Correção do diagnóstico, pelo usuário**: o conteúdo descartado não era corrupção — eram 7
+achados reais de UX que o usuário reportou em 2026-09-25 (loading indevido/lento em
+`Registrar aposta` e outras telas, tamanho inconsistente do último gráfico de drawdown, 3 campos
+no login em vez de 2, sem opção de editar aposta no histórico, ações desalinhadas em apostas
+resolvidas, eixos de gráfico sem legenda, datas fora do padrão BR em Visão geral/Histórico) —
+capturados por uma sessão anterior como entradas `not-started` em `feature_list.json`, com
+descrição completa, mas **nunca commitados**. Ficaram só no working tree local, invisíveis a
+qualquer `git status` de sessões seguintes (inclusive a que descartou o commit), até serem lidos
+por acidente e tratados como lixo.
+
+**Recuperação**: o commit que os continha (`12032d2`, criado e depois descartado nesta mesma
+sessão) continuava no object database do git mesmo sem branch apontando pra ele (`git fsck
+--unreachable` encontra objetos não-referenciados até o garbage collection real rodar —
+normalmente dias/semanas depois, não imediato). `git show <hash>:feature_list.json` recuperou o
+conteúdo original íntegro. Os 7 achados foram recriados com IDs novos (os originais — `feat-049`,
+`feat-051`–`feat-056` — já tinham sido reusados por trabalho real e não-relacionado, merge real
+no meio do caminho: `feat-051` real é "suíte E2E determinística", não tem nada a ver com o
+"tamanho consistente dos gráficos de drawdown" do achado perdido).
+
+**Causa raiz, ainda não resolvida — risco real pra qualquer harness deste projeto**: como uma
+sessão inteira (dias de calendário na cronologia do projeto) conseguiu deixar trabalho real sem
+commitar, sem nenhum aviso? A regra de "Fim de sessão" no `CLAUDE.md` de cada harness já manda
+commitar antes de encerrar, mas depende da sessão anterior ter seguido a regra — não há nenhum
+mecanismo que **force** isso, nem nenhuma sessão (incluindo a que causou este achado) roda
+`git status` no início antes de ler/editar arquivos de harness, apesar de ser prática já adotada
+em outros pontos do fluxo (raiz, `git status` explícito nas instruções gerais). **Ação
+recomendada, não implementada nesta sessão**: toda sessão que for editar `feature_list.json` de
+qualquer harness deveria rodar `git status`/`git diff` naquele arquivo primeiro, e tratar
+qualquer divergência entre working tree e `HEAD` como bloqueio a investigar — nunca presumir que
+"working tree == último commit" sem checar.
