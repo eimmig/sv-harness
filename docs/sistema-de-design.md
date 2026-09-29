@@ -445,8 +445,17 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
       carregamento do app inteiro** (`core/loading-overlay`, o app não tem spinner em lugar
       nenhum): aparece sobre o app todo (sidebar incluída), com fundo translúcido
       (`color-mix` de `--color-background`) + `backdrop-filter: blur`, sempre que uma chamada a
-      `/api/` passa de 250ms (chamada rápida não pisca; `/i18n/*.json` não conta). Uma vez
-      visível, a sequência de 2.1s termina antes do fade de 400ms (regra acima). Cores por
+      `/api/` passa de 250ms (chamada rápida não pisca; `/i18n/*.json` não conta), **qualquer
+      método HTTP** (não só GET — inclui o POST de login, por exemplo). **Revertido em
+      `apps/web feat-060` (2026-09-29, decisão do usuário)**: a garantia de sequência completa
+      (regra acima, "não usar loop infinito... deixá-la concluir e só então dar fade") não vale
+      mais para este uso em produção — o overlay agora começa a sumir (`leaving()` + fade de
+      400ms) no exato instante em que a requisição termina, sem esperar os 2,1s da animação. A
+      SVG continua com as `keyframes` de 2,1s hardcoded (`loading-overlay.scss`), então uma
+      resposta mais rápida que isso agora pode cortar a animação no meio visualmente — risco
+      aceito explicitamente pelo usuário, depois de uma sessão recuperada (2026-09-25) relatar
+      que o loading "demora mais do que deveria" e pedir que ele termine assim que a resposta
+      voltar. Cores por
       token (`--color-brand`/`--color-text-primary`/`--color-border`), não os hex fixos da
       referência, para funcionar nos 2 temas. `z-index: 1100` (acima do `.cdk-overlay-container`
       do Material, 1000) e `inert` no `.app-shell` enquanto visível — bloqueia ponteiro e teclado.
