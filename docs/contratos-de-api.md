@@ -301,9 +301,10 @@ o código-fonte do outro serviço.
     [[bets-service]] gravam esse valor (ver [[modelo-de-dados]]), e o envelope de evento (seção
     abaixo) carrega `userId` além de `tenantId`.
   - `X-Tenant-Id`: qual organização/schema a chamada pertence — extraído do token PASETO
-    (resolvido no login a partir do slug informado, ver [[auth-service]]). O valor é o slug do
-    tenant; cada serviço deriva o nome físico do schema deterministicamente a partir dele
-    (`tenant_<slug>`, ver [[convencoes]] seção "Migrations").
+    (resolvido no login a partir do domínio do e-mail informado, desde `auth-service feat-023`
+    — todo e-mail é sempre `username@<slug>`, construído na criação do usuário, ver
+    [[auth-service]]). O valor é o slug do tenant; cada serviço deriva o nome físico do schema
+    deterministicamente a partir dele (`tenant_<slug>`, ver [[convencoes]] seção "Migrations").
   - `X-User-Role` (desde 2026-09-10, ver [[DECISIONS-LOG]] "Claim `role` no PASETO"): `admin` ou
     `member`, extraído do claim `role` do token (embutido por [[auth-service]] na emissão). Existe
     porque serviços além de `auth-service` passaram a precisar de uma checagem `role = admin`

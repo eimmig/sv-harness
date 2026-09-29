@@ -30,10 +30,13 @@ Fonte: `TCC_1_Sistema_de_Apostas.pdf`, seção 4.1 (Escopo), cruzado com
 
 > **RF01/RF02 reinterpretados em 2026-08-02** — o TCC 1 modelava conta como 1:1 com o usuário,
 > sem conceito de organização. Este harness estende para um modelo de **tenant multiusuário**
-> (organização com vários usuários independentes, um `admin` que cria os demais, login exige
-> identificador da organização além de e-mail/senha) — ver [[DECISIONS-LOG]] seção "Modelo de
-> tenant multiusuário e provisionamento de banco" para o racional completo e
-> [[auth-service]]/[[modelo-de-dados]] para o desenho resultante. A descrição da tabela acima é a
+> (organização com vários usuários independentes, um `admin` que cria os demais) — ver
+> [[DECISIONS-LOG]] seção "Modelo de tenant multiusuário e provisionamento de banco" para o
+> racional completo e [[auth-service]]/[[modelo-de-dados]] para o desenho resultante. Login pede
+> só e-mail/senha (não um terceiro campo de identificador da organização): desde `feat-023`
+> (2026-09-29, ver [[DECISIONS-LOG]] "Login volta a 2 campos") o e-mail de todo usuário é sempre
+> `username@<slug do tenant>`, construído pelo próprio `auth-service` na criação, então o slug é
+> derivado do domínio do e-mail sem precisar ser digitado. A descrição da tabela acima é a
 > transcrição fiel do TCC1 original — não editada, para preservar a rastreabilidade com a fonte.
 | RF03 | Manter casas de apostas | Cadastro/gerenciamento das casas usadas pelo usuário, com saldo e acompanhamento da banca. |
 | RF04 | Manter apostas | Registro manual de apostas pelas interfaces da plataforma. |

@@ -12,8 +12,9 @@ RF01/RF02 completos. Harness de código em `services/auth-service/CLAUDE.md`.
 - RF01 — manter usuário (cadastro, dados básicos: nome, e-mail, senha). **Reinterpretado em
   2026-08-02** (ver [[DECISIONS-LOG]]): usuário agora existe dentro de um **tenant**
   (organização com múltiplos usuários independentes), não como conta isolada 1:1.
-- RF02 — autenticar usuários e controlar sessão. Login exige identificador do tenant além de
-  e-mail/senha (ver seção "Modelo de tenant" abaixo).
+- RF02 — autenticar usuários e controlar sessão. Login pede só e-mail/senha — o slug do tenant é
+  derivado do domínio do próprio e-mail (ver seção "Modelo de tenant" abaixo; reverte a decisão
+  de 2026-08-02 de exigir um terceiro campo, ver [[DECISIONS-LOG]] "Login volta a 2 campos").
 
 ## Autenticação
 
@@ -25,23 +26,26 @@ antes de rotear para os demais serviços. O token carrega claims de `userId` **e
 > **Contrato implementado em `feat-005`** (`POST /api/v1/auth/login`, biblioteca
 > `io.github.nbaars:paseto4j-version4:2024.3` — v4.**local** simétrico, não v4.public/assinado,
 > chave `PASETO_LOCAL_KEY` compartilhada com `api-gateway` quando `epic-008` existir, ver
-> [[observabilidade-e-configuracao]]): body `{"slug": "acme", "email": "admin@acme", "password":
-> "..."}` → `200` `{"token": "v4.local...", "mustChangePassword": true|false, "userId": "uuid",
-> "role": "ADMIN"|"MEMBER"}`. `slug` vem do **corpo**, não do header `X-Tenant-Id` — o chamador
-> ainda não está autenticado, não há tenant resolvido antes do login. Token carrega
+> [[observabilidade-e-configuracao]]): body `{"email": "admin@acme", "password": "..."}` →
+> `200` `{"token": "v4.local...", "mustChangePassword": true|false, "userId": "uuid",
+> "role": "ADMIN"|"MEMBER"}`. **Sem campo `slug` desde `feat-023`** (2026-09-29) — o serviço deriva
+> o tenant do domínio do próprio e-mail (tudo depois do `@`), garantia estabelecida em `feat-023`
+> ao mudar a criação de usuário pra sempre construir o e-mail como `username@<slug>` (ver seção
+> "Criação de usuário dentro de um tenant" abaixo). Token carrega
 > `userId`/`tenantId`/`iat`/`exp` (TTL 8h, sem token de refresh no backlog atual — sessão de
 > duração única, revisitável se/quando refresh for pedido).
 > **`userId`/`role` no corpo, contrato implementado em `feat-010`** (2026-09-09, gap encontrado
 > ao planejar `apps/web feat-002` — mesmo precedente do gap de `feat-009`): o token é v4.**local**
 > (criptografado simetricamente, chave só no backend), então o frontend não tem como decodificar
-> claims no cliente. `tenantId` já é conhecido pelo cliente (o próprio slug digitado no login),
-> mas `userId`/`role` não têm outra fonte — sem eles a UI não sabe se deve mostrar a tela de
+> claims no cliente. `tenantId` já é conhecido pelo cliente (derivável do domínio do e-mail
+> digitado no login, desde `feat-023`), mas `userId`/`role` não têm outra fonte — sem eles a UI não sabe se deve mostrar a tela de
 > gestão de usuários do tenant (exclusiva de `role = admin`, ver [[web]] seção "Modelo de tenant
 > (UI)") nem tem um id estável do usuário logado.
-> `401` **genérico** (`invalid-credentials`, mesma mensagem sempre) para slug malformado, tenant
-> inexistente, e-mail inexistente ou senha errada — nunca diferencia o motivo, evita enumeração
-> de tenant/usuário; os dois primeiros casos ainda executam um hash BCrypt descartado antes de
-> rejeitar, para manter o tempo de resposta equivalente ao de uma comparação de senha real.
+> `401` **genérico** (`invalid-credentials`, mesma mensagem sempre) para e-mail sem domínio válido
+> (sem `@`, ou domínio malformado como slug), tenant inexistente, e-mail inexistente ou senha
+> errada — nunca diferencia o motivo, evita enumeração de tenant/usuário; os casos de domínio/
+> tenant ainda executam um hash BCrypt descartado antes de rejeitar, para manter o tempo de
+> resposta equivalente ao de uma comparação de senha real.
 > `mustChangePassword = true` (do admin criado em `feat-003`) **não bloqueia** o login — devolvido
 > no corpo para o frontend decidir a UX; não há endpoint de troca de senha no backlog ainda,
 > bloquear travaria o admin sem via de escape (decisão do usuário, 2026-09-04).
@@ -96,7 +100,7 @@ de banco" para o racional completo. Resumo:
   `role`.
   > **Contrato implementado em `feat-004`** (`POST /api/v1/users`, requer `X-Tenant-Id` — já
   > resolvido pelo `TenantSchemaFilter` de `feat-001.3` — e `X-User-Id`, o id do usuário
-  > chamador): body `{"name": "...", "email": "...", "password": "..."}` → `201`
+  > chamador): body `{"name": "...", "username": "...", "password": "..."}` → `201`
   > `{"id": "...", "name": "...", "email": "...", "role": "MEMBER", "mustChangePassword": false,
   > "createdAt": "..."}` — nunca `passwordHash` nem a senha em texto puro (diferente da resposta
   > de `feat-003`, aqui quem escolhe a senha é o próprio requester). `role` é sempre `MEMBER`;
@@ -105,10 +109,18 @@ de banco" para o racional completo. Resumo:
   > é identidade do chamador, não um campo de payload). `400` se `X-Tenant-Id` estiver ausente
   > (ainda não existe `api-gateway`/`epic-008` para injetar os dois headers de verdade — por ora
   > quem chama informa direto, mesmo modelo de confiança que `bets-service`/`stats-service` vão
-  > usar, ver [[contratos-de-api]]) ou se o payload falhar Bean Validation (`name`/`email`/`password`
-  > em branco, `email` com formato inválido). `403` se o chamador não existir no tenant resolvido
-  > ou não for `admin` (os dois casos retornam o mesmo erro, para não vazar enumeração de
-  > usuário). `409` se o e-mail já estiver cadastrado nesse tenant.
+  > usar, ver [[contratos-de-api]]) ou se o payload falhar Bean Validation (`name`/`username`/`password`
+  > em branco, `username` fora do formato `^[a-zA-Z0-9._-]{1,64}$`). `403` se o chamador não existir
+  > no tenant resolvido ou não for `admin` (os dois casos retornam o mesmo erro, para não vazar
+  > enumeração de usuário). `409` se o e-mail resultante já estiver cadastrado nesse tenant.
+  > **`username` em vez de `email` livre, desde `feat-023`** (2026-09-29, decisão do usuário):
+  > o servidor monta o e-mail completo como `username + "@" + <slug do tenant do chamador>`
+  > (`TenantSchemaName.emailFor()`, reaproveitado também por `CreateTenantService` — que já
+  > construía `"admin@" + slug` manualmente pro admin auto-provisionado, mesmo padrão agora
+  > generalizado pra todo usuário). Antes desta mudança só esse admin seguia esse padrão; um
+  > usuário comum aceitava e-mail livre, e o domínio podia não bater com o slug do tenant — a
+  > troca elimina essa ambiguidade por construção, pré-requisito pro login (abaixo) deixar de
+  > exigir um terceiro campo.
   > **Contrato implementado em `feat-009`** (`GET /api/v1/users`, motivado por um gap real
   > encontrado ao planejar `apps/web feat-002` — a tela de gestão de usuários do tenant precisa
   > de listagem, que não existia até aqui): mesmos headers `X-User-Id`/`X-Tenant-Id` e mesma
@@ -158,9 +170,13 @@ de banco" para o racional completo. Resumo:
   > [[convencoes]]) deve conferir se o método `applyUpdate` da entidade cobre **todos** os campos
   > que o `update()` de domínio promete alterar, não só os que a primeira feature que o criou
   > precisava.
-- **Login (RF02)**: e-mail é único apenas dentro do schema do tenant, não globalmente — a tela
-  de login precisa de um terceiro campo (slug/identificador da organização) para que este
-  serviço saiba em qual schema procurar antes de validar a senha.
+- **Login (RF02)**: e-mail é único apenas dentro do schema do tenant, não globalmente — mas
+  desde `feat-023` (2026-09-29) o e-mail de todo usuário é sempre `username@<slug>` (construído
+  pelo servidor na criação, nunca livre), então o domínio do e-mail já identifica o tenant sem
+  precisar de um terceiro campo no login. Antes disso o e-mail podia ser arbitrário e um mesmo
+  e-mail podia existir em tenants diferentes — por isso o login exigia o slug explícito; a
+  garantia nova elimina essa ambiguidade por construção (ver [[DECISIONS-LOG]] "Login volta a 2
+  campos").
 
 ## Modelo de dados (banco `auth`, isolado — Database per Service, schema-per-tenant)
 

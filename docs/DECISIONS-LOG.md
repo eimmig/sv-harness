@@ -1806,3 +1806,44 @@ recomendada, não implementada nesta sessão**: toda sessão que for editar `fea
 qualquer harness deveria rodar `git status`/`git diff` naquele arquivo primeiro, e tratar
 qualquer divergência entre working tree e `HEAD` como bloqueio a investigar — nunca presumir que
 "working tree == último commit" sem checar.
+
+## 2026-09-29 — Login volta a 2 campos: reverte parcialmente a decisão 5 (2026-08-02)
+
+Nasce de `epic-039` item 3 (`apps/web feat-062`, "login com 3 campos é contraprodutivo,
+resolveria o slug a partir do e-mail"). A decisão 5 (2026-08-02, "Login exige identificador da
+organização além de e-mail e senha") explicava por quê o terceiro campo existia: e-mail só é
+único **dentro** do schema de cada tenant, então um e-mail arbitrário podia em tese existir em
+mais de um tenant — sem o slug, `auth-service` não saberia em qual schema procurar. A alternativa
+descartada naquela sessão (tabela global `email -> schema`) foi rejeitada por enfraquecer o
+isolamento estrito por schema que motivou a decisão 2.
+
+**O que mudou**: investigação confirmou que a ambiguidade era real **na prática**, não só em
+teoria — só o admin auto-provisionado de cada tenant seguia o padrão `admin@<slug>`
+(`CreateTenantService`, hardcoded); qualquer usuário comum criado via `POST /api/v1/users`
+aceitava e-mail livre, sem nenhuma checagem contra o slug (confirmado com um teste de integração
+real que criava o mesmo e-mail em dois tenants diferentes). **Decisão do usuário** (sistema ainda
+não está em produção, mudança de contrato aceita): generalizar o padrão do admin pra todo
+usuário — `services/auth-service feat-023` faz a criação de usuário passar a receber só um
+`username` (parte local), o servidor monta o e-mail completo como `username@<slug do tenant>`
+(`TenantSchemaName.emailFor()`). A partir daí, por construção, dominio do e-mail == slug do
+tenant **sempre**, pra qualquer usuário — não só o admin. Com essa garantia, `POST
+/api/v1/auth/login` deixa de precisar do campo `slug`: `LoginService` deriva o tenant do domínio
+do próprio e-mail recebido.
+
+**Por quê isto não é a mesma coisa que a alternativa rejeitada em 2026-08-02**: a tabela global
+`email -> schema` teria sido um índice cross-tenant PARALELO ao isolamento por schema — um
+segundo lugar pra manter sincronizado, e um vazamento estrutural do modelo de isolamento (e-mail
+continuaria podendo divergir do schema de fato). A mudança desta sessão não cria nenhum índice
+novo nem enfraquece o isolamento por schema — só restringe o que o e-mail PODE SER na origem
+(construído, nunca digitado livre), de um jeito que o schema correto já está embutido no próprio
+valor. O isolamento por schema-per-tenant (decisão 2) continua intacto.
+
+**Impacto**: `POST /api/v1/users` (`CreateUserRequest`) troca `email` por `username`
+(`@Pattern(regexp = "^[a-zA-Z0-9._-]{1,64}$")`, não pode conter `@`). `POST /api/v1/auth/login`
+(`LoginRequest`) perde o campo `slug`. `apps/web feat-062` (frontend) é o consumidor desta
+mudança: login vira 2 campos, tela de criação de usuário passa a pedir `username`. Removido o
+teste `AuthControllerIntegrationTest.shouldReturn401WhenLoggingIntoOneTenantWithAnotherTenantsPasswordForTheSameEmail`
+— o cenário que ele provava (mesmo e-mail em 2 tenants) fica estruturalmente impossível de
+reproduzir depois desta mudança, não só deixou de ser testado. Ver `docs/services/auth-service.md`
+seções "Autenticação" e "Criação de usuário dentro de um tenant", e `services/auth-service
+feature_list.json` (`feat-023`) pro detalhe de implementação completo.
