@@ -373,6 +373,25 @@ recusou tomar sozinho antes nesta sessão (ver "Bloqueio de ambiente" acima). Ro
 SSH + `kubectl rollout restart`/`apply`) continua sendo o caminho pra colocar as imagens novas em
 produção enquanto essa decisão não for tomada.
 
+### Apontamentos reais do SonarCloud corrigidos (`infra/feat-009`, 2026-09-29)
+
+Achado do usuário: o projeto `eimmig_sv-infra-backend` existia no SonarCloud (analisado fora do
+harness documentado, nunca gateado por `ci.yml` — ver `docs/pipeline-ci-cd.md`) com 80 issues
+abertos. Corrigidos: `resources` (CPU/memory/ephemeral-storage requests+limits) em todos os 14
+containers/initContainers dos manifests `k8s/`; `automountServiceAccountToken: false` em todos os
+13 pod specs (nenhum pod do cluster usa client Kubernetes — só o `ServiceAccount ci-deployer`
+dedicado, usado pela CI externa via `kubeconfig`, precisa de token).
+
+**Decisão deliberada, não corrigida**: as 6 issues `kubernetes:S6596` ("use uma tag de imagem
+específica em vez de `latest`") nos manifests dos 6 serviços de aplicação **não foram corrigidas**
+— resolvidas como `accept` via API do SonarCloud, com comentário. O mecanismo de CD (`epic-028`,
+seção acima) depende de `imagePullPolicy: Always` + tag `:latest` para o `kubectl rollout restart`
+repuxar a imagem nova sem reaplicar o manifest a cada deploy — pinar a tag quebraria esse
+mecanismo inteiro (exigiria reescrever o CD pra atualizar+reaplicar o manifest a cada release,
+fora de escopo desta correção). Se o CD for redesenhado no futuro para usar tags versionadas
+(ex.: manifest atualizado + `kubectl apply` a cada release em vez de só `rollout restart`), essas
+6 issues podem ser reabertas e corrigidas de verdade.
+
 ## Onde fica
 
 `infra/docker-compose.yml` (criado em `feat-001`, 2026-08-03), mais:

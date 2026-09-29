@@ -28,10 +28,10 @@ da decisão).
 > Estado em 2026-08-02: **scaffolding**. Os 7 repositórios já existem no GitHub (usuário
 > `eimmig`), vazios — os workflows abaixo já estão versionados dentro de cada pasta local, mas só
 > disparam de verdade quando cada pasta virar de fato aquele repositório (`git init` + `git
-> remote add origin` + push) e, para os 6 serviços de aplicação, a organização/projetos do
-> SonarCloud forem provisionados (ver seção "Setup pendente" no final — `infra` não usa
-> SonarCloud). Nenhum serviço tem código ainda, então nenhum workflow passa hoje — isso é
-> esperado, mesma lógica do `init.sh` raiz para sub-harnesses não iniciados.
+> remote add origin` + push) e a organização/projetos do SonarCloud forem provisionados (ver
+> seção "Setup pendente" no final — `infra` entrou no gate SonarCloud em 2026-09-29, ver
+> `infra/feat-009`, não fica mais de fora). Nenhum serviço tem código ainda, então nenhum workflow
+> passa hoje — isso é esperado, mesma lógica do `init.sh` raiz para sub-harnesses não iniciados.
 
 | Pasta local | Repositório GitHub |
 |---|---|
@@ -69,10 +69,14 @@ raiz existe, mas ignora `/services/`, `/infra/` e `/apps/` — um workflow rodan
 acesso a nenhum código de serviço para verificar, e o `init.sh` raiz só agrega o estado local dos
 sub-harnesses. Cada repositório de serviço continua sendo o único lugar onde CI roda.
 
-`infra/` segue uma pipeline mais simples (só 2 passos: changelog + `docker compose config`), não
-os 6 passos abaixo — não tem texto de usuário (sem passo de i18n), não tem código de aplicação
-para o SonarCloud analisar, e "testes unitários" não se aplica a um `docker-compose.yml`. Ver
-`infra/CLAUDE.md` e `infra/.github/workflows/ci.yml`.
+`infra/` segue uma pipeline mais simples (changelog + `docker compose config` + SonarCloud desde
+`infra/feat-009`, 2026-09-29), não os 6 passos abaixo — não tem texto de usuário (sem passo de
+i18n), não tem build/testes de aplicação (`docker-compose.yml` não compila nem tem suíte de
+testes), mas os manifests `k8s/*.yaml` e os scripts shell são código analisável pelo SonarCloud
+(regras `kubernetes:*`/`shelldre:*`) — `infra` teve um projeto real no SonarCloud desde antes
+dessa feature, nunca gateado por CI nenhuma até então (achado do usuário, 80 issues acumulados
+sem ninguém ver — ver `docs/services/infra.md` seção "Apontamentos reais do SonarCloud
+corrigidos"). Ver `infra/CLAUDE.md` e `infra/.github/workflows/ci.yml`.
 
 ## Os 6 passos dos serviços de aplicação, sempre nesta ordem
 
@@ -339,8 +343,8 @@ repositórios de aplicação: **só** a parte "push pra `main`" — nunca tentar
 
 ## Setup pendente (uma vez por repositório, quando cada um for criado)
 
-Repetir para cada um dos 6 serviços de aplicação (`infra/` só precisa do passo 1 — não usa
-SonarCloud):
+Repetir para cada um dos 7 repositórios (`infra/` entrou nos passos 2-4 em 2026-09-29,
+`infra/feat-009` - antes só precisava do passo 1):
 
 1. Dentro da pasta (`services/<nome>/`, `apps/web/` ou `infra/`): `git init -b main`, `git
    remote add origin <url da tabela acima>` (já feito em 2026-08-02 — ver [[DECISIONS-LOG]]),
@@ -367,6 +371,16 @@ passo 5 (Sonar) por falta de credencial — comportamento esperado, não um bug 
 > `tools/sonar_setup.py` (lê `tools/.sonar.env`, valida token/organização/projetos contra a API do
 > SonarCloud e grava via `gh`, sem imprimir o token). Rode `python tools/sonar_setup.py --check`
 > para reconferir o estado a qualquer momento.
+>
+> **`infra` incluído em 2026-09-29** (`infra/feat-009`, achado do usuário — 80 apontamentos reais
+> acumulados no projeto SonarCloud sem nenhum gate ligado, ver `docs/services/infra.md`):
+> `tools/sonar_setup.py` ganhou `infra` na tabela `REPOS`, `secret`/`variable` configurados no
+> repositório real, `sonar-project.properties` novo (`sonar.sources=k8s,.github,docker-compose.yml,init.sh`
+> — sem `sonar.tests`, infra não tem suíte de testes), `.github/scripts/validate-sonar-issues.py`
+> copiado dos outros 6. O passo de push só roda pra `main` (nunca `develop`, API do SonarCloud
+> recusa branch != main com 403) com `continue-on-error`, aplicado desde o primeiro commit —
+> reaproveita a correção já descoberta em `auth-service feat-022` (Oitava armadilha, acima) em vez
+> de repetir o ciclo de descoberta.
 >
 > Foi descartada a alternativa de tornar o passo do Sonar não-bloqueante (`continue-on-error`):
 > enfraqueceria o gate de qualidade de forma permanente para contornar uma situação temporária. Em

@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
-"""Distribui a credencial do SonarCloud para os 6 repositorios de aplicacao.
+"""Distribui a credencial do SonarCloud para os 7 repositorios.
 
 Le tools/.sonar.env (ver tools/.sonar.env.example), confere contra a API do
-SonarCloud que o token e a organizacao existem e que os 6 projetos ja foram
+SonarCloud que o token e a organizacao existem e que os 7 projetos ja foram
 criados, e so entao grava em cada repositorio do GitHub, via `gh`:
 
     secret   SONAR_TOKEN          (sensivel)
     variable SONAR_ORGANIZATION   (nao e sensivel — e' so a org key)
 
 Sao configurados por repositorio porque o GitHub nao compartilha secrets nem
-variables entre repositorios distintos. `infra` fica de fora: a pipeline dele
-nao chama o Sonar (sem codigo de aplicacao para analisar).
+variables entre repositorios distintos. `infra` entrou em 2026-09-29
+(infra/feat-009) - os manifests k8s/scripts shell sao codigo analisavel
+(regras kubernetes:*/shelldre:*), o projeto ja existia no SonarCloud fora do
+harness (analise manual/automatica nunca gateada) ate essa feature ligar o
+gate de verdade.
 
 O token nunca e impresso. Uso:
 
@@ -35,7 +38,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 ENV_FILE = ROOT / "tools" / ".sonar.env"
 SONAR_API = "https://sonarcloud.io/api"
 
-# pasta local -> repositorio GitHub. `infra` de proposito fora: sem SonarCloud.
+# pasta local -> repositorio GitHub.
 REPOS = {
     "services/api-gateway": "sv-api-gateway",
     "services/auth-service": "sv-auth-backend",
@@ -43,6 +46,7 @@ REPOS = {
     "services/stats-service": "sv-stats-backend",
     "services/telegram-integration": "sv-telegram-integration-backend",
     "apps/web": "sv-frontend",
+    "infra": "sv-infra-backend",
 }
 GH = pathlib.Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "GitHub CLI" / "gh.exe"
 
