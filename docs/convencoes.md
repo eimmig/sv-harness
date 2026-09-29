@@ -844,6 +844,19 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
   consistente (a intenção quase sempre num grid responsivo de cards/gráficos); `auto-fit` só é
   correto quando esticar o(s) item(ns) restante(s) pra preencher o espaço é o comportamento
   desejado.
+- **Texto desenhado por `ngx-echarts` (`CanvasRenderer`) não é inspecionável via locator/texto do
+  Playwright** (achado real, `apps/web feat-065.1`, 2026-09-29, rótulos de eixo X/Y): `title`,
+  `axisLabel`, `xAxis.name`/`yAxis.name` etc. são pintados direto no `<canvas>` pelo ECharts, sem
+  gerar nenhum elemento DOM correspondente — diferente do tooltip do ECharts, que é um `<div>`
+  real sobreposto (por isso os testes de tooltip existentes, ex. `feat-048`, conseguem usar
+  `page.locator('div[style*="z-index: 9999999"]')`). Nível correto de teste pra qualquer opção
+  visual do gráfico que só existe dentro do canvas: o **objeto de opções do ECharts** retornado
+  pelo `computed(chartOptions)` do componente (`option.xAxis.name`, `option.series[0].smooth`,
+  etc.), mesmo padrão já usado por `chart-theme.spec.ts` e pelos specs de cada componente de
+  gráfico — não pixel-matching/screenshot, que testaria o próprio ECharts, não a configuração
+  (repository-owned) que o repositório controla. Confirmação visual de que a configuração
+  realmente renderiza como esperado (ex.: rótulo não sobrepõe outro elemento) é papel do QA
+  visual manual (dev server + captura de tela), não de teste automatizado.
 
 ## Python (telegram-integration)
 
