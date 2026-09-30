@@ -18,7 +18,10 @@ serviço de aplicação e a raiz não pode hospedar código versionado.
   `postgres-bets` e `postgres-stats`, portas `5432`/`5433`/`5434` (Database per Service, ver
   [[DECISIONS-LOG]] "Postgres por instância") — ver [[auth-service]], [[bets-service]] e
   [[stats-service]] para os schemas de cada um. Dentro de cada instância, isolamento adicional
-  por schema por tenant.
+  por schema por tenant. Imagem `postgres:18-alpine` (Quadro 2 do TCC 1, PostgreSQL 18.x): o PG18
+  mudou `PGDATA` para `/var/lib/postgresql/18/docker` e o `VOLUME` da imagem para
+  `/var/lib/postgresql`, então volume/PVC montam esse caminho; volume criado com PG17 fica
+  órfão (cluster novo e vazio ao lado), tenants precisam ser reprovisionados.
 - **RabbitMQ** (AMQP): broker entre [[bets-service]] (produtor de `BetCreated` e
   `BetSettled`) e [[stats-service]] (consumidor). Precisa de uma **Dead Letter Queue (DLQ)**
   configurada desde o início — mensagens que falham consecutivamente vão para lá em vez de
@@ -26,7 +29,7 @@ serviço de aplicação e a raiz não pode hospedar código versionado.
   (fiel aos diagramas originais do TCC1, movidos para `docs/diagrams/flows/` em 2026-08-02) na
   seção "Resiliência" abaixo — relevante para `epic-007` (raiz).
 - **Redis**: cache distribuído, usado exclusivamente por [[stats-service]] (padrão
-  Cache-Aside).
+  Cache-Aside). Imagem `redis:8-alpine` (Quadro 2 do TCC 1, Redis 8.x).
 - **n8n**: recebe o webhook do bot do Telegram e aciona [[telegram-integration]].
 
 ## Resiliência: DLQ e retry automático (relevante para `epic-007`)
