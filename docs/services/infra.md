@@ -395,6 +395,20 @@ fora de escopo desta correção). Se o CD for redesenhado no futuro para usar ta
 (ex.: manifest atualizado + `kubectl apply` a cada release em vez de só `rollout restart`), essas
 6 issues podem ser reabertas e corrigidas de verdade.
 
+### Autoscaling horizontal (HPA, `infra/feat-011`, 2026-09-30)
+
+Achado da auditoria do TCC 1 contra o sistema: os manifests tinham `replicas: 1` fixo e nenhum
+autoscaler — o k8s nunca escalaria sozinho, então RNF06 e o objetivo de escalabilidade horizontal não
+estavam provados. `k8s/hpa.yaml` cria um `HorizontalPodAutoscaler` (`autoscaling/v2`) para cada serviço
+Java de aplicação (`api-gateway`, `auth-service`, `bets-service`, `stats-service`): CPU a 70% do
+`requests.cpu`, de 1 a 4 réplicas, `scaleUp` sem espera e `scaleDown` com janela de 300 s (o pico de CPU
+da partida da JVM ultrapassa 60m sozinho, por isso 70%). O campo `replicas` saiu dos 4 Deployments para
+o `kubectl apply` não sobrescrever o HPA. Depende de duas correções de concorrência já entregues:
+[[stats-service]] tolera `BetSettled` antes de `BetCreated` e grava dimensões com `ON CONFLICT DO
+NOTHING` (`feat-027`), e [[bets-service]] publica pelo outbox com `SKIP LOCKED`, seguro com várias
+réplicas (`feat-024`). Roteiro de verificação e capturas em `infra/CLAUDE.md` "Verificação —
+Autoscaling". Risco residual: capacidade do nó k3s desconhecida (pior caso 8Gi de limites).
+
 ## Onde fica
 
 `infra/docker-compose.yml` (criado em `feat-001`, 2026-08-03), mais:
