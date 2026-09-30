@@ -67,9 +67,9 @@ done
 start_java_service() {
   local name="$1" port="$2" db_port="$3" db_name="$4" db_user="$5" db_pass="$6"
   echo "== $name: build (mvn package) =="
-  (cd "$ROOT_DIR/services/$name" && ./mvnw -q -DskipTests package)
+  (cd "$ROOT_DIR/services/$name" && ./mvnw -q -DskipTests clean package)
   local jar
-  jar="$(ls "$ROOT_DIR/services/$name"/target/*.jar | grep -v -e sources -e original | head -1)"
+  jar="$(ls -t "$ROOT_DIR/services/$name"/target/*.jar | grep -v -e sources -e original | head -1)"
   echo "== $name: start na porta $port =="
   DB_HOST=localhost DB_PORT="$db_port" DB_NAME="$db_name" DB_USER="$db_user" DB_PASSWORD="$db_pass" \
   RABBITMQ_USER="$RABBITMQ_USER" RABBITMQ_PASSWORD="$RABBITMQ_PASSWORD" \
@@ -85,8 +85,8 @@ start_java_service stats-service 8083 5434 "$POSTGRES_STATS_DB" "$POSTGRES_STATS
 
 # --- 4. build + start do api-gateway (sem banco proprio) ---
 echo "== api-gateway: build (mvn package) =="
-(cd "$ROOT_DIR/services/api-gateway" && ./mvnw -q -DskipTests package)
-gateway_jar="$(ls "$ROOT_DIR/services/api-gateway"/target/*.jar | grep -v -e sources -e original | head -1)"
+(cd "$ROOT_DIR/services/api-gateway" && ./mvnw -q -DskipTests clean package)
+gateway_jar="$(ls -t "$ROOT_DIR/services/api-gateway"/target/*.jar | grep -v -e sources -e original | head -1)"
 echo "== api-gateway: start na porta 8080 =="
 PASETO_LOCAL_KEY="$PASETO_LOCAL_KEY" SERVICE_KEY="$SERVICE_KEY" \
 AUTH_SERVICE_URL="http://localhost:8081" BETS_SERVICE_URL="http://localhost:8082" STATS_SERVICE_URL="http://localhost:8083" \
