@@ -3148,3 +3148,20 @@ mês-ano como desenho atual, agora marcados como substituídos) e `docs/convenco
 mecanismos novos reaproveitáveis: escala Y compartilhada entre instâncias de `ngx-echarts`, e
 separação `effect`-de-fetch vs. `computed`-de-render em componente `@Input`-driven).
 
+## `epic-038`/`epic-040` fechados, `epic-039` fechado — 7 achados de UX + gap de CI (2026-09-29)
+
+`epic-038` (gap de CI do SonarCloud não rodar em push pra `main`, só `apps/web feat-059`) e
+`epic-040` (contrato de login/e-mail muda — `auth-service feat-023` + `apps/web feat-062`, nasceu
+como spinoff do item 3 de `epic-039`) fechados nesta sessão, sem entrada própria aqui (só
+registro tardio). `epic-039` (7 achados reais de UX recuperados de sessão nunca commitada de
+2026-09-25, quase descartados como corrupção — ver `docs/DECISIONS-LOG.md`) fechado agora, todos
+os 7 em `apps/web`: `feat-060` (loading indevido/lento), `feat-061` (grid de drawdown mensal),
+`feat-062` (login 2 campos), `feat-063` (editar aposta pelo histórico, último a fechar),
+`feat-064` (ações alinhadas na tabela de histórico), `feat-065` (rótulos de eixo dos gráficos),
+`feat-066` (datas BR no Relatório do período). Achado real fora de escopo durante o fechamento de
+`feat-063` (suite e2e completa, não só os specs tocados pela feature): regressão em
+`e2e/login-layout.spec.ts` (seletor de idioma sobrepõe o botão de login em viewport curto),
+provável efeito colateral de `feat-062` — registrada como `apps/web feat-067` no backlog daquele
+harness, não corrigida por estar fora do escopo de arquivos de `feat-063`. Detalhe completo de
+cada feature em `apps/web/progress.md`.
+

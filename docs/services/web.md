@@ -676,6 +676,23 @@ requisição que levou o token **atual**, trata `401` com `type` `.../invalid-to
 navegação para `/login`, que mostra o aviso `login.sessionExpired` até a próxima tentativa.
 `401` de regra de negócio (senha atual errada) não derruba a sessão.
 
+## Editar aposta pelo histórico (`epic-039` da raiz, `apps/web feat-063`, done)
+
+`pages/register-bet` passa a atender 2 rotas: `/register-bet` (criação, como antes) e
+`/register-bet/:id` (edição) — mesmo componente, sem duplicar formulário. Com `:id` na rota,
+`ngOnInit` busca a aposta via `BetsApi.get()` e pré-preenche o form (`FormGroup.patchValue`);
+`submit()` chama `BetsApi.update()` (`PUT /api/v1/bets/{id}`, sem `Idempotency-Key` — só
+`create()`/`POST` usa idempotência) em vez de `create()`, e navega para `/history` no sucesso em
+vez de exibir a mensagem de sucesso e limpar o formulário (que só faz sentido em criação — por
+isso o botão "Limpar" some em modo edição). O campo Status (`mat-select`, oculto em criação) só
+aparece quando a aposta carregada já está resolvida (`won`/`lost`/`void`) — reflete a regra de
+negócio de `bets-service` (`PUT` só permite `pending→pending` ou `liquidada→liquidada`, nunca
+cruzar essa fronteira; ver [[bets-service]]), então uma aposta pendente não mostra o campo (nada
+para corrigir) e uma já resolvida mostra as 3 opções para corrigir o status errado. O link
+"Editar" (`history.html`, `routerLink` para `/register-bet/:id`) aparece em toda linha da tabela
+de apostas do Histórico, ao lado dos botões de marcar resultado (que continuam só em apostas
+pendentes).
+
 ## Ver também
 
 - [[auth-service]], [[bets-service]], [[stats-service]] — APIs consumidas via API Gateway.
