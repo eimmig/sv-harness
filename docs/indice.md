@@ -24,6 +24,8 @@ Atalhos: [[mapa-de-navegacao]] · [[business/negocio|Negócio]] · [[services/se
   sessão que tomar uma decisão desse tipo — não confundir com `progress.md` (diário de sessão).
 - [[divergencias-tcc1]] — só o que o texto do TCC 1 afirma e o sistema faz diferente (TCC diz X,
   foi feito Y, o que ajustar no texto). Recorte enxuto do [[DECISIONS-LOG]].
+- [[testes-de-producao]] — roteiro e scripts (`tools/evidence/`) para gerar a evidência de carga, HPA, DLQ e cache no
+  servidor k3s.
 - **Diagramas originais do TCC1**, movidos de `D:\UTFPR\TCC\Graficos` para dentro do vault em
   2026-08-02 — agora em `docs/diagrams/` (`database/`, `flows/`, `architecture/`, `process/`) e
   `docs/design-references/` (mockups de marca). Cruzados com este vault em 2026-08-01; onde havia
