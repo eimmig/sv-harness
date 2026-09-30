@@ -1056,6 +1056,14 @@ produtor ([[bets-service]] passa a ter publicação rejeitada quando a fila ench
 desproporcional para ambiente de desenvolvimento. Tradeoff aceito e registrado em vez de
 silencioso. Reavaliar se `feat-002` (`epic-007`) mostrar perda real de mensagem.
 
+*Reavaliação, 2026-09-30*: a perda real apareceu, mas **antes** do broker, não no trajeto para a
+DLQ. Teste de carga com 1.000.000 de apostas mostrou só ~40% dos eventos no stats, com fila e DLQ
+vazias: o `bets-service` publicava direto, capturava a exceção e seguia, sem confirms nem outbox.
+Corrigido em `bets-service feat-024` (outbox transacional + relay com publisher confirms, ver
+[[bets-service]]): a garantia "nenhuma mensagem é descartada" do TCC 1 passa a valer até a fila.
+O `at-most-once` do dead-lettering (fila -> DLQ) **continua aceito**: não houve perda observada
+nesse trecho (ver [[divergencias-tcc1]] seção 6).
+
 ## 2026-08-03 — Jira como espelho do backlog (reverte "este projeto não usa Jira")
 
 **O que mudou**: o TCC1 não mencionava ferramenta de gestão, e este harness tinha decidido

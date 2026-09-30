@@ -214,8 +214,8 @@ coluna `timestamp` (`could not determine data type of parameter`, mesmo padrão 
 Dois eventos distintos no RabbitMQ (ver [[contratos-de-api]] para os schemas completos e o motivo
 da separação — fiel aos diagramas de fluxo do TCC1, que não reaproveitam um único evento):
 
-- **`BetCreated`** (`feat-006`, implementado): publicado uma vez, logo após o `INSERT` de `BET`
-  suceder (sempre `status: pending`). Envelope carrega `userId` = `BET.createdByUserId`.
+- **`BetCreated`** (`feat-006`, implementado): registrado no outbox na mesma transação do
+  `INSERT` de `BET` (sempre `status: pending`) e publicado pelo relay. Envelope carrega `userId` = `BET.createdByUserId`.
 - **`BetSettled`** (`feat-008`, implementado): publicado quando `BET_RESULT` é criado/`BET.status`
   muda para `won`/`lost`/`void` (RN06) — carrega `profit`/`settledAt`, que `BetCreated` nunca tem,
   e **não** carrega os campos descritivos de `BET` (`ticketNumber`/`team1`/`team2`/`description`/
@@ -235,21 +235,43 @@ dimensões denormalizados no payload" e [[modelo-de-dados]]). `BetService.resolv
 busca as 5 entidades de catálogo por id (`findById`, não só `existsById`) no momento de publicar,
 tanto em `create()` quanto em `updateStatus()`.
 
-**Mecanismo de publicação (`feat-006`/`feat-008`)**: `RabbitBetEventPublisher`
-(`adapter/out/messaging/`) publica ambos os eventos no exchange `bets.events` (routing keys
-`bet.created`/`bet.settled`) já provisionado por `infra/rabbitmq/definitions.json` — nunca
-redeclarado em código; os dois compartilham o mesmo envelope genérico (`BetEventEnvelope<T>`) e
-o mesmo método privado de publish/log de erro. Mensagem marcada `PERSISTENT` (sobrevive a
-restart do broker, já que a fila de produção é durable) — ver `docs/convencoes.md` para o
-gotcha de `getDeliveryMode()` vs `getReceivedDeliveryMode()` descoberto testando isso. Falha ao
-publicar é logada (nível ERROR) e nunca propagada como erro HTTP — a durabilidade do registro da
-aposta/liquidação pesa mais que o sinal assíncrono nesta fase do projeto; **risco residual
-aceito**: sem outbox/retry, uma falha de publish nesse instante perde o evento permanentemente —
-replay de `Idempotency-Key` (`BetCreated`) e nova tentativa de liquidação já resolvida
-(`BetSettled`, bloqueada por `422`) não tentam republicar. Revisitar se o volume/criticidade
-justificar um mecanismo de outbox. Teste de contrato valida cada mensagem publicada contra a
-cópia vendorizada do schema correspondente (`src/test/resources/contracts/*.schema.json` — ver
-`docs/contratos-de-api.md` seção "Cópias vendorizadas do schema").
+**Mecanismo de publicação (`feat-006`/`feat-008`, reescrito em `feat-024`, 2026-09-30)**: os
+eventos passam por um **outbox transacional**, não são mais publicados direto no broker.
+`OutboxBetEventPublisher` (`adapter/out/messaging/`, implementa o mesmo port `BetEventPublisher`)
+monta o envelope (`BetEventEnvelope<T>`, `eventId` UUID aleatório, `tenantId` do contexto da
+requisição) e **grava uma linha em `public.outbox_event`** dentro da mesma transação do `INSERT`
+de `BET` (`BetService.create`, via `TransactionTemplate`) ou da liquidação/edição
+(`@Transactional`) — ou a aposta e o evento são gravados juntos, ou nenhum dos dois. Falha ao
+gravar o outbox derruba a operação (não é mais logada e ignorada). O tratamento de
+`Idempotency-Key` duplicada fica **fora** da transação: a duplicata desfaz a transação inteira, sem
+evento extra.
+
+`OutboxRelay` (`@Scheduled`, `outbox.relay.delay-ms`, padrão 200 ms; desligável com
+`outbox.relay.enabled=false`, como no perfil de teste) publica o outbox no exchange `bets.events`
+(routing keys `bet.created`/`bet.settled`, já provisionado por `infra/rabbitmq/definitions.json`,
+nunca redeclarado em código): lê um lote de 500 com `FOR UPDATE SKIP LOCKED` (várias réplicas,
+HPA, nunca publicam as mesmas linhas), publica com `mandatory` e **confirms correlacionados**
+(`publisher-confirm-type: correlated`, `publisher-returns: true`), e só apaga as linhas depois do
+ack do broker. Mensagem devolvida por não ter binding, nack ou timeout desfaz o lote: as linhas
+ficam e são reenviadas no ciclo seguinte. Garantia: **pelo menos uma vez** até a fila
+`stats.bet-events` — uma queda entre o ack e o `DELETE` republica a linha (mesmo `eventId`),
+absorvido pela idempotência do consumidor (`PROCESSED_EVENT`). Mensagem `PERSISTENT` (ver
+`docs/convencoes.md` para o gotcha de `getDeliveryMode()` vs `getReceivedDeliveryMode()`).
+Contadores Micrometer `bets.outbox.published` e `bets.outbox.failures`.
+
+- **`public.outbox_event` é uma tabela de transporte, exceção consciente ao schema-por-tenant**:
+  guarda payloads de vários tenants no schema `public` (migration em `db/migration-public`, runner
+  `PublicSchemaMigrationRunner` igual ao do `auth-service`), mas só transitoriamente — a linha some
+  quando o broker confirma. Um relay por schema de tenant exigiria varrer todos os schemas a cada
+  ciclo.
+- **Ordem**: `id` (`bigserial`) ordena a publicação, mas só vale por aposta (o `BetCreated` de uma
+  aposta sempre commita antes do seu `BetSettled`); entre apostas e entre réplicas do relay pode
+  haver inversão, e [[stats-service]] já tolera `BetSettled` antes de `BetCreated` (`feat-027`).
+- **Origem**: achado em teste de carga de 2026-09-30 (1.000.000 de apostas, ~40% dos eventos no
+  stats, fila e DLQ vazias): o publicador antigo capturava a exceção e seguia, sem confirms nem
+  outbox. Teste de contrato continua validando cada evento contra a cópia vendorizada do schema
+  (`src/test/resources/contracts/*.schema.json` — ver `docs/contratos-de-api.md` seção "Cópias
+  vendorizadas do schema"), agora lendo o payload do outbox.
 
 ## Edição de aposta ja registrada (`feat-019`, 2026-09-22)
 

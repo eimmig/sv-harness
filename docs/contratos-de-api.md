@@ -531,6 +531,11 @@ desta tabela é mudança de contrato: atualiza `infra/rabbitmq/definitions.json`
 
 - `schemaVersion` incrementa em qualquer mudança incompatível do `payload`; o consumidor deve
   ignorar (ou tratar explicitamente) versões que não reconhece, nunca falhar silenciosamente.
+- **Entrega `bets-service` -> fila: pelo menos uma vez (`bets-service feat-024`)**: o evento é
+  gravado no outbox na mesma transação da aposta e só sai do outbox depois do ack do broker
+  (`mandatory` + confirms correlacionados); duplicatas possíveis, absorvidas pela idempotência do
+  consumidor. Ver [[bets-service]] "Mecanismo de publicação". O dead-lettering do broker (fila ->
+  DLQ) segue no modo padrão `at-most-once` ([[DECISIONS-LOG]] 2026-08-03, item 4).
 - Mensagens que falham consecutivamente no consumo vão para a DLQ (ver [[infra]]) — não são
   descartadas nem travam a fila principal.
 - Idempotência do consumo (mesmo evento reentregue não duplica efeito) é garantida por
