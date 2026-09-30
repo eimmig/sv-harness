@@ -3165,3 +3165,24 @@ provável efeito colateral de `feat-062` — registrada como `apps/web feat-067`
 harness, não corrigida por estar fora do escopo de arquivos de `feat-063`. Detalhe completo de
 cada feature em `apps/web/progress.md`.
 
+## `epic-041` fechado — produção pronta para teste de carga/estresse (2026-09-30)
+
+Auditoria do TCC 1 contra o sistema (pedido do usuário) achou 3 lacunas que invalidariam os testes de
+produção: (1) **nenhum HPA** e `replicas: 1` fixo (RNF06 e escalabilidade horizontal sem prova);
+(2) **perda silenciosa de eventos** — 1.000.000 de apostas no `bets-service`, ~40% dos eventos no
+stats, fila e DLQ vazias (`RabbitBetEventPublisher` engolia a exceção, sem confirms nem outbox);
+(3) imagens PostgreSQL 17/Redis 7 contra PostgreSQL 18/Redis 8 do Quadro 2. Entregas, todas em
+`develop`: `stats-service feat-027` (consumidores concorrentes: `BetCreated` completa a linha criada
+por `BetSettled` adiantado, dimensões `ON CONFLICT DO NOTHING`, `UNIQUE` em `dim_date`), `infra
+feat-010`/`feat-011` (PG18/Redis 8 e 4 HPAs), `auth-service feat-024` (testes em PG18) e
+`bets-service feat-024` (outbox transacional + `OutboxRelay` com `SKIP LOCKED`, `mandatory` e
+confirms). Achados reais no caminho: a constraint em `dim_date` quebrou 5 classes de teste que só a
+CI pegou (rodar a suíte completa, não só testes direcionados); o SonarCloud derrubou o PR de story
+do bets por 3 apontamentos (2 MAJOR) — `tools/.sonar.env` permite ler o motivo pela API; leitura do
+outbox com 990 mil linhas mortas levou 8,1 s (autovacuum ajustado na tabela). Vault:
+`docs/divergencias-tcc1.md` (nova), `bets-service.md`, `stats-service.md`, `contratos-de-api.md`,
+`infra.md`, `DECISIONS-LOG.md`. Backlog: `stats-service feat-028` (corrida `BetCreated`/`BetSettled`
+em `fact_bet`) e `feat-029` (cache em `afterCommit`). **Pendente, na máquina de produção:** `kubectl
+apply -f k8s/hpa.yaml`, carga com `tools/load_test_bets.py`, contagem de eventos publicados x
+processados, DLQ com mensagem envenenada e capturas do Redis.
+

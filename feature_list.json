@@ -465,9 +465,9 @@
       "name": "Preparar producao para teste de carga/estresse: autoscaling, eventos sem perda e imagens do Quadro 2",
       "description": "Nasce da auditoria do TCC 1 contra o sistema (2026-09-30, docs/divergencias-tcc1.md). Tres lacunas bloqueiam os testes de producao (autoscaling, DLQ, cache): (1) nenhum HPA e replicas:1 fixo - k8s nunca escalaria sozinho (RNF06, objetivo de escalabilidade horizontal); (2) bets-service perde eventos em silencio (1.000.000 bets, ~40% dos eventos no stats, fila e DLQ vazias) - contradiz 'nenhuma mensagem e descartada' (3.1.5); (3) imagens PostgreSQL 17 / Redis 7 divergem do Quadro 2 (18.x / 8.x). Harnesses, nesta ordem: stats-service feat-027 (tolerante a consumidores concorrentes, pre-requisito do HPA), infra feat-010 (imagens) e feat-011 (HPAs), auth-service feat-024 (Testcontainers), bets-service feat-024 (outbox - precisa de Plan Reviewer antes).",
       "dependencies": [],
-      "status": "not-started",
+      "status": "done",
       "harness": "multiplos: infra, services/stats-service, services/auth-service, services/bets-service",
-      "evidence": ""
+      "evidence": "2026-09-30. As 4 features em develop com CI, SonarCloud e auditorias: stats-service feat-027 (SV-709, consumidores concorrentes), infra feat-010 (SV-715, PostgreSQL 18/Redis 8) e feat-011 (SV-719, HPAs), auth-service feat-024 (SV-724, testes em PG18) e bets-service feat-024 (SV-727, outbox transacional + relay com confirms). Verificacao em cluster real (kubectl get hpa, carga com contagem de eventos publicados x processados) fica para a maquina de producao do usuario; roteiro em infra/CLAUDE.md. Achados fora de escopo: stats-service feat-028 e feat-029."
     }
   ]
 }

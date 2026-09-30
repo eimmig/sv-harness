@@ -74,11 +74,11 @@ atualizadas, não é mais uma divergência.
 
 ## 6. Afirmações do TCC ainda sem evidência (atualizar após os testes de produção)
 
-Estas frases do texto **ainda não foram provadas** pelo sistema e devem ser reescritas conforme
-o resultado dos testes de carga e resiliência:
+Estas frases do texto **ainda não foram provadas em produção** e devem ser reescritas conforme o
+resultado dos testes de carga e resiliência. O código já foi corrigido; falta a evidência medida:
 
 | Frase do TCC 1 | Situação |
 |---|---|
-| "O uso de DLQ garante que nenhuma mensagem de aposta seja descartada" (3.1.5). | Achado em teste local com 1 milhão de apostas: só ~40% dos eventos chegaram ao stats; filas e DLQ vazias. O publicador do `bets-service` não usava confirmação de publicação nem outbox. Em correção. |
-| Escalabilidade horizontal, RNF06 e o objetivo específico "arquitetura visando escalabilidade horizontal". | Os manifests tinham 1 réplica fixa e nenhum autoscaler. Em correção (HPA). |
+| "O uso de DLQ garante que nenhuma mensagem de aposta seja descartada" (3.1.5). | Teste local com 1 milhão de apostas mostrou só ~40% dos eventos no stats, com fila e DLQ vazias: o publicador não usava confirmação nem outbox. **Corrigido** (`bets-service feat-024`: outbox transacional + relay com confirms, garantia pelo menos uma vez até a fila). Falta provar com carga real que eventos publicados = processados. O dead-lettering do broker segue `at-most-once`. |
+| Escalabilidade horizontal, RNF06 e o objetivo específico "arquitetura visando escalabilidade horizontal". | Os manifests tinham 1 réplica fixa e nenhum autoscaler. **Corrigido** (`infra feat-011`: 4 HPAs, 1 a 4 réplicas, CPU 70%). Falta mostrar o escalonamento no k3s (`kubectl get hpa -w`) sob carga. |
 | Resposta de dashboard **abaixo de 300 ms** (3.1.6). | Ainda não medido com volume. |
