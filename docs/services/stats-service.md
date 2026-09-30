@@ -40,13 +40,17 @@ aposta (ver [[arquitetura]] seção "Fluxos dinâmicos"). Falhas consecutivas v�
 > `x-delivery-limit`/retry — ver [[convencoes]]) e cai direto na DLQ — nos dois casos a falha é
 > permanente, retentar não ajuda. `BetCreated` faz *insert* em `FACT_BET` (`status: pending`) só
 > quando a linha ainda não existe — se `BetSettled` já chegou primeiro (mensagens fora de ordem),
-> `BetCreated` é um no-op além de marcar o evento processado, nunca reverte a liquidação já
-> aplicada. `BetSettled` sempre faz *upsert* de verdade (carrega a linha existente via `findById`
+> `BetCreated` **completa** a linha (`betType`, `dateId` da data do jogo e times) sem tocar em
+> `status`/`profit`/`isWin`, e invalida o cache do mês da aposta (`stats-service feat-027`); nunca
+> reverte a liquidação já aplicada. `BetSettled` sempre faz *upsert* de verdade (carrega a linha existente via `findById`
 > e muta a instância rastreada pelo Hibernate — `FactBetJpaEntity.applyFrom`, não reconstrói a
 > entidade do zero, que tentaria `INSERT` de novo e falharia por chave duplicada; ver
 > [[convencoes]] "Atualizar uma linha já persistida"). As 6 dimensões são resolvidas por
-> `DimensionResolver`: as 5 nominais (upsert-if-missing por `existsById`) e `DIM_DATE` (única sem
-> id vindo do evento — localizada por chave natural dia/mês/ano, criada sob demanda).
+> `DimensionResolver`: as 5 nominais e `DIM_TEAM`/`DIM_DATE` são gravadas com
+> `INSERT ... ON CONFLICT DO NOTHING` (nunca `existsById` + `save`, que com vários consumidores
+> gera `duplicate key`); `DIM_DATE` (única sem id vindo do evento) é localizada por chave natural
+> dia/mês/ano, protegida por `UNIQUE (day, month, year)`, e relida após a inserção para devolver o
+> id que ganhou a corrida.
 
 > O envelope de evento carrega `userId` além de `tenantId` desde 2026-08-02 (trilha de
 > auditoria, ver [[DECISIONS-LOG]] e [[bets-service]]) — **este serviço não persiste esse campo**
@@ -350,14 +354,13 @@ liquidação, toda vez que uma aposta liquidava. Como `betDate` é a data do jog
 nem de liquidação, decisão do usuário), isso corrompia silenciosamente a granularidade mensal já
 usada pelo dashboard consolidado (`monthly`, `feat-006`) para qualquer aposta liquidada em mês
 diferente do jogo — não só a série nova desta feature. Corrigido: `processSettled` preserva o
-`dateId` já existente na linha (não recalcula) quando `BetCreated` já processou antes. Residual
-aceito: se `BetSettled` chegar antes do `BetCreated` correspondente (mensagens fora de ordem), a
-linha ainda nasce com `dateId` derivado de `settledAt` (sem `betDate` no payload de `BetSettled`)
-até `BetCreated` processar depois — `BetCreated` nunca sobrescreve uma liquidação já aplicada
-(comportamento existente desde `feat-003`), então esse `dateId` de estimativa nunca é corrigido
-retroativamente nesse caso raro. Corrigir isso de verdade exigiria propagar `betDate` também no
-evento `BetSettled` (mudança de contrato cross-service com `bets-service`) — fora do escopo de
-`epic-011`.
+`dateId` já existente na linha (não recalcula) quando `BetCreated` já processou antes. Se
+`BetSettled` chegar antes do `BetCreated` correspondente (mensagens fora de ordem — passa a ser
+comum com vários consumidores concorrentes, HPA no k3s), a linha nasce com `dateId` derivado de
+`settledAt` (sem `betDate` no payload de `BetSettled`) e `betType` nulo; **desde `feat-027` o
+`BetCreated` que chega depois corrige `dateId`, `betType` e times**, preservando
+`status`/`profit`/`isWin`. Linhas gravadas por esse caminho antes de `feat-027` continuam com o
+`dateId` de estimativa (não há reprocessamento retroativo).
 
 ### Times escopados por esporte (`feat-013`, addendum do dia seguinte)
 
