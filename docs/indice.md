@@ -22,6 +22,8 @@ Atalhos: [[mapa-de-navegacao]] · [[business/negocio|Negócio]] · [[services/se
 - [[DECISIONS-LOG]] — log cronológico de decisões que divergem/estendem o TCC 1 original (ex.:
   modelo de tenant multiusuário, provisionamento de schema, idioma da API). Atualizado a cada
   sessão que tomar uma decisão desse tipo — não confundir com `progress.md` (diário de sessão).
+- [[divergencias-tcc1]] — só o que o texto do TCC 1 afirma e o sistema faz diferente (TCC diz X,
+  foi feito Y, o que ajustar no texto). Recorte enxuto do [[DECISIONS-LOG]].
 - **Diagramas originais do TCC1**, movidos de `D:\UTFPR\TCC\Graficos` para dentro do vault em
   2026-08-02 — agora em `docs/diagrams/` (`database/`, `flows/`, `architecture/`, `process/`) e
   `docs/design-references/` (mockups de marca). Cruzados com este vault em 2026-08-01; onde havia
