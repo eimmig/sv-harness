@@ -459,6 +459,15 @@
       "status": "done",
       "harness": "multiplos: services/auth-service (feat-023) e apps/web (feat-062) - nesta ordem",
       "evidence": "Fechado em 2026-09-29. services/auth-service feat-023 (story SV-696, PRs #88/#89/#90): POST /api/v1/users troca email por username (servidor monta o e-mail completo via TenantSchemaName.emailFor()); POST /api/v1/auth/login perde o campo slug (deriva do dominio do proprio e-mail). apps/web feat-062 (story SV-700, PRs #261/#262/#263): login vira 2 campos, tela de criacao de usuario passa a pedir username, com hint mostrando o sufixo @<slug>. Sistema ainda nao em producao, mudanca de contrato aceita pelo usuario. Vault atualizado nos 2 harnesses: docs/DECISIONS-LOG.md, docs/requisitos.md, docs/contratos-de-api.md, docs/services/auth-service.md, docs/services/web.md."
+    },
+    {
+      "id": "epic-041",
+      "name": "Preparar producao para teste de carga/estresse: autoscaling, eventos sem perda e imagens do Quadro 2",
+      "description": "Nasce da auditoria do TCC 1 contra o sistema (2026-09-30, docs/divergencias-tcc1.md). Tres lacunas bloqueiam os testes de producao (autoscaling, DLQ, cache): (1) nenhum HPA e replicas:1 fixo - k8s nunca escalaria sozinho (RNF06, objetivo de escalabilidade horizontal); (2) bets-service perde eventos em silencio (1.000.000 bets, ~40% dos eventos no stats, fila e DLQ vazias) - contradiz 'nenhuma mensagem e descartada' (3.1.5); (3) imagens PostgreSQL 17 / Redis 7 divergem do Quadro 2 (18.x / 8.x). Harnesses, nesta ordem: stats-service feat-027 (tolerante a consumidores concorrentes, pre-requisito do HPA), infra feat-010 (imagens) e feat-011 (HPAs), auth-service feat-024 (Testcontainers), bets-service feat-024 (outbox - precisa de Plan Reviewer antes).",
+      "dependencies": [],
+      "status": "not-started",
+      "harness": "multiplos: infra, services/stats-service, services/auth-service, services/bets-service",
+      "evidence": ""
     }
   ]
 }
