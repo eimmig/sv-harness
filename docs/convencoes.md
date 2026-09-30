@@ -827,6 +827,7 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
   `display` (table-cell normal) e mover o flex para um `<div>` interno que envolve o conteúdo
   condicional. Verificar sempre que uma célula de tabela tiver `display: flex`/`grid` aplicado
   direto nela, especialmente quando o conteúdo é condicional por linha.
+- **`padding-bottom` reservando espaço pra controle `position: fixed` não vale pro scroll-into-view — precisa de `scroll-padding-bottom` igual** (achado real, `apps/web feat-067`, 2026-09-30, tela de login): `scrollIntoViewIfNeeded`/foco por teclado alinham o elemento à borda do viewport do container de scroll e ignoram o `padding`, então o botão de submit parava sob o seletor de idioma fixo. Correção: `scroll-padding-bottom` com o mesmo valor do `padding-bottom` no container de scroll.
 - **`grid-template-columns: repeat(auto-fit, minmax(...))` estica o(s) item(ns) existente(s) pra
   preencher trilhas nunca usadas em nenhuma linha do grid — `auto-fill` não** (achado real,
   `apps/web feat-061.1`, 2026-09-29, grade de mini-gráficos de drawdown mensal): confirmado
