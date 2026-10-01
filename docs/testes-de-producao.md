@@ -73,14 +73,50 @@ requisições a quente (hit) em `GET /api/v1/statistics`, e grava: chaves e TTL 
 o JSON do dashboard consolidado, hits/misses do Redis antes e depois e `04-resumo.txt` com p50/p95 e
 o veredito de RNF03 (p95 abaixo de 300 ms com cache quente). A medida inclui a rede até o Ingress.
 
-## Capturas de tela a tirar à mão
+## Passo a passo com as capturas (o que fazer, quando, onde)
 
-1. Terminal com `kubectl get hpa -w` durante a carga (REPLICAS subindo de 1 e depois descendo após ~5 min).
-2. Terminal com `kubectl get pods` mostrando as réplicas novas.
-3. Console do RabbitMQ (`kubectl port-forward svc/rabbitmq 15672:15672`, abrir `http://localhost:15672`):
-   página **Queues** com `stats.bet-events` e `stats.bet-events.dlq`, e na DLQ **Get messages** (mensagens
-   com o payload visível) depois do `03-dlq.sh`.
-4. Terminal com o `04-resumo.txt` e `04-redis-chaves.txt` (ou `redis-cli --scan` e `ttl`).
+Use 3 janelas SSH na máquina Debian e o navegador do seu computador.
+
+**Preparação (uma vez)**
+
+- Janela **B**: `watch -n 3 kubectl get hpa`
+- Janela **C**: `watch -n 3 'kubectl get pods | grep -E "auth|bets|stats|gateway"'`
+- Janela **A**: onde roda os scripts (`cd ~/sv-harness`).
+- Console do RabbitMQ no seu navegador: no seu computador `ssh -L 15672:localhost:15672 eduardo@<ip-do-servidor>`;
+  no servidor (janela extra) `kubectl port-forward svc/rabbitmq 15672:15672`; abra `http://localhost:15672`.
+  Usuário e senha: `kubectl get secret stakevault-secrets -o jsonpath='{.data.RABBITMQ_USER}' | base64 -d`
+  (idem `RABBITMQ_PASSWORD`).
+
+| # | Momento | O que fazer | Captura (janela) | Figura no TCC |
+|---|---|---|---|---|
+| 1 | Antes de tudo | janela A: `bash tools/evidence/01-baseline.sh` | **B** e **C** com 1 réplica por serviço; **A** com a saída do baseline (versões PG 18/Redis 8, capacidade do nó) | "Ambiente e estado inicial" |
+| 2 | Começo da carga | janela A: `bash tools/evidence/02-carga.sh 50000 64` | espere 1 a 3 min; quando a **B** mostrar `REPLICAS` maior que 1 e `TARGETS` acima de 70%, capture **B** e **C** juntas | "HPA elevando réplicas sob carga" |
+| 3 | No meio da carga | navegador: RabbitMQ, aba **Queues** | capture a tabela com `stats.bet-events` (Ready, Incoming, Deliver/Get) | "Fila de eventos durante a carga" |
+| 4 | Fim da carga | a janela A imprime `02-reconciliacao.txt` e `02-resumo.txt` | capture o final da janela **A** (PASS/FAIL e a tabela de réplicas/pico) | "Reconciliação de eventos" e tabela de pico |
+| 5 | ~6 min depois do fim | olhe a janela **B** | capture quando `REPLICAS` voltar a 1 (o HPA espera 300 s para reduzir) | "Redução automática de réplicas" |
+| 6 | DLQ | janela A: `bash tools/evidence/03-dlq.sh`; quando pedir **Enter**, vá ao navegador | **Queues**: `stats.bet-events.dlq` com 2 mensagens (Ready 2); clique na fila, **Get messages**, ack mode "Nack message requeue true", **Get Message(s)** e capture o payload; depois volte à janela A e aperte Enter | "Mensagens na DLQ" |
+| 7 | DLQ, recuperação | fim do `03-dlq.sh` | capture a janela **A** com `03-resultado.txt` (PASS) e a **Queues** com a DLQ zerada | "Reprocessamento após recuperação" |
+| 8 | Cache | janela A: `bash tools/evidence/04-cache.sh <slug> <email> <senha>` (os 3 valores saem no fim do passo 2) | capture o final da janela **A** (`04-resumo.txt`); depois `cat evidence/<pasta>/04-redis-chaves.txt` e capture | "Cache hit/miss e tempo de resposta" |
+| 9 | Guardar | `bash tools/evidence/05-coleta.sh evidence/<pasta>`; no seu computador `scp eduardo@<ip>:~/sv-harness/evidence/<pasta>.tar.gz .` | n/a | n/a |
+
+Dica: para capturas de terminal use a tela inteira da janela; para o RabbitMQ, a captura da página inteira.
+
+## Números para o texto do TCC (de onde copiar)
+
+| Número | Arquivo | Linha |
+|---|---|---|
+| máximo de réplicas e pico de CPU | `02-resumo.txt` | tabela "HPA" |
+| tempo até escalar | `02-resumo.txt` | coluna "1o escalonamento" |
+| vazão (apostas/s) e erros | `02-resumo.txt` | seção "Carga" |
+| eventos publicados = processados | `02-reconciliacao.txt` | linhas com PASS |
+| causa do escalonamento | `02-hpa-eventos.txt` | "reason: cpu resource utilization" |
+| mensagens na DLQ e recuperação | `03-resultado.txt` | todas |
+| p50/p95 do dashboard e RNF03 | `04-resumo.txt` | todas |
+| TTL e chaves do cache | `04-redis-chaves.txt` | todas |
+
+Estrutura sugerida no Capítulo 4: **4.4 Avaliação experimental**, com: ambiente (passo 1), escalabilidade
+horizontal (passos 2 a 5), resiliência e DLQ (6 e 7), cache e desempenho (8) e limitações (amostragem de 10 s,
+um único nó, carga sintética gerada por `tools/load_test_bets.py`).
 
 ## Como preencher o TCC
 

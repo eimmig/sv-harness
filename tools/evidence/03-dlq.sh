@@ -66,6 +66,10 @@ k logs deploy/stats-service --since=10m | grep -iE "reject|retry|attempt|dead|un
 
 log "DLQ tem ${dlq:-?} mensagens (esperado 2); conteudo em 03-dlq-mensagens.json"
 
+if [ -t 0 ]; then
+  read -r -p "Tire agora as capturas da DLQ na interface do RabbitMQ e aperte Enter para continuar... " _
+fi
+
 log "recuperacao: provisionar o tenant e republicar a mensagem do cenario B"
 curl -s -X POST localhost:18081/api/v1/admin/tenants -H "X-Admin-Api-Key: $(secret ADMIN_API_KEY)" \
   -H 'content-type: application/json' -d "{\"slug\":\"$SLUG\",\"tenantName\":\"DLQ\"}" >"$OUT/03-tenant.json"
