@@ -42,6 +42,14 @@ esvaziarem e grava `02-reconciliacao.txt` com PASS/FAIL para:
 - `fact_bet` = apostas em `bets-service`;
 - outbox vazio e DLQ vazia.
 
+No fim, `02-resumo.txt` traz a tabela pronta: **máximo de réplicas** por serviço, **pico de CPU** (% do
+`requests.cpu`, o valor que o HPA compara com 70%), **tempo até o primeiro escalonamento**, pico de CPU e
+memória por pod e a vazão da carga (apostas por segundo, erros). O **motivo** de cada escalonamento está em
+`02-hpa-eventos.txt` (`kubectl describe hpa`: linhas "New size: N; reason: cpu resource utilization
+above target"). Limites: amostragem a cada 10 s e o `metrics-server` atrasa 15 a 60 s, então o pico real
+pode ser um pouco maior que o registrado; não há gráfico nem latência por requisição sob carga (a latência
+só é medida no passo 4, em repouso).
+
 Comece com 50 mil apostas para ver o HPA reagir; suba para 200 mil ou 1 milhão se o nó aguentar.
 Se réplicas ficarem `Pending`, o nó está pequeno (`kubectl describe pod`): anote isso, é resultado.
 

@@ -58,4 +58,7 @@ verdict() { [ "$1" = "$2" ] && echo PASS || echo FAIL; }
 } | tee "$OUT/02-reconciliacao.txt"
 
 snapshot 02-depois
+k describe hpa >"$OUT/02-hpa-eventos.txt" 2>&1 || true
+k get events --sort-by=.lastTimestamp >"$OUT/02-eventos.txt" 2>&1 || true
+python3 "$(dirname "$0")/resumo_carga.py" "$OUT" | tee "$OUT/02-resumo.txt"
 log "carga concluida; arquivos em $OUT"
