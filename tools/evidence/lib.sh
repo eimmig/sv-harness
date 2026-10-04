@@ -51,8 +51,10 @@ sample_loop() {
 
 port_forward() {
   k port-forward "$1" "$2" >/dev/null 2>&1 &
-  BG_PIDS+=("$!")
+  local pid=$!
+  BG_PIDS+=("$pid")
   sleep 3
+  kill -0 "$pid" 2>/dev/null || { echo "port-forward $1 $2 falhou: porta local em uso por um kubectl antigo? (ss -ltnp | grep ${2%%:*})" >&2; exit 1; }
 }
 
 cleanup() {
