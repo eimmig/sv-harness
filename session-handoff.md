@@ -39,8 +39,8 @@ seção "Resultados da rodada de 2026-10-04"; frases do TCC 1 afetadas: `docs/di
 Probes de liveness/readiness separados, `Recreate` nos PostgreSQL, `postgres-bets` com CPU 2000m, 2Gi e
 `shared_buffers=512MB`, memória dos Java a 1Gi. **Já aplicado no k3s.** Prova real **parcial**: carga cancelada
 após ~4 min (0 restarts, banco a 216m de CPU); vazão e reconciliação do pós-ajuste **não foram medidas**. Próximo
-teto provável: limite de CPU dos pods Java (500m). A `develop` do `infra` ainda não foi para `main` (release
-pendente de decisão do usuário).
+teto provável: limite de CPU dos pods Java (500m). Release `infra` **v0.3.0** feita em 2026-10-04
+(`develop` para `main`, tag e GitHub Release; `main` sincronizada de volta na `develop`).
 
 ## Backlog aberto por esta rodada (nenhum com `plan_review`)
 
