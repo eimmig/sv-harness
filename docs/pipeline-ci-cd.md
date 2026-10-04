@@ -178,7 +178,12 @@ ter a chave — ver [[convencoes]] seção "Git"), o próprio diff de uma PR `su
 story **nunca** toca `CHANGELOG.md` — a linha já estava lá quando a branch foi criada. Por isso o
 passo 1 (changelog) só roda de fato na PR story → `develop` (guarda por `github.base_ref`, mesmo
 mecanismo já usado no passo 5/Sonar) — exigir o toque também no PR de subtask quebraria por
-sequenciamento, não por esquecimento real.
+sequenciamento, não por esquecimento real. **A recíproca também vale** (erro real, `infra feat-012`, 2026-10-04): as linhas da
+story e das subtasks não podem ser commitadas na `develop` antes da branch da story, nem junto com o registro do
+`plan_review`; se já estiverem na base, o diff da PR story → `develop` não toca o arquivo e o passo de changelog
+reprova. Rodar `tools/jira_story.py` e criar a branch da story logo em seguida, deixando o `CHANGELOG.md` modificado
+no working tree até o primeiro commit da branch. Corrigir um caso já publicado: tirar as linhas da `develop` num
+commit novo e reintroduzi-las pela branch da story com `append_changelog_lines` (a opção `--update` não as reescreve).
 
 ### Quais passos rodam em qual PR
 

@@ -3205,3 +3205,20 @@ partida das JVMs, descartados como evidência; (3) o contador de fila quorum atr
 `03-dlq.sh` gravava `2` na DLQ já vazia, corrigido para esperar o contador zerar. Vault atualizado:
 `docs/testes-de-producao.md` (resultados e lições), `docs/divergencias-tcc1.md` seção 6, `docs/services/infra.md`
 e `docs/services/stats-service.md`. Falta empacotar a evidência (`05-coleta.sh`) e escrever a 4.4.
+
+## `infra feat-012` fechada e liberada na `develop` (2026-10-04)
+
+Resposta aos achados da carga: Plan Reviewer `REVISE` (o liveness dos 4 serviços Java apontava para o
+`/actuator/health` agregado, com banco e broker; os Deployments de PostgreSQL usavam `RollingUpdate` por omissão,
+que sobe duas instâncias sobre o mesmo `PGDATA`; o tuning planejado foi reduzido ao que a medição sustentava) e
+Delivery Reviewer `CONCERNS` (2 P3 tratados). Entrega em `infra` (story SV-732, subtasks SV-733 a SV-736): `Recreate`
+nos 3 PostgreSQL, `postgres-bets` com CPU 2000m, memória 2Gi e `shared_buffers=512MB`, liveness e `startupProbe` em
+`/actuator/health/liveness`, readiness em `/actuator/health/readiness`, memória dos Java a 1Gi. Aplicado no k3s:
+0 restarts e `postgres-bets` a 216m de CPU na carga (antes 501m). **A carga completa foi cancelada pelo operador
+após ~4 minutos**, então vazão e reconciliação não foram remedidas e nenhum ganho de vazão está provado; os pods
+Java a ~495% do request (limite de 500m) são o provável próximo teto. Backlog novo: teste de
+`/actuator/health/liveness` nos 4 serviços (`api-gateway feat-020`, `auth-service feat-025`, `bets-service feat-025`,
+`stats-service feat-030`). Erros de processo corrigidos no caminho: linhas de CHANGELOG commitadas na `develop`
+antes da branch da story (a CI reprovou a PR story; ver `docs/pipeline-ci-cd.md`), roteiro do pod descartável sem
+espera pelo `initdb` e túnel de porta antigo derrubando o script de carga (`tools/evidence/lib.sh` agora aborta).
+

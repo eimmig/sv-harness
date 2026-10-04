@@ -34,11 +34,20 @@ seção "Resultados da rodada de 2026-10-04"; frases do TCC 1 afetadas: `docs/di
 - **Probes:** `bets-service` reiniciou 2 vezes na carga por liveness de 1 s com CPU limitada a 500m (26 erros
   no gerador).
 
+## Ajuste de produção entregue (`infra feat-012`, story SV-732, na `develop`)
+
+Probes de liveness/readiness separados, `Recreate` nos PostgreSQL, `postgres-bets` com CPU 2000m, 2Gi e
+`shared_buffers=512MB`, memória dos Java a 1Gi. **Já aplicado no k3s.** Prova real **parcial**: carga cancelada
+após ~4 min (0 restarts, banco a 216m de CPU); vazão e reconciliação do pós-ajuste **não foram medidas**. Próximo
+teto provável: limite de CPU dos pods Java (500m). A `develop` do `infra` ainda não foi para `main` (release
+pendente de decisão do usuário).
+
 ## Backlog aberto por esta rodada (nenhum com `plan_review`)
 
 - `stats-service feat-028` (já existia; ganhou a evidência de produção): corrida `BetCreated`/`BetSettled` em
   `fact_bet` **não converge** pelo retry, 18 apostas ficaram `pending`.
-- `infra feat-012` (nova): probes tolerantes a carga, `startupProbe` e dimensionamento do `postgres-bets`.
+- `api-gateway feat-020`, `auth-service feat-025`, `bets-service feat-025` e `stats-service feat-030` (novas): teste de
+  `/actuator/health/liveness` no `HealthChecksTest`.
 - `stats-service feat-029` (já existia): cache em `afterCommit`, `existsById` morto.
 
 ## Falta
@@ -63,6 +72,6 @@ seção "Resultados da rodada de 2026-10-04"; frases do TCC 1 afetadas: `docs/di
 
 1. Rodar `./init.sh` na raiz (deve sair `0`).
 2. Ler `docs/testes-de-producao.md` e `docs/divergencias-tcc1.md`.
-3. Se o usuário quiser corrigir os achados (`stats-service feat-028`, `infra feat-012`), seguir o fluxo do harness:
+3. Se o usuário quiser corrigir os achados (`stats-service feat-028` ou subir o limite de CPU dos Java), seguir o fluxo do harness:
    `Plan Reviewer`, `plan_review`, story no Jira, branch pela chave, PRs com CI, auditorias na última subtask.
 4. Se for escrever o capítulo, usar as tabelas "Números para o texto do TCC" e "Resultados da rodada".
