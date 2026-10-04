@@ -418,11 +418,38 @@ manifest de serviço Java deste cluster:
   restarts, `Liveness probe failed: context deadline exceeded`), o que gerou 26 erros no gerador. A partida a frio
   da JVM com pouca CPU também passa do `delay` de 30 s mais 3 tentativas de 15 s e põe o pod em loop de restart
   (`connection refused`). A mesma lição do probe do RabbitMQ acima: probe sem folga mata o que está só ocupado.
-  Correção em `feat-012` (backlog).
+  A causa raiz era o liveness apontar para o `/actuator/health` agregado (banco e broker); corrigido em
+  `feat-012` (ver abaixo).
 - O `postgres-bets` (um só, 512Mi) chegou a 501m de CPU e o `pg_isready` dele estourou 1 s; réplicas do
   `bets-service` só aumentam a pressão sobre ele, e a vazão com HPA (32,4 apostas/s) ficou abaixo da linha de base
   sem réplicas (43,2). O HPA escala a camada de aplicação, não o banco. Também em `feat-012`.
 Números completos e leitura honesta em [[testes-de-producao]].
+
+### Probes, estratégia Recreate e dimensionamento do `postgres-bets` (`infra/feat-012`, 2026-10-04)
+
+Resposta aos dois achados acima, em `k8s/`:
+
+- **Liveness e readiness separados.** Os 4 serviços Java usam `/actuator/health/liveness` para `livenessProbe` e
+  `startupProbe` e `/actuator/health/readiness` para `readinessProbe`, todos com `timeoutSeconds: 5`. O
+  `startupProbe` (a cada 5 s, 36 tentativas, ~180 s) cobre a partida da JVM sob 500m de CPU e substitui os
+  `initialDelaySeconds`; o liveness tolera 6 falhas de 15 s. Os filtros de autenticação e de tenant já ignoram o
+  prefixo `/actuator`, então os subcaminhos não pedem token.
+- **`strategy: Recreate` nos 3 PostgreSQL.** Sem isso o padrão é `RollingUpdate`: ao mudar recursos ou `args`, o pod
+  novo sobe antes de o antigo sair e os dois montam o mesmo PVC (`ReadWriteOnce` só restringe nós, não pods no mesmo
+  nó), com duas instâncias sobre o mesmo `PGDATA`; em contêineres separados o travamento por PID e por memória
+  compartilhada do PostgreSQL não protege. Por isso **não se usa `kubectl set resources` direto num Deployment de
+  PostgreSQL** sem `Recreate`. O custo do `Recreate` é o banco ficar fora do ar durante a troca.
+- **`postgres-bets`**: requests 500m e 1Gi, limits 2000m e 2Gi, `shared_buffers=512MB` e
+  `effective_cache_size=1GB` (os padrões do PostgreSQL pensam numa máquina mínima). Ficaram de fora
+  `wal_compression` (gasta mais CPU, o recurso que faltava), `max_wal_size` acima do PVC de 1Gi e qualquer
+  `synchronous_commit=off` ou `fsync=off` (dados financeiros). Os `args` começam por `postgres`: com a imagem
+  oficial, `-c` solto também funcionaria, mas assim o comando fica explícito.
+- **Memória dos Java**: requests 512Mi e limits 1Gi, o que roda no cluster desde a carga (picos medidos de 255 a
+  434 MiB; 512Mi era justo demais). O limite de CPU dos Java ficou em 500m de propósito, para a medição seguinte
+  atribuir o ganho ao banco. Overcommit teórico aceito: 16 pods a 1Gi mais os bancos passam dos 16 GB do nó, mas o
+  uso real fica em ~6 a 7 GB.
+
+Ordem de aplicação no cluster: PostgreSQL primeiro, esperar `kubectl rollout status` dos três, depois os 4 Java.
 
 ## Onde fica
 

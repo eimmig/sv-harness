@@ -31,8 +31,11 @@ Convenções operacionais que evitam cada serviço logar/configurar de um jeito 
 
 ## Health checks
 
-- Serviços Java: Spring Boot Actuator, `/actuator/health` (liveness) e `/actuator/health/readiness`
-  (readiness — inclui checagem de conexão com Postgres/RabbitMQ/Redis conforme o serviço).
+- Serviços Java: Spring Boot Actuator, `/actuator/health/liveness` (liveness e `startupProbe`, só o estado da
+  aplicação) e `/actuator/health/readiness` (readiness — inclui checagem de conexão com Postgres/RabbitMQ/Redis
+  conforme o serviço). **Não usar o `/actuator/health` agregado como probe de liveness**: ele inclui banco e
+  broker, e com o banco lento o kubelet reinicia pods saudáveis (achado real da carga de 2026-10-04,
+  `infra feat-012`). Os 4 manifests do `infra` usam os dois endpoints separados com `timeoutSeconds: 5`.
 - `telegram-integration`: endpoint simples `GET /health` (FastAPI, ver
   [[telegram-integration]]) retornando 200 se o processo está de pé. **Correção de 2026-09-08**:
   esta nota chegou a dizer que o endpoint verificava conectividade com "RabbitMQ/n8n configurados"
