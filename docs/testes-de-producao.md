@@ -178,6 +178,9 @@ Como ler esses números sem afirmar demais:
 - **Contadores de fila quorum atrasam** alguns segundos: `03-dlq.sh` espera o contador da DLQ zerar antes de gravar o
   resultado; olhar `rabbitmqctl list_queues` isolado logo depois de um drain pode mostrar o valor antigo.
 - O IP do servidor na rede local pode mudar entre boots; `hostname -I` no Debian dá o atual.
+- **Túnel antigo na porta 18081:** um `kubectl port-forward` esquecido de rodada anterior aponta para o pod que o
+  rollout derrubou e o script falha com `Connection refused` em `localhost:18081`. O `port_forward` do `lib.sh` agora
+  aborta com mensagem se o túnel novo não sobe; para limpar: `pkill -f "port-forward svc/auth-service"`.
 
 Os scripts `01` a `04` foram validados contra o cluster real nesta rodada; `05-coleta.sh` é o único ainda sem uso
 registrado. Se um comando falhar, o erro aparece no terminal e em `log.txt`.
