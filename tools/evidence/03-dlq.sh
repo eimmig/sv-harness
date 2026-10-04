@@ -91,10 +91,16 @@ for _ in $(seq 1 30); do
   sleep 2
 done
 
+for _ in $(seq 1 15); do
+  dlq_final="$(queue_depth stats.bet-events.dlq)"
+  [ "${dlq_final:-x}" = "0" ] && break
+  sleep 2
+done
+
 {
   echo "tenant do cenario B          : $SLUG"
   echo "aposta do cenario B          : $BET_B"
   echo "linhas em fact_bet (esperado 1) : ${found:-0}   $([ "${found:-0}" = "1" ] && echo PASS || echo FAIL)"
-  echo "mensagens na DLQ depois de drenar : $(queue_depth stats.bet-events.dlq)"
+  echo "mensagens na DLQ depois de drenar : ${dlq_final:-?}   $([ "${dlq_final:-x}" = "0" ] && echo PASS || echo FAIL)"
 } | tee "$OUT/03-resultado.txt"
 snapshot 03-depois

@@ -341,6 +341,14 @@ transação concorrente) — auto-recuperável, sem perda de dado. Não corrigid
 verdade (`INSERT ... ON CONFLICT`) mudaria as 6 dimensões de uma vez, fora do escopo pontual desta
 feature.
 
+**Corrida em `FACT_BET` não converge sozinha em produção** (rodada real de 2026-10-04, 100.000 apostas, 4
+réplicas do stats): a premissa acima, de que o retry do listener cura a corrida, vale para as dimensões, mas
+não para a linha do fato. 18 apostas ficaram `pending` em `fact_bet` enquanto o `bets-service` as tem
+liquidadas, mesmo com os 193.998 eventos registrados em `PROCESSED_EVENT`. Hipótese ainda não confirmada: o
+`BetCreated` lê "vazio" em paralelo com o `BetSettled`, e o `save` dele, ao commitar por último, sobrescreve a
+liquidação com `PENDING` sem violar a PK, de modo que não há exceção nem retry. Acompanhamento e teste de
+reprodução em `feat-028`; resultado completo em [[testes-de-producao]].
+
 `maxDrawdown`/`sharpeRatio` não são agregados SQL simples (`SUM`/`AVG`/`COUNT`) como o resto do
 serviço — exigem a série de `profit` ordenada por `betDate` (data do jogo — ver [[estatisticas]])
 das apostas liquidadas do recorte, iterada em memória (`domain`, calculador puro sem I/O, ver

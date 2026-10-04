@@ -409,6 +409,21 @@ NOTHING` (`feat-027`), e [[bets-service]] publica pelo outbox com `SKIP LOCKED`,
 réplicas (`feat-024`). Roteiro de verificação e capturas em `infra/CLAUDE.md` "Verificação —
 Autoscaling". Risco residual: capacidade do nó k3s desconhecida (pior caso 8Gi de limites).
 
+**Resultado medido (rodada real de 2026-10-04, 100.000 apostas, 128 threads):** os 4 HPAs subiram para 3 ou 4
+réplicas em 41 a 62 s e voltaram a 1 cerca de 9 min depois do fim da carga. Dois achados que valem para qualquer
+manifest de serviço Java deste cluster:
+
+- O `livenessProbe`/`readinessProbe` com `timeoutSeconds: 1` e limite de CPU de 500m derruba pods saudáveis, mas
+  saturados: sob carga o `/actuator/health` passou de 1 s e o kubelet reiniciou o `bets-service` (13 para 15
+  restarts, `Liveness probe failed: context deadline exceeded`), o que gerou 26 erros no gerador. A partida a frio
+  da JVM com pouca CPU também passa do `delay` de 30 s mais 3 tentativas de 15 s e põe o pod em loop de restart
+  (`connection refused`). A mesma lição do probe do RabbitMQ acima: probe sem folga mata o que está só ocupado.
+  Correção em `feat-012` (backlog).
+- O `postgres-bets` (um só, 512Mi) chegou a 501m de CPU e o `pg_isready` dele estourou 1 s; réplicas do
+  `bets-service` só aumentam a pressão sobre ele, e a vazão com HPA (32,4 apostas/s) ficou abaixo da linha de base
+  sem réplicas (43,2). O HPA escala a camada de aplicação, não o banco. Também em `feat-012`.
+Números completos e leitura honesta em [[testes-de-producao]].
+
 ## Onde fica
 
 `infra/docker-compose.yml` (criado em `feat-001`, 2026-08-03), mais:

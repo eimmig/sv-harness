@@ -3186,3 +3186,22 @@ em `fact_bet`) e `feat-029` (cache em `afterCommit`). **Pendente, na máquina de
 apply -f k8s/hpa.yaml`, carga com `tools/load_test_bets.py`, contagem de eventos publicados x
 processados, DLQ com mensagem envenenada e capturas do Redis.
 
+## Testes de produção executados no k3s (2026-10-04)
+
+Rodada real com 100.000 apostas e 128 threads (`evidence/final` no Debian), 01 a 04 de `tools/evidence/`
+validados no cluster. O HPA subiu os 4 serviços para 3 ou 4 réplicas em 41 a 62 s (pico de CPU 172% a 501% do
+request) e voltou a 1 em ~9 min, **sem ganho de vazão** (32,4 apostas/s contra 43,2 com 1 réplica): o
+`postgres-bets` chegou a 501m de CPU e o `pg_isready` dele estourou 1 s. Reconciliação: 193.998 eventos
+esperados = 193.998 processados, `fact_bet` = 99.998, outbox e DLQ em 0; mas **18 apostas ficaram `pending` no
+stats** (liquidadas no `bets-service`), achado que desmente a premissa de `stats-service feat-028` de que o retry
+cura a corrida em `fact_bet` (evidência acrescentada àquela feature). Probe de liveness de 1 s com limite de CPU
+de 500m reiniciou o `bets-service` sob carga (26 erros no gerador): nova `infra feat-012`. Cache: RNF03 PASS, p95
+de 206,2 ms. DLQ: mensagem fora do contrato e evento de tenant inexistente foram para a DLQ e o segundo foi
+reprocessado depois de criar o tenant.
+
+Pelo caminho: (1) o clone do `sv-harness` no Debian estava antigo e rodou o `02-carga.sh` sem resumo e sem os
+eventos do HPA; (2) o servidor tinha acabado de ligar e os eventos de escalonamento que pareciam da carga eram a
+partida das JVMs, descartados como evidência; (3) o contador de fila quorum atrasa alguns segundos e o
+`03-dlq.sh` gravava `2` na DLQ já vazia, corrigido para esperar o contador zerar. Vault atualizado:
+`docs/testes-de-producao.md` (resultados e lições), `docs/divergencias-tcc1.md` seção 6, `docs/services/infra.md`
+e `docs/services/stats-service.md`. Falta empacotar a evidência (`05-coleta.sh`) e escrever a 4.4.

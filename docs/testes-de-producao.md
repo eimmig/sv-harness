@@ -130,5 +130,54 @@ um único nó, carga sintética gerada por `tools/load_test_bets.py`).
 Se algum passo der FAIL, não reescreva a frase do TCC: a causa está nos logs (`kubectl logs deploy/<serviço>`)
 e vale abrir uma feature no backlog do serviço correspondente.
 
-Os scripts não foram executados contra o cluster real por quem os escreveu (não havia cluster acessível):
-o primeiro uso é também a validação deles; se um comando falhar, o erro aparece no terminal e em `log.txt`.
+## Resultados da rodada de 2026-10-04 (100.000 apostas, 128 threads)
+
+Rodada real no k3s (nó de ~8 CPUs, 16 GB), pasta `evidence/final` na máquina Debian. Tenant `loadtest-0086b111`.
+
+| Medida | Resultado |
+|---|---|
+| Vazão do gerador | 32,4 apostas/s em 3.089 s (51 min), 26 erros de 100.000 |
+| HPA, réplicas máximas | `api-gateway` 4, `auth-service` 3, `bets-service` 4, `stats-service` 4 |
+| Pico de CPU (% do `requests.cpu` de 100m) | 290%, 172%, 501% e 495% |
+| Tempo até o primeiro escalonamento | 41 s (gateway, auth, bets) e 62 s (stats) |
+| Redução | todos voltaram a 1 réplica cerca de 9 min depois do fim da carga |
+| Eventos esperados x processados | 193.998 = 193.998 (PASS); `fact_bet` 99.998 = apostas do `bets-service` (PASS); outbox e DLQ em 0 (PASS) |
+| Estado final | **18 apostas ficaram `pending` em `fact_bet`** e liquidadas no `bets-service` (0,019% das 94.000 liquidações); `stats-service` `feat-028` |
+| Cache (`04-cache.sh`) | miss 2.189,5 ms; hit p50 173,4 ms, p95 206,2 ms, máx. 292,0 ms (RNF03 PASS); 392 hits e 8 misses; 8 chaves por tenant com TTL de ~1 h |
+| DLQ | mensagem fora do contrato rejeitada direto para a DLQ; evento válido de tenant inexistente foi para a DLQ depois das tentativas e, criado o tenant, foi reprocessado e gravado em `fact_bet` (PASS) |
+
+Como ler esses números sem afirmar demais:
+
+- **Escalabilidade:** o HPA subiu e desceu os 4 serviços, mas a vazão com réplicas (32,4/s) ficou **abaixo** da
+  linha de base de 1 réplica (43,2/s, 50.000 apostas, 64 threads). O gargalo é o PostgreSQL único do `bets-service`:
+  `postgres-bets` chegou a 501m de CPU e o `pg_isready` dele estourou o timeout de 1 s. Escrever "elevou réplicas
+  sob carga e manteve a consistência dos eventos", nunca "aumentou a vazão".
+- **Eventos:** "eventos processados = esperados" vale para a **contagem**. O estado final divergiu em 18 apostas,
+  então não escrever "perda zero de estado" (`stats-service` `feat-028`, com a hipótese de corrida em `fact_bet`).
+- **Erros do gerador (26):** coincidem com restarts do `bets-service` por falha de liveness (probe de 1 s com limite
+  de CPU de 500m) durante a carga; `infra` `feat-012`. Os 26 não são perda de evento, são requisições que falharam na API.
+- **Dashboard:** `settledCount` 93.982 contra 94.000 é a mesma divergência das 18 apostas, não erro de cálculo do cache.
+- **Limitações:** nó único, um PostgreSQL por serviço, carga sintética de um único processo, amostragem de 10 s do
+  `metrics-server` (que atrasa 15 a 60 s), eventos do Kubernetes duram ~1 h.
+
+## Lições para repetir os testes
+
+- **Atualizar o clone antes de tudo** (`git pull` na pasta `sv-harness` do Debian): um clone antigo roda o
+  `02-carga.sh` sem `02-resumo.txt` nem `02-hpa-eventos.txt`, e os eventos do Kubernetes que explicam o
+  escalonamento expiram em ~1 h. Se faltar o resumo, `python3 tools/evidence/resumo_carga.py <pasta>` o gera depois
+  a partir de `02-hpa.txt`, `02-top.txt` e `02-carga.txt`.
+- **Esperar o cluster assentar depois de um boot** (10 a 15 min): a partida simultânea das JVMs estoura os 100m
+  de request e faz o HPA subir réplicas sem tráfego, e o `metrics-server` ainda responde com erro. Esses eventos não
+  são evidência de carga. Conferir `kubectl get hpa` (todos em 1 réplica) e `kubectl top pods` antes de começar.
+- **Uma pasta por rodada** (`export OUT=evidence/<nome>`) e nunca apagar `evidence/`; a pasta de uma rodada perdida
+  não se reconstrói.
+- **Cache no RedisInsight:** a figura fica melhor com a interface do que com o `cat`. Túnel
+  `ssh -L 6379:localhost:6379 <usuario>@<ip>`, no servidor `kubectl port-forward svc/redis 6379:6379`, senha em
+  `kubectl get secret stakevault-secrets -o jsonpath='{.data.REDIS_PASSWORD}' | base64 -d`. As chaves expiram em 1 h:
+  rodar o `04-cache.sh` logo antes da captura.
+- **Contadores de fila quorum atrasam** alguns segundos: `03-dlq.sh` espera o contador da DLQ zerar antes de gravar o
+  resultado; olhar `rabbitmqctl list_queues` isolado logo depois de um drain pode mostrar o valor antigo.
+- O IP do servidor na rede local pode mudar entre boots; `hostname -I` no Debian dá o atual.
+
+Os scripts `01` a `04` foram validados contra o cluster real nesta rodada; `05-coleta.sh` é o único ainda sem uso
+registrado. Se um comando falhar, o erro aparece no terminal e em `log.txt`.

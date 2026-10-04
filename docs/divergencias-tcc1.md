@@ -72,13 +72,14 @@ atualizadas, não é mais uma divergência.
 - Marca **Arka** e identidade visual.
 - Pipeline de CI/CD com versionamento semântico, imagens no GHCR e deploy no k3s.
 
-## 6. Afirmações do TCC ainda sem evidência (atualizar após os testes de produção)
+## 6. Afirmações do TCC medidas nos testes de produção (2026-10-04)
 
-Estas frases do texto **ainda não foram provadas em produção** e devem ser reescritas conforme o
-resultado dos testes de carga e resiliência. O código já foi corrigido; falta a evidência medida:
+Resultados da rodada de 100.000 apostas no k3s, com a leitura honesta de cada frase do TCC 1. Números e
+ressalvas completas em [[testes-de-producao]].
 
 | Frase do TCC 1 | Situação |
 |---|---|
-| "O uso de DLQ garante que nenhuma mensagem de aposta seja descartada" (3.1.5). | Teste local com 1 milhão de apostas mostrou só ~40% dos eventos no stats, com fila e DLQ vazias: o publicador não usava confirmação nem outbox. **Corrigido** (`bets-service feat-024`: outbox transacional + relay com confirms, garantia pelo menos uma vez até a fila). Falta provar com carga real que eventos publicados = processados. O dead-lettering do broker segue `at-most-once`. |
-| Escalabilidade horizontal, RNF06 e o objetivo específico "arquitetura visando escalabilidade horizontal". | Os manifests tinham 1 réplica fixa e nenhum autoscaler. **Corrigido** (`infra feat-011`: 4 HPAs, 1 a 4 réplicas, CPU 70%). Falta mostrar o escalonamento no k3s (`kubectl get hpa -w`) sob carga. |
-| Resposta de dashboard **abaixo de 300 ms** (3.1.6). | Ainda não medido com volume. |
+| "O uso de DLQ garante que nenhuma mensagem de aposta seja descartada" (3.1.5). | Teste local anterior perdia ~40% dos eventos (publicador sem confirmação nem outbox); **corrigido** (`bets-service feat-024`: outbox transacional + relay com confirms). Na rodada real: 193.998 eventos esperados = 193.998 processados, outbox e DLQ vazios. A garantia vale para a **contagem de eventos**: 18 de 94.000 liquidações (0,019%) ficaram `pending` em `fact_bet` por corrida entre `BetCreated` e `BetSettled` (`stats-service feat-028`). Reescrever como "nenhum evento foi descartado" e citar a divergência de estado como limitação. O dead-lettering do broker segue `at-most-once`. |
+| Escalabilidade horizontal, RNF06 e o objetivo específico "arquitetura visando escalabilidade horizontal". | **Provado**: `infra feat-011` (4 HPAs, 1 a 4 réplicas, CPU 70%). Sob carga os 4 serviços subiram para 3 ou 4 réplicas em 41 a 62 s e voltaram a 1 depois de ~9 min. **Sem ganho de vazão** (32,4 apostas/s contra 43,2 com 1 réplica): o gargalo é o PostgreSQL único do `bets-service` (CPU em 501m, `pg_isready` estourando 1 s). Escrever "elevou réplicas sob carga", não "aumentou a vazão". Restarts por probe de 1 s em `infra feat-012`. |
+| Resposta de dashboard **abaixo de 300 ms** (3.1.6). | **Provado** (RNF03): p95 de 206,2 ms com cache quente (máx. 292,0 ms); primeira requisição, a frio, 2.189,5 ms. A medida inclui a rede até o Ingress. |
+| Recuperação do estado consistente depois de falha (3.1.5, DLQ). | **Provado**: evento válido de tenant inexistente foi para a DLQ, o tenant foi criado, a mensagem foi republicada e gravada em `fact_bet`; a DLQ ficou vazia. |
