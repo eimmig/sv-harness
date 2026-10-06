@@ -3222,3 +3222,19 @@ Java a ~495% do request (limite de 500m) são o provável próximo teto. Backlog
 antes da branch da story (a CI reprovou a PR story; ver `docs/pipeline-ci-cd.md`), roteiro do pod descartável sem
 espera pelo `initdb` e túnel de porta antigo derrubando o script de carga (`tools/evidence/lib.sh` agora aborta).
 
+## Backlog dos serviços zerado, exceto `web feat-056` (2026-10-06)
+
+Fechadas e mergeadas em `develop` (cada uma com Plan Reviewer, CI e SonarCloud verdes, `./init.sh` verde e evidence):
+os 4 testes de `/actuator/health/liveness` (`api-gateway feat-020`, `auth-service feat-025`, `bets-service feat-025`,
+`stats-service feat-030`); `stats-service feat-028` (**causa raiz da corrida em `fact_bet` confirmada**: o `save` do adapter
+relia a linha e sobrescrevia a outra transação, sem PK violada e sem retry; correção por `insertIfAbsent` com
+`ON CONFLICT DO NOTHING`, reproduzida de forma determinística com `@MockitoSpyBean`); `stats-service feat-029` (invalidação do
+cache em `afterCommit`, `existsById` morto removido); `stats-service feat-031` (nova, apontamento de `feat-029`: o
+`await().untilAsserted` dos testes de listener não repetia `NoSuchElementException`, o que deixava o `init.sh` vermelho
+conforme a velocidade da máquina); `web feat-069` (eixo X do drawdown com o dia real e cards maiores) e `web feat-068` (R$ nos
+cards da Visão geral e rótulo do Pre / Live). Regras do Sonar descobertas (`java:S5976`, `java:S107`) e o gotcha do Awaitility
+estão em `docs/testes.md`; a causa raiz da corrida em `docs/services/stats-service.md`.
+
+**Em aberto: `web feat-056`** (rollout do deployment `web` no k3s). Não há código a mudar: exige `kubectl rollout restart
+deployment/web` no cluster de produção via túnel SSH do usuário e o reteste do login por ele; a sessão não tem acesso ao k3s
+(o contexto local `kind-stakevault` está parado), então ficou `not-started` de propósito.

@@ -3,7 +3,7 @@
 > Estado atual, não histórico. O diário cronológico é o `progress.md` — este arquivo é reescrito
 > a cada sessão para responder "o que a próxima sessão precisa saber agora".
 
-**Última atualização:** 2026-10-04
+**Última atualização:** 2026-10-06
 
 ## Objetivo atual
 
@@ -11,6 +11,13 @@ Escrever a **4.4 Avaliação experimental** do TCC e ajustar o texto pelas diver
 produção (carga, escalonamento, DLQ, cache) foi **coletada** em 2026-10-04; falta empacotá-la
 (`05-coleta.sh` + `scp`) e transformar em texto. Números e leitura honesta: `docs/testes-de-producao.md`
 seção "Resultados da rodada de 2026-10-04"; frases do TCC 1 afetadas: `docs/divergencias-tcc1.md` seção 6.
+
+## Backlog dos serviços (2026-10-06)
+
+Zerado nos 6 serviços e no `infra/`, exceto `apps/web feat-056` (rollout manual do `web` no k3s, depende do túnel SSH e do
+reteste do usuário). `stats-service feat-028` fechou a corrida de `fact_bet` que a rodada de 2026-10-04 expôs (18 apostas
+`pending`): atualizar a leitura em `docs/testes-de-producao.md` e `docs/divergencias-tcc1.md` seção 6 ao escrever a 4.4, e
+**reexecutar a carga** se for citar a reconciliação como evidência, pois o número medido era anterior à correção.
 
 ## Concluído
 
