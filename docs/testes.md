@@ -373,6 +373,9 @@ abrir o PR da story:
 - **`java:S5976`** (MAJOR, `api-gateway feat-020`, 2026-10-06): 3 `@Test` com corpo idêntico que
   só mudam o valor de entrada (ex.: os 3 paths de `/actuator/health*` em `HealthChecksTest`) —
   um único `@ParameterizedTest` com `@ValueSource`, não um método por valor.
+- **`java:S107`** (MAJOR, `stats-service feat-028`, 2026-10-06): método com mais de 7 parâmetros — num
+  `@Query` nativo de `INSERT` (16 colunas de `fact_bet`) passar um `record` package-private
+  (`NewFactBetRow`) e referenciar `:#{#row.campo()}`, mesmo padrão dos `ResolvedStatistics*Filter`.
 
 ## Ver também
 
