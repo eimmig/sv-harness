@@ -38,7 +38,7 @@ aposta (ver [[arquitetura]] seção "Fluxos dinâmicos"). Falhas consecutivas v�
 > processar. Mensagem que não bate com o schema, ou cujo `tenantId` não resolve para um tenant
 > provisionado, é rejeitada sem reenfileirar (`AmqpRejectAndDontRequeueException`, não o
 > `x-delivery-limit`/retry — ver [[convencoes]]) e cai direto na DLQ — nos dois casos a falha é
-> permanente, retentar não ajuda. `BetCreated` faz *insert* em `FACT_BET` (`status: pending`) só
+> permanente, retentar não ajuda. `BetCreated` faz *insert* em `FACT_BET` (`status: pending`) via `insertIfAbsent` (`ON CONFLICT DO NOTHING`) só
 > quando a linha ainda não existe — se `BetSettled` já chegou primeiro (mensagens fora de ordem),
 > `BetCreated` **completa** a linha (`betType`, `dateId` da data do jogo e times) sem tocar em
 > `status`/`profit`/`isWin`, e invalida o cache do mês da aposta (`stats-service feat-027`); nunca
@@ -344,10 +344,16 @@ feature.
 **Corrida em `FACT_BET` não converge sozinha em produção** (rodada real de 2026-10-04, 100.000 apostas, 4
 réplicas do stats): a premissa acima, de que o retry do listener cura a corrida, vale para as dimensões, mas
 não para a linha do fato. 18 apostas ficaram `pending` em `fact_bet` enquanto o `bets-service` as tem
-liquidadas, mesmo com os 193.998 eventos registrados em `PROCESSED_EVENT`. Hipótese ainda não confirmada: o
-`BetCreated` lê "vazio" em paralelo com o `BetSettled`, e o `save` dele, ao commitar por último, sobrescreve a
-liquidação com `PENDING` sem violar a PK, de modo que não há exceção nem retry. Acompanhamento e teste de
-reprodução em `feat-028`; resultado completo em [[testes-de-producao]].
+liquidadas, mesmo com os 193.998 eventos registrados em `PROCESSED_EVENT`. **Causa raiz confirmada
+(`stats-service feat-028`, 2026-10-06)**: o `BetCreated` lia "vazio" em paralelo com o `BetSettled` e o `save`
+do adapter (`JpaFactBetRepository.save`) relia a linha por conta própria; se a outra transação já tinha
+commitado, o `applyFrom` sobrescrevia a linha sem violar a PK (liquidação voltava a `PENDING`, ou a linha
+liquidada perdia o `betType`), sem exceção nem retry, e o evento ficava marcado como processado. Correção:
+`FactBetRepository.insertIfAbsent` (`INSERT ... ON CONFLICT DO NOTHING`, mesmo mecanismo das dimensões) —
+`processCreated`/`processSettled` tentam inserir primeiro e, ao perder a corrida, relêem a linha já
+commitada e aplicam o merge de sempre. Reprodução determinística em
+`ProcessBetEventConcurrencyIntegrationTest` (`@MockitoSpyBean` pausa o `findById` de um consumidor até o outro
+commitar — a corrida real é estreita demais para `@RepeatedTest`); resultado completo em [[testes-de-producao]].
 
 `maxDrawdown`/`sharpeRatio` não são agregados SQL simples (`SUM`/`AVG`/`COUNT`) como o resto do
 serviço — exigem a série de `profit` ordenada por `betDate` (data do jogo — ver [[estatisticas]])
