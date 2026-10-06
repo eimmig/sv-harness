@@ -136,6 +136,12 @@ Chaves padronizadas (inglês, mesma decisão de nomenclatura técnica — ver [[
 > `status=pending`, e RN06 exclui `pending` de toda agregação, então aquele insert é invisível
 > para qualquer métrica cacheada (evictar ali seria desperdício, sem nenhuma mudança de valor).
 > Achado real durante a implementação, corrigindo a premissa inicial do plano.
+>
+> **A invalidação roda em `afterCommit`** (`stats-service feat-029`, 2026-10-06), via
+> `TransactionSynchronizationManager`: evictar dentro da transação deixava um leitor repopular o cache
+> com o estado de antes do commit (o TTL de 1 h só limitava o estrago), e uma transação revertida não
+> deve invalidar nada. Sem transação ativa (chamada direta), invalida na hora. Teste unitário com
+> sincronização manual em `ProcessBetEventServiceTest` (commit evicta, rollback não).
 
 Meta de performance (RNF03): resposta de dashboard < 300 ms (depende do cache estar quente).
 
