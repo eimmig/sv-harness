@@ -181,6 +181,14 @@ client-side de uma única chamada a `GET /api/v1/bankroll/balance?at=<data mais 
 inteiramente para um tenant sem histórico) + o próprio lucro diário já buscado para a curva, sem
 1 chamada por mês (`buildMonthlyBalances`) — ver [[estatisticas]].
 
+**Valor em R$ nos cards (`apps/web feat-068`, 2026-10-06)**: Lucro Total, Pre / Live e Lucro Médio Mensal mostram o
+valor em reais numa linha secundária do `KpiCard` (`secondary`, opcional). Sai dos mesmos dados já carregados, sem chamada
+nova: total = soma de `netProfit` do `daily`; pre/live = `netProfit` do segmento de `byBetType`; médio = total / 12 (mesmo
+divisor da versão em unidades). Como a unidade é fixa (`saldoAtual × unitPercent`), somar reais e converter dá o mesmo valor,
+então não há recálculo pelo denominador. O card Pre / Live virou "Lucro Pre / Live (U)" e ganhou uma dica (`hint`, vira o
+`title` do card): é lucro em unidades por tipo de aposta, valor absoluto e não percentual, e pre + live pode diferir do total
+por arredondamento ou por apostas sem `betType` (anteriores à migração).
+
 **Achado real, diverge do que a descrição do epic assumia**: `monthly` de
 `GET /api/v1/statistics` **não** vem pré-filtrado pelo ano corrente quando a chamada é feita sem
 `from`/`to` — `aggregateByMonth` (`stats-service`) agrupa por `(year, month)` sobre o histórico
