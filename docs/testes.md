@@ -370,6 +370,9 @@ abrir o PR da story:
   tem esse papel implícito (Playwright continua achando por `getByRole('status')`).
 - **`typescript:S7755`** (MINOR, `feat-048`): último elemento por `arr[arr.length - 1]` — usar
   `arr.at(-1)` e tratar o `undefined` do tipo com guarda, não com non-null assertion (`!`).
+- **`java:S5976`** (MAJOR, `api-gateway feat-020`, 2026-10-06): 3 `@Test` com corpo idêntico que
+  só mudam o valor de entrada (ex.: os 3 paths de `/actuator/health*` em `HealthChecksTest`) —
+  um único `@ParameterizedTest` com `@ValueSource`, não um método por valor.
 
 ## Ver também
 
