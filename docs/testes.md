@@ -351,6 +351,16 @@ pequeno demais para justificar a ferramenta. Em vez disso:
 - Se algum schema mudar, os dois testes (em repositórios/pastas diferentes) devem ser
   atualizados no mesmo commit/feature — não é aceitável só um lado saber da mudança.
 
+### Awaitility: `untilAsserted` só repete `AssertionError`
+
+Dentro de `await().untilAsserted(...)`, `findById(...).orElseThrow()` lança `NoSuchElementException`, que o
+Awaitility **não** repete: a primeira leitura (100 ms depois do `publish`) derruba o teste se o listener
+ainda não terminou a primeira mensagem (a de um tenant novo migra o schema). O `DROP SCHEMA` do `afterEach`
+então concorre com a mensagem em processamento (`deadlock detected`), ela retenta com backoff e atrasa as dos
+testes seguintes: falha em cascata, verde ou vermelho conforme a velocidade da máquina (`stats-service
+feat-031`, 2026-10-06). Usar `.ignoreException(NoSuchElementException.class)` em todo await que lê uma linha
+ainda inexistente.
+
 ## CI e SonarCloud
 
 Os relatórios de cobertura definidos acima (JaCoCo XML, LCOV do `ng test --code-coverage`,
