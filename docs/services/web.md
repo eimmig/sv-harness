@@ -267,6 +267,12 @@ reincidir no achado de duplicação do SonarCloud. Módulo puro de cálculo
 inverter a dependência — um componente `shared/` nunca deveria depender de um módulo de
 `pages/`.
 
+**Eixo X e tamanho (`apps/web feat-069`, 2026-10-06)**: `MonthlyDrawdownMonth` carrega `startDay` (dia real em que o
+trecho do mês começa: o dia de `from` no primeiro mês, 1 nos demais) e o gráfico rotula as categorias a partir dele —
+antes eram `index + 1`, então um período de 20/09 a 04/10 aparecia como dias 1 a 11 e o acumulado parcial (11 dias)
+parecia contradizer o total do mês na Visão geral. A grade usa `minmax(min(320px, 100%), 1fr)` (o `min(…, 100%)`
+impede estouro horizontal no mobile, onde o painel tem ~200 px) e o canvas tem 220 px de altura.
+
 **Implementado em `web feat-028`**: os 2 campos de mês ficam batched atrás de um botão "Aplicar"
 explícito (mesmo padrão do `filterForm` de 5 selects do próprio `dashboard.ts`) — achado real de
 design encontrado durante os próprios testes: reagir a cada campo independentemente disparava 2
