@@ -281,6 +281,12 @@ antes eram `index + 1`, então um período de 20/09 a 04/10 aparecia como dias 1
 parecia contradizer o total do mês na Visão geral. A grade usa `minmax(min(320px, 100%), 1fr)` (o `min(…, 100%)`
 impede estouro horizontal no mobile, onde o painel tem ~200 px) e o canvas tem 220 px de altura.
 
+**Tooltip dos gráficos (`apps/web feat-070`, 2026-10-06)**: sem `valueFormatter`, o echarts imprime o número cru no locale
+dele (en-US, sem unidade). `core/chart-theme.ts` aceita `tooltipValueFormatter` nos dois builders; lucro no período e curva de
+equity usam `formatBrl` (R$, pt-BR fixo como os cards), drawdown mensal e comparativo usam `formatOdd` no idioma ativo + ` U`.
+Todo gráfico novo passa o formatador. Nos specs, um componente que injeta `Language` precisa de `stubBrazilianLocale()`, senão
+o Transloco de teste troca para `en-US` e as chaves de tradução saem com prefixo.
+
 **Implementado em `web feat-028`**: os 2 campos de mês ficam batched atrás de um botão "Aplicar"
 explícito (mesmo padrão do `filterForm` de 5 selects do próprio `dashboard.ts`) — achado real de
 design encontrado durante os próprios testes: reagir a cada campo independentemente disparava 2
