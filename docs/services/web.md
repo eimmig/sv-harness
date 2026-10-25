@@ -623,6 +623,13 @@ de flex/grid nas telas com filtro em `flex-wrap`, e duplo de teste precisa de `s
 `errorMessage` (opcional) plugado em `search-statistics` (sportId/leagueId, `Validators.required`)
 — renderiza a mesma mensagem de antes, só que fora do `mat-form-field`.
 
+**`[displayWith]` é obrigatório quando `mat-option [value]` é o id** (`feat-075`, achado nas capturas
+do TCC 2): ao selecionar, o `mat-autocomplete` escreve no input `displayWith(value)` ou, sem ele, o
+próprio `value`. O binding `[value]="displayValue()"` só reescreve o campo quando o signal muda —
+digitar o nome exato ("Futebol") e escolher a opção deixava o resolvido igual ao digitado, e o UUID
+ficava no campo (o form recebia o id certo). `displayName` resolve id → nome no próprio componente,
+então vale para todas as telas sem mudança nos callers.
+
 ## Dashboard de times (`epic-036` da raiz, `feat-047`)
 
 Times passou a ter o mesmo menu flutuante Cadastrar/Dashboard dos outros catálogos (antes era link
