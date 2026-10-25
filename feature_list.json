@@ -468,6 +468,69 @@
       "status": "done",
       "harness": "multiplos: infra, services/stats-service, services/auth-service, services/bets-service",
       "evidence": "2026-09-30. As 4 features em develop com CI, SonarCloud e auditorias: stats-service feat-027 (SV-709, consumidores concorrentes), infra feat-010 (SV-715, PostgreSQL 18/Redis 8) e feat-011 (SV-719, HPAs), auth-service feat-024 (SV-724, testes em PG18) e bets-service feat-024 (SV-727, outbox transacional + relay com confirms). Verificacao em cluster real (kubectl get hpa, carga com contagem de eventos publicados x processados) fica para a maquina de producao do usuario; roteiro em infra/CLAUDE.md. Achados fora de escopo: stats-service feat-028 e feat-029."
+    },
+    {
+      "id": "epic-042",
+      "name": "Padronizar a taxa de acerto: apostas devolvidas fora do denominador",
+      "description": "Nasce da revisao das equacoes do TCC 2 (secao 2.5) contra o sistema (2026-10-16). Hoje convivem duas taxas de acerto: winRate do stats-service (GET /api/v1/statistics, segmentos e GET /api/v1/statistics/search) = ganhas / liquidadas, com void no denominador (decisao de interpretacao de stats-service feat-004); e taxaAcertoEntradas do Relatorio do periodo (apps/web, period-report-metrics.ts) = ganhas / (ganhas + perdidas), usada no EV. Decisao do usuario (2026-10-16): padronizar em ganhas / (ganhas + perdidas) - aposta devolvida nao entra na taxa de acerto. O texto do TCC 2 ja descreve a definicao padronizada. Harness: services/stats-service (feat-032). Definicao de pronto: winRate de todos os endpoints com void fora do denominador, docs/estatisticas.md com uma unica definicao, evidencia no campo evidence deste epic e em services/stats-service/feature_list.json.",
+      "dependencies": [],
+      "status": "not-started",
+      "harness": "services/stats-service",
+      "evidence": ""
+    },
+    {
+      "id": "epic-043",
+      "name": "Unidade de aposta com uma unica base: saldo inicial do periodo",
+      "description": "Nasce da revisao das equacoes do TCC 2 contra o sistema (2026-10-16). A conversao de reais em unidades (saldo x unitPercent) usa saldoFinal no Relatorio e na Comparacao de periodos e o saldo de agora no dashboard e na Visao geral, enquanto docs/estatisticas.md diz saldoAtual. Correto: saldo no inicio do periodo (bate com o print de referencia do usuario: 264,20 / 1195,05 = 22,11% e 22,11u). Harness: apps/web (feat-072), so cliente, sem mudanca de backend. Definicao de pronto: todas as telas com a mesma base, docs/estatisticas.md e docs/services/web.md com uma unica definicao, evidencia no campo evidence deste epic e em apps/web/feature_list.json.",
+      "dependencies": [],
+      "status": "not-started",
+      "harness": "apps/web",
+      "evidence": ""
+    },
+    {
+      "id": "epic-044",
+      "name": "Vault desatualizado em relacao ao codigo (rota de liquidacao, ERD, outbox)",
+      "description": "Nasce da revisao do TCC 2 contra o sistema (2026-10-16), que redesenhou as figuras a partir das migrations e controllers. Pontos em que o vault diverge do codigo: (1) docs/arquitetura.md fluxo 3 usa PUT /api/v1/bets/{id}/result; o codigo e PATCH /api/v1/bets/{id}/status (BetsController); (2) docs/modelo-de-dados.md, ERD Mermaid do bets-service ainda com team1/team2 varchar, sem a tabela TEAM nem team1Id/team2Id (migrations V20260915145002 e V20260915150500), sem idempotencyKey em BET e sem OUTBOX_EVENT no schema public (V20260930130000); (3) docs/arquitetura.md fluxos 1 e 3 mostram o bets-service publicando direto no RabbitMQ e o stats-service 'atualizando o cache'; o codigo publica via outbox transacional + relay com confirms (bets-service feat-024) e o stats-service so evicta o cache em BetSettled, apos o commit (feat-029); (4) docs/divergencias-tcc1.md secao 2 cita a chave tenant:{slug} e docs/services/stats-service.md cita tenant:{tenantId}; o codigo usa o slug (RedisMetricsCacheRepository). Harness: raiz (so docs). Definicao de pronto: as 4 notas alinhadas ao codigo, sem mudanca de codigo.",
+      "dependencies": [],
+      "status": "not-started",
+      "harness": "raiz (docs/)",
+      "evidence": ""
+    },
+    {
+      "id": "epic-045",
+      "name": "Registrar aposta quebra quando acessado por http (crypto.randomUUID)",
+      "description": "Achado nas capturas de tela do TCC 2 (2026-10-25), com Playwright contra a producao (https://192.168.2.124, tenant loadtest-0086b111). Por http://192.168.2.124 a tela register-bet fica em branco ('crypto.randomUUID is not a function': a API so existe em contexto seguro). Por https funciona. Harness: apps/web (feat-073), so cliente. Definicao de pronto: tela funcionando por http e https em producao, evidencia aqui e em apps/web/feature_list.json.",
+      "dependencies": [],
+      "status": "not-started",
+      "harness": "apps/web",
+      "evidence": ""
+    },
+    {
+      "id": "epic-046",
+      "name": "Campos de data esperam mes/dia/ano em pt-BR",
+      "description": "Achado nas capturas de tela do TCC 2 (2026-10-25), com Playwright contra a producao (https://192.168.2.124, tenant loadtest-0086b111). core/date-mask.directive.ts monta mes/dia/ano e o NativeDateAdapter faz o parse no formato americano, mas a tela exibe dia/mes/ano: quem digita 25/08/2026 recebe campo invalido. Afeta todos os campos de data (periodo personalizado, historico, busca, registro de aposta). Harness: apps/web (feat-074). Definicao de pronto: data digitada no formato do idioma ativo aceita em todos os campos, evidencia aqui e em apps/web/feature_list.json.",
+      "dependencies": [],
+      "status": "not-started",
+      "harness": "apps/web",
+      "evidence": ""
+    },
+    {
+      "id": "epic-047",
+      "name": "Filtros com busca exibem o UUID em vez do nome",
+      "description": "Achado nas capturas de tela do TCC 2 (2026-10-25), com Playwright contra a producao (https://192.168.2.124, tenant loadtest-0086b111). No componente searchable-select, digitar o nome completo de uma opcao e escolhe-la deixa o UUID no campo (o filtro aplicado esta certo). Harness: apps/web (feat-075). Definicao de pronto: campo sempre com o nome, evidencia aqui e em apps/web/feature_list.json.",
+      "dependencies": [],
+      "status": "done",
+      "harness": "apps/web",
+      "evidence": "2026-10-25: apps/web feat-075 done (SV-774, PRs #283/#284/#285 em develop). searchable-select ganhou [displayWith] resolvendo id -> nome; unitario e e2e reproduzem o caso (falham sem a correcao com 'sp-1') e passam; init.sh verde; Delivery Reviewer e Test Suite Auditor PASS. Producao ainda sem o deploy (rollout manual no k3s)."
+    },
+    {
+      "id": "epic-048",
+      "name": "IP do servidor de producao desatualizado na documentacao",
+      "description": "Achado na sessao do TCC 2 de 2026-10-25: o servidor de producao responde em 192.168.2.124 (informado pelo usuario; SSH e https testados), mas docs/services/infra.md (linhas 335 e 362, tunel SSH e KUBE_CONFIG) ainda cita 192.168.2.123. Registrar tambem que, no servidor, o kubectl do usuario eduardo usa KUBECONFIG=~/.kube/config (o /etc/rancher/k3s/k3s.yaml e so do root). Confirmar com o usuario se o IP e fixo (reserva DHCP) antes de gravar. Harness: raiz (so docs). Definicao de pronto: nenhuma ocorrencia de 192.168.2.123 em docs/, sem mudanca de codigo.",
+      "dependencies": [],
+      "status": "not-started",
+      "harness": "raiz (docs/)",
+      "evidence": ""
     }
   ]
 }
