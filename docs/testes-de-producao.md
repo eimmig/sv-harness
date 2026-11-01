@@ -160,6 +160,36 @@ Como ler esses números sem afirmar demais:
 - **Limitações:** nó único, um PostgreSQL por serviço, carga sintética de um único processo, amostragem de 10 s do
   `metrics-server` (que atrasa 15 a 60 s), eventos do Kubernetes duram ~1 h.
 
+## Resultados da rodada de 2026-11-01 (100.000 apostas, 128 threads) — a que o TCC usa
+
+Rodada definitiva, depois de `infra` `feat-012` (sondas só da aplicação, `postgres-bets` com 2000m/2Gi) e de
+`stats-service` `feat-028` (corrida entre `BetCreated` e `BetSettled`). Mesmo nó: i5-1145G7 (4 núcleos, 8 threads),
+16 GB, Debian 13, k3s v1.36.4. Evidência em `evidence/20261101-152144` no Debian (cópia `.tar.gz` com o autor).
+Tenant `loadtest-8a365bf8`. O TCC apresenta só esta rodada; a de 04/10 fica aqui como histórico.
+
+| Medida | Resultado |
+|---|---|
+| Vazão do gerador | **90,1 apostas/s** em 1.109,9 s, **0 erros**, 100.000 de 100.000 (04/10: 32,4/s e 26 erros) |
+| HPA, réplicas máximas | `api-gateway` 4, `auth-service` 2, `bets-service` 4, `stats-service` 4 |
+| Pico de CPU (% do `requests.cpu` de 100m) | 303%, 127%, 501% e 498% |
+| Tempo até o primeiro escalonamento | 40 s (auth) e 61 s (gateway, bets, stats) |
+| Pico por pod | `postgres-bets` **1.916m** (limite 2000m); `postgres-stats` 501m e réplicas do stats em 501m (no limite) |
+| Redução | auth voltou a 1 durante a carga; gateway e bets ~6 min depois do fim; stats ficou em 4 até a fila esvaziar e a coleta terminou antes da redução dele |
+| Fila | **96.822 eventos** em `stats.bet-events` no fim do registro, drenados em ~11 min (consumo, não registro, virou o limite) |
+| Eventos esperados x processados | 194.055 = 194.055 (PASS); `fact_bet` 100.000 (PASS); outbox e DLQ em 0 (PASS) |
+| Estado final (`02-estado.txt`) | contagens por status **iguais** nos dois bancos (won 44.199, lost 47.112, void 2.744, pending 5.945); a divergência de 18 de 04/10 não se repetiu |
+| Cache (`04-cache.sh`, 2ª execução) | miss 1.930,9 ms; hit p50 156,8 ms, p95 193,6 ms, máx. 229,5 ms (RNF03 PASS); 392 hits e 8 misses |
+| Reinícios | 0 nos pods de aplicação durante a carga |
+
+Como ler sem afirmar demais:
+
+- **Vazão:** o ganho sobre 04/10 vem dos ajustes do banco e das sondas. Não houve rodada com 1 réplica depois deles,
+  então a parcela do ganho devida ao HPA não foi medida.
+- **Estado:** `02-estado.txt` compara totais por status, não aposta por aposta.
+- **Cache:** o `04-cache.sh` rodou duas vezes (16:00:25 e 16:00:50) e a segunda sobrescreveu os arquivos. A primeira
+  teve máx. de 431,7 ms (p95 207,1 ms), registrada só em captura de tela e no `log.txt`. O TCC usa a segunda.
+- **DLQ e figuras da fila:** não refeitas nesta rodada; o TCC reaproveita as capturas de 04/10.
+
 ## Lições para repetir os testes
 
 - **Atualizar o clone antes de tudo** (`git pull` na pasta `sv-harness` do Debian): um clone antigo roda o
@@ -181,6 +211,17 @@ Como ler esses números sem afirmar demais:
 - **Túnel antigo na porta 18081:** um `kubectl port-forward` esquecido de rodada anterior aponta para o pod que o
   rollout derrubou e o script falha com `Connection refused` em `localhost:18081`. O `port_forward` do `lib.sh` agora
   aborta com mensagem se o túnel novo não sobe; para limpar: `pkill -f "port-forward svc/auth-service"`.
+
+- **`export OUT` na mesma janela que roda os scripts** (achado de 2026-11-01): exportado em outra aba, o `02-carga.sh`
+  cria `evidence/<data-hora>` e o baseline vai para outra pasta. Confira a primeira linha (`saida em ...`).
+- **Rodar `04-cache.sh` uma vez só**: cada execução sobrescreve os `04-*.txt`, e a captura de tela precisa ser da
+  mesma execução que fica nos arquivos.
+- **Senha nas capturas**: o fim do `02-carga.sh` e o comando do `04-cache.sh` mostram a senha do admin do tenant.
+  Corte essas linhas antes de usar a captura no TCC.
+- **Depois de `rollout restart`, esperar o HPA voltar a 1**: as JVMs subindo juntas levam os 4 serviços a 4 réplicas
+  sem tráfego; o baseline só vale com todos em 1.
+- **Estado final por status**: o `02-carga.sh` não compara as situações das apostas. Rode o `group by status` em `bet`
+  e `fact_bet` e grave em `$OUT/02-estado.txt`.
 
 Os scripts `01` a `04` foram validados contra o cluster real nesta rodada; `05-coleta.sh` é o único ainda sem uso
 registrado. Se um comando falhar, o erro aparece no terminal e em `log.txt`.
