@@ -3246,3 +3246,11 @@ PASS): `PasetoClaims` ganha `isComplete()` e `isExpired(long)`, e `PasetoAuthent
 usar `if (!claims.isComplete() || claims.isExpired(Instant.now().getEpochSecond()))`. Refatoração pura, pedida para a
 Listagem do filtro PASETO no TCC 2; o texto final de `doFilterInternal` está em `services/api-gateway/progress.md`.
 `epic-049` (telegram-integration) segue `not-started`.
+
+## `epic-051` fechado (2026-11-01)
+
+`apps/web feat-076` (story SV-780, PRs #287-#289, CI e SonarCloud verdes, Delivery Reviewer e Test Suite Auditor
+PASS): tokens de cor ajustados para o contraste AA da WCAG 2.2 (4,5:1) nos dois temas, mudando só a luminosidade.
+`apps/web/src/styles/contrast.spec.ts` lê os tokens e reprova o `ng test` abaixo do mínimo; a tabela de razões que o
+TCC pode citar está em `docs/sistema-de-design.md`, seção "Contraste (WCAG 2.2 AA)". O verde do tema claro escureceu
+de `#2fa85c` para `#20733f`. Produção ainda sem o deploy (rollout manual).

@@ -567,6 +567,33 @@
         }
       ]
     }
+    },
+    {
+      "id": "epic-051",
+      "name": "Contraste AA da WCAG 2.2 nas cores da interface",
+      "description": "Pedido do usuario na sessao do TCC 2 de 2026-11-01: o TCC vai afirmar que a interface atende ao contraste minimo AA da WCAG 2.2 (4,5:1 para texto normal). Hoje o verde do tema claro, o vermelho e o azul do tema escuro e os badges com fundo translucido ficam abaixo disso, e docs/sistema-de-design.md diverge do codigo (#26A65B). Harness: apps/web (feat-076). Definicao de pronto: feat-076 done em develop, com teste automatizado de contraste e vault atualizado; evidencia aqui e em apps/web/feature_list.json.",
+      "dependencies": [],
+      "status": "done",
+      "harness": "apps/web",
+      "evidence": {
+        "resumo": "Fechado em 2026-11-01 com apps/web feat-076 (story SV-780) done em develop (merge 780b707).",
+        "secoes": [
+          {
+            "titulo": "O que foi feito",
+            "itens": [
+              "Tokens ajustados so na luminosidade: claro brand #20733f, brand-strong #144b25, negative #b93635, action-neutral #2d6c9b; escuro negative #ea7a79, action-neutral #65a4d0.",
+              "apps/web/src/styles/contrast.spec.ts le _tokens.scss e theme-colors.scss e reprova o ng test se algum par texto/fundo em uso ficar abaixo de 4,5:1 nos dois temas. Tabela de razoes em docs/sistema-de-design.md (secao Contraste (WCAG 2.2 AA))."
+            ]
+          },
+          {
+            "titulo": "Como foi verificado",
+            "itens": [
+              "Spec: 19/70 falham com os tokens antigos, 70/70 passam com os novos. e2e 106/106, init.sh verde (476 testes).",
+              "PRs #287, #288 e #289 em eimmig/sv-frontend, CI e SonarCloud verdes. Delivery Reviewer e Test Suite Auditor: PASS. Evidencia completa em apps/web/feature_list.json (feat-076)."
+            ]
+          }
+        ]
+      }
     }
   ]
 }
