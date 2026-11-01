@@ -204,6 +204,11 @@ código" em `docs/convencoes.md`).
   mudando, quando na verdade é o duplo que não é reativo. Corrigir sempre com `readonly options =
   signal<X[]>([...])` no host de teste e `[options]="options()"` no template, nunca uma
   propriedade mutável simples — mesmo padrão que o próprio app de produção já usa em toda página.
+- **Spec que lê um arquivo-fonte como texto** (`apps/web feat-076`): o `@angular/build:unit-test`
+  aceita `import source from './_tokens.scss' with { loader: 'text' }`, sem `node:fs` (o bundle de
+  teste é de navegador). Precisa de um `.d.ts` declarando o módulo (`src/styles/scss-text.d.ts`,
+  `declare module '*.scss'`). É o que `src/styles/contrast.spec.ts` usa para medir o contraste dos
+  tokens de cor sem duplicar os valores no teste.
 - **Cobertura**: gate de 80% (statements/branches/functions/lines) via `coverageThresholds` em
   `apps/web/angular.json`, aplicado automaticamente em todo `ng test` — não precisa mais da flag
   `--code-coverage`/`--coverage` na linha de comando (era a sintaxe do Karma, stale desde que o

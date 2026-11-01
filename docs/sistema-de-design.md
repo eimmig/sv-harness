@@ -83,9 +83,12 @@ sobrepondo a preferência do SO quando o usuário escolher explicitamente.
 Valores exatos do modo escuro (citação direta dos mockups originais da marca, reconfirmados por
 `arka-tokens.css` no rebranding de 2026-09-23 — mesmo verde `#3EC46D`); modo claro derivado pela
 mesma regra de construção usada no restante do documento (fundo↔texto invertidos, mesmo verde de
-marca), com o verde de modo claro atualizado para `#26A65B` (valor de `arka-tokens.css`) — o
-usuário não forneceu um mockup claro original, então o modo claro continua a parte menos
-certificada desta tabela, revisitar se um mockup claro real aparecer depois.
+marca), com o verde escurecido para contraste — o usuário não forneceu um mockup claro original,
+então o modo claro continua a parte menos certificada desta tabela, revisitar se um mockup claro
+real aparecer depois. Os valores de verde, vermelho e azul das duas tabelas são os de `apps/web
+feat-076` (2026-11-01), ajustados para o contraste AA da WCAG 2.2 — ver "Contraste (WCAG 2.2 AA)"
+abaixo. O `#26A65B` que `arka-tokens.css` sugeria para o verde claro nunca chegou ao código (que
+usava `#2FA85C`) e também não passa: 3,1:1 sobre `--color-surface`.
 
 ### Modo escuro
 
@@ -98,11 +101,11 @@ certificada desta tabela, revisitar se um mockup claro real aparecer depois.
 | `--color-text-primary` | `#F2F7F5` | Texto principal (off-white) |
 | `--color-text-secondary` | `#8B99A2` | Texto secundário/muted (legendas, rótulos de KPI) — ver nota de contraste abaixo. **`arka-tokens.css` (2026-09-23) traz `#7A8A93` para este papel — não adotado**: é o valor pré-correção de acessibilidade descrito na nota abaixo (`4.47:1`, falha WCAG AA), tratado como desatualizado em vez de reabrir o achado já corrigido |
 | `--color-brand` | `#3EC46D` | Verde de marca — **só** logo, ícone ativo da nav, link ativo, e valores positivos (ver regra semântica abaixo) |
-| `--color-brand-strong` | `#26A65B` | Estado hover/pressed de elementos com `--color-brand` |
+| `--color-brand-strong` | `#26A65B` | Estado hover/pressed de elementos com `--color-brand` (sem uso no código hoje) |
 | `--color-positive` | `--color-brand` (mesmo verde) | Lucro, variação percentual positiva, badge de aposta "won" |
-| `--color-negative` | `#E24B4A` | Prejuízo, variação percentual negativa, badge de aposta "lost", erro/destrutivo |
-| `--color-action-neutral` | `#3E8CC4` | **Cor padrão de CTA/ação neutra** (salvar, filtrar, confirmar, navegação) — ver regra semântica abaixo. Derivada por rotação de matiz do `--color-brand` (mesma saturação/luminosidade, matiz azul) para harmonizar com a marca sem ambiguidade semântica; não veio do mockup do usuário, ajustar se um azul específico for preferido. |
-| `--color-action-neutral-strong` | `#2E6FA0` | Estado hover/pressed de `--color-action-neutral` |
+| `--color-negative` | `#EA7A79` | Prejuízo, variação percentual negativa, badge de aposta "lost", erro/destrutivo (antes `#E24B4A`, `feat-076`) |
+| `--color-action-neutral` | `#65A4D0` | **Cor de ação neutra do app** (contador do painel, papel admin, série B do comparativo) — ver regra semântica abaixo. Derivada por rotação de matiz do `--color-brand`; clareada em `feat-076` (antes `#3E8CC4`, que segue como semente do tema M3, ver "Integração com Angular Material") |
+| `--color-action-neutral-strong` | `#2E6FA0` | Estado hover/pressed de `--color-action-neutral` (sem uso no código hoje) |
 | `--color-disabled-bg` | `#1D2A36` | Fundo de botão/elemento desabilitado |
 | `--color-disabled-text` | `#4C5A64` | Texto de botão/elemento desabilitado |
 
@@ -129,15 +132,53 @@ certificada desta tabela, revisitar se um mockup claro real aparecer depois.
 | `--color-surface-elevated` | `#E7EEEB` | Estados hover/ativo |
 | `--color-border` | `#DCE3E0` | Divisores e bordas sutis |
 | `--color-text-primary` | `#0B1622` | Texto principal (mesmo navy do fundo escuro) |
-| `--color-text-secondary` | `#5A6B75` | Texto secundário/muted (valor de `arka-tokens.css`, 2026-09-23 — próximo do anterior `#5C6B72`, já passava WCAG AA) |
-| `--color-brand` | `#26A65B` | Verde de marca, escurecido para contraste em fundo claro (valor de `arka-tokens.css`, 2026-09-23 — antes `#2FA85C`) |
-| `--color-brand-strong` | `#22803F` | Estado hover/pressed |
+| `--color-text-secondary` | `#5C6B72` | Texto secundário/muted. `arka-tokens.css` (2026-09-23) sugeria `#5A6B75`, que nunca chegou ao código; o valor em uso já passa AA |
+| `--color-brand` | `#20733F` | Verde de marca, escurecido para contraste em fundo claro (`feat-076`; antes `#2FA85C` no código) |
+| `--color-brand-strong` | `#144B25` | Estado hover/pressed (sem uso no código hoje; escurecido junto com o verde para continuar mais forte que ele) |
 | `--color-positive` | `--color-brand` | Lucro, variação positiva, badge "won" |
-| `--color-negative` | `#C73E3D` | Prejuízo, variação negativa, badge "lost", erro |
-| `--color-action-neutral` | `#2E70A0` | CTA/ação neutra, escurecido para contraste em fundo claro |
-| `--color-action-neutral-strong` | `#215680` | Estado hover/pressed |
+| `--color-negative` | `#B93635` | Prejuízo, variação negativa, badge "lost", erro (antes `#C73E3D`) |
+| `--color-action-neutral` | `#2D6C9B` | Ação neutra, escurecido para contraste em fundo claro (antes `#2E70A0`) |
+| `--color-action-neutral-strong` | `#215680` | Estado hover/pressed (sem uso no código hoje) |
 | `--color-disabled-bg` | `#E7EEEB` | Fundo de elemento desabilitado |
 | `--color-disabled-text` | `#9AA6A2` | Texto de elemento desabilitado |
+
+### Contraste (WCAG 2.2 AA)
+
+Desde `apps/web feat-076` (2026-11-01), todo texto da interface atinge 4,5:1 nos dois temas (WCAG
+2.2, critério 1.4.3, nível AA, texto normal). A prova é `apps/web/src/styles/contrast.spec.ts`, que
+lê `src/styles/_tokens.scss` e `src/theme-colors.scss` e reprova o `ng test` (e, portanto, o
+`init.sh` e a CI) se algum par abaixo cair de 4,5:1. Fórmula de luminância relativa da WCAG.
+
+Como os valores foram escolhidos: só a luminosidade (HSL) mudou, com matiz e saturação mantidos,
+até o par mais exigente de cada cor passar. O par que decide não é a cor sobre o fundo liso: é o
+texto sobre um fundo translúcido da própria cor (`color-mix(in srgb, <cor> N%, transparent)`, que
+o navegador compõe sobre `--color-surface`), usado em badges won/lost, no contador do painel, no
+papel admin e no link ativo da navegação. O teste compõe esses fundos do mesmo jeito (conferido no
+`getComputedStyle` do Chromium, que devolve a própria cor com alfa N).
+
+| Par (texto sobre fundo) | Claro | Escuro |
+|---|---|---|
+| `text-primary` sobre background / surface / surface-elevated | 16,62 / 18,23 / 15,47 | 16,84 / 14,75 / 13,50 |
+| `text-secondary` sobre background / surface / surface-elevated | 5,04 / 5,52 / 4,69 | 6,23 / 5,45 / 4,99 |
+| `brand`/`positive` sobre background / surface / surface-elevated | 5,34 / 5,86 / 4,97 | 8,09 / 7,09 / 6,49 |
+| `negative` sobre background / surface / surface-elevated | 5,26 / 5,77 / 4,89 | 6,56 / 5,75 / 5,26 |
+| `action-neutral` sobre background / surface / surface-elevated | 5,13 / 5,63 / 4,78 | 6,75 / 5,91 / 5,41 |
+| M3 `primary` (tom 40 / 80) sobre background / surface / surface-elevated | 5,85 / 6,42 / 5,45 | 10,68 / 9,35 / 8,56 |
+| M3 `error` (tom 40 / 80) sobre background / surface / surface-elevated | 5,89 / 6,46 / 5,48 | 10,74 / 9,40 / 8,61 |
+| `positive` sobre ela mesma a 16% (badge won) | 4,66 | 5,26 |
+| `negative` sobre ela mesma a 16% (badge lost) | 4,51 | 4,53 |
+| `action-neutral` sobre ela mesma a 16% (contador do painel, papel admin) | 4,51 | 4,51 |
+| `brand` sobre ela mesma a 12% (link ativo da navegação) | 4,94 | 5,71 |
+| `brand` sobre ela mesma a 18% (link ativo em hover) | 4,52 | 5,05 |
+| `positive` sobre ela mesma a 10% (valor do retorno potencial) | 5,09 | 5,93 |
+| `text-secondary` sobre `positive` a 10% (rótulo do retorno potencial) | 4,80 | 4,57 |
+| M3 `on-primary` sobre M3 `primary` (rótulo de botão preenchido) | 6,42 | 7,73 |
+
+Fora do teste, de propósito: `--color-disabled-text` (2,1 a 2,6:1), porque a WCAG isenta componente
+inativo; os tokens `-strong` e `--color-disabled-*`, que nenhum componente usa hoje; o logo e o
+wordmark em SVG (logotipo é isento). Linhas de gráfico e ícones são elementos não textuais (critério
+1.4.11, 3:1) e ficam acima disso por consequência das razões acima. Antes de usar um token novo como
+cor de texto, ou um fundo translúcido novo, acrescentar o par ao teste.
 
 ### Regra semântica de cor (importante — recomendação explícita do usuário)
 
@@ -490,7 +531,8 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
 de tema M3 (`mat.theme()`, Sass), que gera um conjunto completo de tokens (`--mat-sys-*`) a
 partir de uma cor semente. Não duplicar um sistema de cor paralelo do zero:
 
-- Gerar o tema M3 a partir de `--color-action-neutral` (`#3E8CC4`/`#2E70A0`) como cor **primária**
+- Gerar o tema M3 a partir do azul de `--color-action-neutral` (semente `#3E8CC4`; os tokens do app
+  foram ajustados para contraste em `feat-076`, a paleta M3 não precisou) como cor **primária**
   semente — não `--color-brand`/verde. O papel `primary` do M3 é o que o Material usa por padrão
   em botões/controles interativos, e por causa da regra semântica de cor acima, esse papel deve
   mapear para a cor neutra, não para a marca. `--color-brand` (verde) é injetado como cor
