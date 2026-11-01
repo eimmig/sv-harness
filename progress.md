@@ -3238,3 +3238,11 @@ estão em `docs/testes.md`; a causa raiz da corrida em `docs/services/stats-serv
 **`web feat-056` fechada em 2026-10-09**: o rollout do deployment `web` no k3s foi feito manualmente pelo usuário; não
 havia código a mudar. A automação do job `deploy` segue dependente da decisão pendente em infra
 (`docs/services/infra.md`).
+
+## `epic-050` fechado (2026-11-01)
+
+`api-gateway feat-021` (story SV-777, PRs #66-#68, CI e SonarCloud verdes, Delivery Reviewer e Test Suite Auditor
+PASS): `PasetoClaims` ganha `isComplete()` e `isExpired(long)`, e `PasetoAuthenticationFilter.doFilterInternal` passa a
+usar `if (!claims.isComplete() || claims.isExpired(Instant.now().getEpochSecond()))`. Refatoração pura, pedida para a
+Listagem do filtro PASETO no TCC 2; o texto final de `doFilterInternal` está em `services/api-gateway/progress.md`.
+`epic-049` (telegram-integration) segue `not-started`.

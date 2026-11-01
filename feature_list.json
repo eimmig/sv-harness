@@ -531,6 +531,42 @@
       "status": "not-started",
       "harness": "raiz (docs/)",
       "evidence": ""
+    },
+    {
+      "id": "epic-049",
+      "name": "Bot nao orienta /vincular quando a conta do Telegram nao tem vinculo",
+      "description": "Achado na sessao do TCC 2 de 2026-11-01, por leitura de codigo. O api-gateway responde 404 (telegram-account-not-found) para telegramUserId sem vinculo; o telegram-integration espera 401 e trata 404 como item de catalogo inexistente. Como a busca de catalogo vem antes do envio, o usuario sem vinculo recebe a mensagem de erro generico, nunca a orientacao para usar /vincular. Harness: services/telegram-integration (feat-014). Definicao de pronto: mensagem bet_submit_no_link entregue ao usuario sem vinculo, notas do vault alinhadas ao status real, evidencia aqui e em services/telegram-integration/feature_list.json.",
+      "dependencies": [],
+      "status": "not-started",
+      "harness": "services/telegram-integration",
+      "evidence": ""
+    },
+    {
+      "id": "epic-050",
+      "name": "Validacao das claims PASETO mais legivel no api-gateway",
+      "description": "Pedido do usuario na sessao do TCC 2 de 2026-11-01. A Listagem do filtro PASETO no TCC 2 (secao 4.3.1) mostra um if de quatro linhas validando userId/tenantId/role e expiracao. Refatoracao pura: PasetoClaims ganha isComplete() e isExpired(), e o filtro passa a usa-los, sem mudanca de comportamento. Harness: services/api-gateway (feat-021). Definicao de pronto: feat-021 done em develop, evidencia aqui e em services/api-gateway/feature_list.json.",
+      "dependencies": [],
+      "status": "done",
+      "harness": "services/api-gateway",
+      "evidence": {
+      "resumo": "Fechado em 2026-11-01 com services/api-gateway feat-021 (story SV-777) done em develop.",
+      "secoes": [
+        {
+          "titulo": "O que foi feito",
+          "itens": [
+            "PasetoClaims ganha isComplete() e isExpired(long); PasetoAuthenticationFilter.doFilterInternal usa if (!claims.isComplete() || claims.isExpired(Instant.now().getEpochSecond())). Refatoracao pura.",
+            "Texto final de doFilterInternal para a Listagem do TCC (tcc-014) em services/api-gateway/progress.md."
+          ]
+        },
+        {
+          "titulo": "Como foi verificado",
+          "itens": [
+            "PRs #66, #67 e #68 em eimmig/sv-api-gateway, CI e SonarCloud verdes; init.sh do servico verde (73 testes, cobertura 99,3%).",
+            "Delivery Reviewer e Test Suite Auditor: PASS. Evidencia completa em services/api-gateway/feature_list.json (feat-021)."
+          ]
+        }
+      ]
+    }
     }
   ]
 }
