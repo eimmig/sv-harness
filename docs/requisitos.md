@@ -78,7 +78,7 @@ Fonte: `TCC_1_Sistema_de_Apostas.pdf`, seção 4.1 (Escopo), cruzado com
 | ID | Nome | Critério de Processamento |
 |---|---|---|
 | RN01 | Consolidação de saldo | Saldo consolidado = soma dos saldos iniciais de todas as casas, ajustado por depósitos/retiradas líquidos, atualizado pelo resultado das apostas liquidadas. |
-| RN02 | Cálculo de lucro bruto | Aposta vencedora: `lucro = stake * odd - stake`. |
+| RN02 | Cálculo de lucro líquido | Aposta vencedora: `lucro = stake * odd - stake`, o lucro líquido da aposta (o TCC 1 chamava de "lucro bruto"; `stake * odd` é o retorno bruto). |
 | RN03 | Cálculo de prejuízo | Aposta perdida: prejuízo = `stake` integral. |
 | RN04 | Cálculo de ROI agregado | `ROI = lucro líquido acumulado / valor total investido`. |
 | RN05 | Sincronização imediata | Saldo da casa e da banca consolidada devem atualizar imediatamente após a liquidação. |
