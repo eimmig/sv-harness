@@ -3254,3 +3254,17 @@ PASS): tokens de cor ajustados para o contraste AA da WCAG 2.2 (4,5:1) nos dois 
 `apps/web/src/styles/contrast.spec.ts` lê os tokens e reprova o `ng test` abaixo do mínimo; a tabela de razões que o
 TCC pode citar está em `docs/sistema-de-design.md`, seção "Contraste (WCAG 2.2 AA)". O verde do tema claro escureceu
 de `#2fa85c` para `#20733f`. Produção ainda sem o deploy (rollout manual).
+
+## Sessão de 2026-11-02: epics 042, 044, 048 fechados; 045 e 052 em andamento
+
+- `epic-048` e `epic-044` (só docs): IP do servidor não é fixo (confirmado pelo usuário), `docs/services/infra.md`
+  com o endereço atual; fluxos de `docs/arquitetura.md`, ERD do bets-service e chaves do Redis alinhados ao código.
+- `epic-042` fechado: `stats-service feat-032` (SV-791) em `develop`, `winRate = ganhas / (ganhas + perdidas)`.
+- `epic-045`: `apps/web feat-073` (SV-788) em `develop`, story em `Review`. Falta o release `develop -> main`
+  (PR #294 do sv-frontend, merge bloqueado pelo classificador do auto mode, decisão do usuário), o rollout do
+  `web` no k3s e o teste por http e https em produção.
+- `epic-052`: parte auth-service (`feat-026`, SV-794, `GET /api/v1/telegram-links/me`) em `develop`; parte
+  `apps/web` não começou (lane do web ocupada por `feat-073` em `Review`).
+- `epic-049` fica aberto de propósito: o usuário vai usá-lo como exemplo do harness numa palestra.
+- Novo no backlog: `apps/web feat-077` (specs de página estouram o timeout de 5 s só com a suíte inteira).
+- Rollout pendente em produção: `stats-service` e `auth-service` (imagens só saem do `main`).
