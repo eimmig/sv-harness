@@ -121,16 +121,25 @@ nesta métrica especificamente, mesmo que o dashboard tenha outros filtros aplic
 ### Unidades apostadas
 
 ```
-unidadesApostadas = totalStaked(período) / (saldoAtual × unitPercent)
+unidadesApostadas = totalStaked(período) / (saldoInicial × unitPercent)
 ```
 
+**Base única da unidade** (`apps/web feat-072`, `epic-043`, 2026-11-02): em toda conversão de
+reais em unidades deste documento, `saldoInicial = saldoEm(from)` do período exibido (seção
+"Saldo inicial/final do período"), o mesmo denominador do ROI Bankroll. Na Visão geral, que não
+tem período, é o saldo na data da primeira aposta (`saldoInicioHistorico`). Antes cada tela usava
+uma base (`saldoFinal` no Relatório e no Comparativo, saldo de agora no dashboard e na Visão
+geral), e o mesmo lucro aparecia com valores diferentes em unidades. Com a base inicial, o print
+de referência fecha: lucro 264,20 sobre saldo inicial 1195,05 dá 22,11% de ROI Bankroll e 22,11u
+com unidade de 1%. Saldo inicial zero → indeterminado (`null`).
+
 **Calculado no cliente** (`apps/web`, `epic-015`), não em nenhum backend — combina `totalStaked`
-já devolvido por `GET /api/v1/statistics` (`stats-service`) com `saldoAtual` (`GET
-/api/v1/bankroll/balance` sem `at`, ou seja "agora") e `unitPercent` (`GET /api/v1/settings`,
+já devolvido por `GET /api/v1/statistics` (`stats-service`) com `saldoInicial` (`GET
+/api/v1/bankroll/balance?at=<from>`) e `unitPercent` (`GET /api/v1/settings`,
 ambos `bets-service`). "Unidade" aqui é um **percentual configurável da banca** (decisão do
 usuário, 2026-09-10: não é um valor fixo em R$ nem digitado por aposta), default 1%, editável em
-`PATCH /api/v1/settings` (admin-only). **Simplificação deliberada**: usa o `unitPercent` e o
-`saldoAtual` **vigentes agora**, aplicados retroativamente ao `totalStaked` do período inteiro —
+`PATCH /api/v1/settings` (admin-only). **Simplificação deliberada**: usa o `unitPercent`
+**vigente agora** e o `saldoInicial` do período, aplicados ao `totalStaked` do período inteiro —
 não versiona o percentual nem recalcula unidade por aposta com o saldo que existia naquele
 momento específico (exigiria uma tabela de histórico de configuração e o mesmo cálculo
 `saldoEm(betDate)` por aposta, não só duas datas de corte). Se o usuário mudar `unitPercent` no
@@ -178,12 +187,12 @@ esta é a leitura de "Average Profit" do print de referência, distinta de "ROI 
 ### Profit em unidades
 
 ```
-profitUnidades = lucroLiquido(período) / (saldoAtual × unitPercent)
+profitUnidades = lucroLiquido(período) / (saldoInicial × unitPercent)
 ```
 
 Mesma conversão de `unidadesApostadas` (seção "Métricas novas do dashboard consolidado" acima),
 aplicada ao `netProfit` em vez de ao `totalStaked` — mesma simplificação deliberada (usa
-`saldoAtual`/`unitPercent` vigentes, não históricos).
+`saldoInicial` do período e `unitPercent` vigente, não histórico).
 
 ### Taxa de acerto das entradas (excluindo devolvidas) e +EV
 
@@ -237,7 +246,7 @@ unidades**, resetando a cada mês:
 
 ```
 diasDoMes = todo dia de 1..N do mês (calendário, N = 28/29/30/31)
-profitUnidadesDia = netProfit(dia) / (saldoAtual × unitPercent)     (0 se não houve aposta liquidada naquele dia)
+profitUnidadesDia = netProfit(dia) / (saldoInicial × unitPercent)     (0 se não houve aposta liquidada naquele dia)
 acumulado[1] = profitUnidadesDia(dia 1)
 acumulado[i] = acumulado[i-1] + profitUnidadesDia(dia i)            para i > 1
 ```
@@ -245,7 +254,7 @@ acumulado[i] = acumulado[i-1] + profitUnidadesDia(dia i)            para i > 1
 **Reseta só na virada de mês** (dia 1 de cada mês recomeça em 0) — dentro do mês, um dia sem
 aposta **carrega o acumulado igual ao dia anterior** (linha reta), não zera no meio da curva.
 Mesma conversão de unidades de `profitUnidades` (seção "Métricas novas do dashboard consolidado"
-acima) — mesma simplificação deliberada (`saldoAtual`/`unitPercent` vigentes, não históricos).
+acima) — mesma simplificação deliberada (`saldoInicial` do período e `unitPercent` vigente, não histórico).
 Fonte: `GET /api/v1/statistics/daily` (`epic-016`) com `from`/`to` cobrindo o intervalo
 selecionado, agrupado por mês no cliente — nenhum endpoint novo, nenhum campo novo de backend.
 
@@ -314,8 +323,8 @@ aposta no denominador.
 ### Lucro por tipo (Pré/Live)
 
 ```
-lucroPreUnidades  = byBetType[PRE].netProfit  / (saldoAtual × unitPercent)
-lucroLiveUnidades = byBetType[LIVE].netProfit / (saldoAtual × unitPercent)
+lucroPreUnidades  = byBetType[PRE].netProfit  / (saldoInicial × unitPercent)
+lucroLiveUnidades = byBetType[LIVE].netProfit / (saldoInicial × unitPercent)
 ```
 
 `byBetType` é o 6º segmento de `GET /api/v1/statistics` (`epic-014`, mesmo formato de

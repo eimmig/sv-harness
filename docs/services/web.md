@@ -141,7 +141,7 @@ inicial e final do período).
 
 **Cards novos**, ao lado dos já existentes (lucro/prejuízo = `netProfit`, quantidade de apostas =
 `settledCount`, ROI — os 3 já em `feat-006`): unidades apostadas (**calculado no cliente**, não
-vem pronto de nenhuma API — `totalStaked / (saldoAtual × unitPercent)`, `unitPercent` de
+vem pronto de nenhuma API — `totalStaked / (saldoInicial × unitPercent)`, `unitPercent` de
 `GET /api/v1/settings`), apostas PRÉ/LIVE (`preCount`/`liveCount`), vitórias/derrotas ao lado da
 taxa de acerto já existente (`wonCount`/`lostCount` + `winRate`), odd média (`avgOdd`), saldo
 inicial do período, saldo final do período. Fórmulas completas em [[estatisticas]].
@@ -155,7 +155,7 @@ apostas, ou área de usuário) é decisão de plan review daquela feature, não 
 > onde o valor é consumido, menor atrito que navegar para outra tela; `GET /api/v1/settings` não
 > é restrito (todo usuário precisa de `unitPercent` para `unidadesApostadas`), só o `PATCH` é
 > admin-only (403 do backend, gate client-side é só UX). (2) `unidadesApostadas`/`avgOdd`
-> indeterminados (saldoAtual ou `unitPercent` = 0) renderizam texto localizado, não lançam
+> indeterminados (saldo base ou `unitPercent` = 0) renderizam texto localizado, não lançam
 > exceção nem dividem por zero. `shared/period-preset-filter` (presets + range customizado com
 > `<input type="date">`, não Material Datepicker — sem precedente no inventário de
 > `docs/sistema-de-design.md`, evita dependência nova para 1 par de campos) fica em `shared/` porque
@@ -194,7 +194,7 @@ inteiramente para um tenant sem histórico) + o próprio lucro diário já busca
 **Valor em R$ nos cards (`apps/web feat-068`, 2026-10-06)**: Lucro Total, Pre / Live e Lucro Médio Mensal mostram o
 valor em reais numa linha secundária do `KpiCard` (`secondary`, opcional). Sai dos mesmos dados já carregados, sem chamada
 nova: total = soma de `netProfit` do `daily`; pre/live = `netProfit` do segmento de `byBetType`; médio = total / 12 (mesmo
-divisor da versão em unidades). Como a unidade é fixa (`saldoAtual × unitPercent`), somar reais e converter dá o mesmo valor,
+divisor da versão em unidades). Como a unidade é fixa (`saldoInicial × unitPercent`), somar reais e converter dá o mesmo valor,
 então não há recálculo pelo denominador. O card Pre / Live virou "Lucro Pre / Live (U)" e ganhou uma dica (`hint`, vira o
 `title` do card): é lucro em unidades por tipo de aposta, valor absoluto e não percentual, e pre + live pode diferir do total
 por arredondamento ou por apostas sem `betType` (anteriores à migração).
@@ -274,9 +274,9 @@ outras telas — granularidade de mês, filtro dedicado desta seção. Intervalo
 de mês por construção (`<input type="month">` não tem componente de dia): `from` = dia 01 do mês
 inicial, `to` = último dia do mês final. Uma chamada a `GET /api/v1/statistics/daily`
 (`epic-016`) cobrindo o intervalo inteiro; cliente agrupa por mês e calcula a curva acumulada em
-unidades (ver [[estatisticas]] "Grade de gráficos mensais de drawdown" para a fórmula — usa
-`saldoAtual`/`GET /api/v1/bankroll/balance` sem `at`, não `saldoFinal` do período como
-`period-report-metrics.ts`; reset só na virada de mês, dia sem aposta carrega o valor anterior).
+unidades (ver [[estatisticas]] "Grade de gráficos mensais de drawdown" para a fórmula — desde
+`web feat-072` usa o `saldoInicial` do filtro (`bankrollFrom`), a mesma base das outras telas;
+reset só na virada de mês, dia sem aposta carrega o valor anterior).
 Zero backend novo. Grade CSS `auto-fit` com N mini-gráficos (`shared/monthly-drawdown-chart`,
 `ngx-echarts`, mesmo padrão de `shared/monthly-profit-chart` de `feat-006`) via 1 componente
 parametrizado por mês, reaproveitado N vezes — mesmo precedente de `feat-008`/`epic-019` para não
@@ -607,7 +607,9 @@ deixar "Cashout Favor/Contra" (do print de referência) fora do escopo em [[esta
 > não coberta explicitamente pelo escopo do epic): "saldoAtual" nas fórmulas desta página (usado
 > por `roiUnidades`/`profitUnidades`) resolve para `saldoFinal` (`saldoEm(to)`) — esta página faz
 > só 2 chamadas de bankroll (`at=from`/`at=to`, sem uma 3ª "agora" separada), diferente do
-> dashboard consolidado. Módulo de cálculo puro (`period-report-metrics.ts`) testado contra os
+> dashboard consolidado. **Substituído em `web feat-072` (2026-11-02)**: a base passou a ser
+> `saldoInicial` (`saldoEm(from)`) em todas as telas, ver [[estatisticas]] "Unidades apostadas".
+> Módulo de cálculo puro (`period-report-metrics.ts`) testado contra os
 > valores do print de referência do usuário como oráculo independente — achado real: a própria
 > nota do vault tinha um erro de aritmética no exemplo de `+EV` (`37,00% − 31,06% = 5,98%` estava
 > escrito, o correto é `5,94%`), corrigido em [[estatisticas]] no mesmo commit deste fechamento.
