@@ -474,9 +474,9 @@
       "name": "Padronizar a taxa de acerto: apostas devolvidas fora do denominador",
       "description": "Nasce da revisao das equacoes do TCC 2 (secao 2.5) contra o sistema (2026-10-16). Hoje convivem duas taxas de acerto: winRate do stats-service (GET /api/v1/statistics, segmentos e GET /api/v1/statistics/search) = ganhas / liquidadas, com void no denominador (decisao de interpretacao de stats-service feat-004); e taxaAcertoEntradas do Relatorio do periodo (apps/web, period-report-metrics.ts) = ganhas / (ganhas + perdidas), usada no EV. Decisao do usuario (2026-10-16): padronizar em ganhas / (ganhas + perdidas) - aposta devolvida nao entra na taxa de acerto. O texto do TCC 2 ja descreve a definicao padronizada. Harness: services/stats-service (feat-032). Definicao de pronto: winRate de todos os endpoints com void fora do denominador, docs/estatisticas.md com uma unica definicao, evidencia no campo evidence deste epic e em services/stats-service/feature_list.json.",
       "dependencies": [],
-      "status": "not-started",
+      "status": "done",
       "harness": "services/stats-service",
-      "evidence": ""
+      "evidence": "2026-11-02: services/stats-service feat-032 done (SV-791, PRs #106/#107/#108 em develop, CI e SonarCloud verdes). winRate = wonCount / (wonCount + lostCount) em GET /api/v1/statistics (overall, segmentos, meses, byBetType) e GET /api/v1/statistics/search, que passou a contar lostCount; sem ganhas nem perdidas devolve 0. Testes com void falharam com a formula antiga (0.3333) e passam (0.5). init.sh verde; Delivery Reviewer, Test Suite Auditor e Persistence Auditor PASS. docs/estatisticas.md com uma unica definicao (sv-harness 16cadf7). Producao ainda sem o deploy (rollout manual no k3s); cache antigo dura no maximo 1 h apos o rollout."
     },
     {
       "id": "epic-043",
