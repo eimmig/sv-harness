@@ -82,10 +82,12 @@ novo a partir de uma mensagem do Telegram.
    por colidir entre duas apostas legítimas com odd/stake/casa iguais, ver [[contratos-de-api]]).
    `bettingHouseId`/`sportId`/`leagueId`/`marketId` resolvidos no passo 4; `betDate` convertido de
    data pura (`aaaa-mm-dd`) para instante completo (`aaaa-mm-ddT00:00:00Z`) — `CreateBetRequest`
-   exige `Instant`, não data pura. Resposta do Gateway vira uma de seis mensagens localizadas:
+   exige `Instant`, não data pura. Resposta do Gateway vira uma destas mensagens localizadas:
    sucesso (`201` ou reenvio idempotente `200`), sem vínculo (`401` — orienta `/vincular`), FK não
    encontrada (`404`, raro — a resolução do passo 4 já validou os IDs momentos antes), validação
-   de negócio falhou (`422`, RN07) ou erro genérico (indisponibilidade). **Limpeza do estado da
+   de negócio falhou (`422`, RN07), outro `4xx` permanente (`bet_submit_rejected`, `feat-015` —
+   qualquer `4xx` não listado, exceto `408`/`429`) ou erro com estado guardado
+   (`generic_error_pending`: `5xx`, `408`, `429` ou rede — cita `/cancelar`). **Limpeza do estado da
    conversa depende de qual parte falhou, não só de sucesso/falha genérico**: sem vínculo (`401`)
    e erro genérico (indisponibilidade) preservam os campos/IDs já resolvidos no Redis — o dado da
    aposta está correto, só uma condição externa precisa mudar (vincular a conta; a infra voltar),
@@ -93,8 +95,20 @@ novo a partir de uma mensagem do Telegram.
    dados de novo. FK não encontrada (`404`) e validação de negócio (`422`) **limpam o estado**
    como sucesso — insistir com o mesmo `catalogId` obsoleto ou a mesma `odd`/`stake` inválida só
    repetiria a falha para sempre; a próxima mensagem do usuário começa uma conversa nova (achado
-   real corrigido durante a implementação, não previsto no Plan Review original).
-7. Resto do fluxo (evento `BetCreated`, consumo assíncrono por [[stats-service]]) é idêntico
+   real corrigido durante a implementação, não previsto no Plan Review original). O mesmo vale
+   para outro `4xx` permanente (`feat-015`, achado em produção em 2026-11-02: um `400` virava
+   "indisponibilidade", o estado ficava no Redis e toda mensagem nova reenviava a mesma aposta
+   até o TTL de 15 min expirar).
+7. **Recomeçar o cadastro** (`feat-015`): o comando `/cancelar` (alias `/cancel`; só o primeiro
+   token conta, sem diferenciar maiúsculas, com ou sem sufixo `@NomeDoBot`) apaga
+   `telegram:pending-bet:<telegramUserId>` e responde `conversation_reset` (havia conversa) ou
+   `conversation_reset_nothing_pending` (não havia); a resposta de `POST /bets/capture` sai com
+   `status: "cancelled"`. Tratado no serviço Python, não no n8n: o ramo de texto do fluxo já
+   encaminha para `/bets/capture` qualquer texto que não começa com `/vincular `, e só o Python
+   acessa o Redis. Uma **foto nova sempre começa uma conversa nova** (o estado anterior é apagado
+   antes do OCR) — antes, os campos já guardados prevaleciam sobre os da foto e a aposta
+   anterior era reenviada.
+8. Resto do fluxo (evento `BetCreated`, consumo assíncrono por [[stats-service]]) é idêntico
    ao registro manual.
 
 ## Internacionalização (i18n)
