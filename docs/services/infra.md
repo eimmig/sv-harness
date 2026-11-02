@@ -276,6 +276,13 @@ responderem, conferir o IP atual com o usuário antes de suspeitar do cluster. T
 `kubectl` do usuário `eduardo` funciona com `KUBECONFIG=~/.kube/config`; o
 `/etc/rancher/k3s/k3s.yaml` só o root lê.
 
+**Rollout manual depois do merge em `main` (achado de 2026-11-02, `apps/web feat-074`)**: o
+`rollout restart` só pega a imagem nova se o `build-and-push-image` do run **daquele merge** já
+terminou (`imagePullPolicy: Always` puxa o `:latest` do momento). Logo após o merge, `gh run list
+--branch main --limit 1` ainda pode devolver o run anterior; filtrar pelo commit do merge
+(`--json headSha`) antes de esperar. Um rollout cedo demais sobe a imagem antiga sem erro nenhum.
+Conferir o resultado pelo `imageID` do pod ou por um arquivo estático que mudou.
+
 ### Env vars de orquestração de tenant no k3s (`infra/feat-006`, 2026-09-15)
 
 `auth-service feat-015` (repositório próprio) passou a chamar `bets-service`/`stats-service` em
