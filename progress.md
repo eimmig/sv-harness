@@ -3268,3 +3268,14 @@ de `#2fa85c` para `#20733f`. Produção ainda sem o deploy (rollout manual).
 - `epic-049` fica aberto de propósito: o usuário vai usá-lo como exemplo do harness numa palestra.
 - Novo no backlog: `apps/web feat-077` (specs de página estouram o timeout de 5 s só com a suíte inteira).
 - Rollout pendente em produção: `stats-service` e `auth-service` (imagens só saem do `main`).
+
+### Atualização de 2026-11-02 (fim da sessão)
+
+- Fechados também: `epic-045` (web `feat-073`, em produção), `epic-046` (web `feat-074`, em produção),
+  `epic-052` (auth `feat-026` + web `feat-078`) e `epic-043` (web `feat-072`). Único epic aberto: `epic-049`, de
+  propósito (palestra).
+- **Pendente de produção**: o rollout do `auth-service` e do `stats-service` (imagens de `main` já no GHCR, releases
+  #101 e #109) foi bloqueado pelo classificador de auto mode ("Production Deploy"). Depois dele: release
+  `develop -> main` do web (leva `feat-078` e `feat-072`) e rollout do `web`. Antes disso, não promover o web:
+  sem `/api/v1/telegram-links/me` em produção a tela Vincular Telegram mostra erro.
+- Backlog novo: web `feat-077` (testes intermitentes por timeout na suíte inteira).
