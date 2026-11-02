@@ -27,7 +27,9 @@ cadastrado (`TELEGRAM_ACCOUNT` em [[auth-service]]). Fluxo: usuário gera um có
 tela de perfil em [[web]] (chama `POST /api/v1/telegram-links` de [[auth-service]], através do
 [[api-gateway]] — rota já roteada) e envia esse código ao bot via `/vincular <codigo>`;
 `telegram-integration` repassa `telegramUserId` + código para `POST /api/v1/telegram-accounts`
-em [[auth-service]] confirmar e persistir o vínculo. Sem vínculo, o [[api-gateway]] rejeita a
+em [[auth-service]] confirmar e persistir o vínculo. A tela pode consultar o vínculo atual do
+usuário logado em `GET /api/v1/telegram-links/me` (`auth-service feat-026`, ver
+[[contratos-de-api]]), sem mandar mensagem ao bot. Sem vínculo, o [[api-gateway]] rejeita a
 chamada de captura automática (ver abaixo) e o bot deve responder ao usuário pedindo para
 vincular a conta primeiro (comportamento de `telegram-integration feat-004`, tratando o `401` do
 Gateway na submissão final — ver passo 6 abaixo) — nunca deve tentar adivinhar ou criar um tenant

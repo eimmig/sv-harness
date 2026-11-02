@@ -367,6 +367,15 @@ o código-fonte do outro serviço.
   de vínculo (aleatório, TTL curto, uso único, ver [[auth-service]]) — sem usuário logado e sem
   credencial de serviço aplicável a este endpoint. Ver [[telegram-integration]] seção "Vínculo
   de conta" e [[DECISIONS-LOG]].
+- **Status do vínculo do usuário logado** (`auth-service feat-026`, `epic-052`, 2026-11-02):
+  `GET /api/v1/telegram-links/me`, pelo [[api-gateway]] com PASETO (rota já coberta por
+  `/api/v1/telegram-links/**`; o Gateway injeta `X-User-Id` e `X-Tenant-Id`). Sempre `200`:
+  `{"linked": true, "linkedAt": "2026-11-02T18:00:00Z"}` ou `{"linked": false, "linkedAt": null}`
+  — estado normal da tela, nunca `404`. `401 missing-caller-context` sem `X-User-Id` válido.
+  Não devolve o `telegramUserId`. `linked` só é `true` enquanto o `telegram_link` público ainda
+  aponta aquele Telegram para o mesmo tenant e usuário: confirmar o mesmo Telegram em outro
+  tenant sobrescreve o `telegram_link` e deixa a linha antiga em `telegram_accounts` do primeiro
+  tenant, que por isso não basta sozinha.
 
 ## CORS (chamadas de navegador)
 
