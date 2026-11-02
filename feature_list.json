@@ -528,9 +528,9 @@
       "name": "IP do servidor de producao desatualizado na documentacao",
       "description": "Achado na sessao do TCC 2 de 2026-10-25: o servidor de producao responde em 192.168.2.124 (informado pelo usuario; SSH e https testados), mas docs/services/infra.md (linhas 335 e 362, tunel SSH e KUBE_CONFIG) ainda cita 192.168.2.123. Registrar tambem que, no servidor, o kubectl do usuario eduardo usa KUBECONFIG=~/.kube/config (o /etc/rancher/k3s/k3s.yaml e so do root). Confirmar com o usuario se o IP e fixo (reserva DHCP) antes de gravar. Harness: raiz (so docs). Definicao de pronto: nenhuma ocorrencia de 192.168.2.123 em docs/, sem mudanca de codigo.",
       "dependencies": [],
-      "status": "not-started",
+      "status": "done",
       "harness": "raiz (docs/)",
-      "evidence": ""
+      "evidence": "2026-11-02. Usuario confirmou que o IP NAO e fixo (sem reserva DHCP). docs/services/infra.md ganhou o paragrafo 'Acesso ao servidor' na secao do k3s de producao: IP atual 192.168.2.124, aviso de que pode mudar, tunel SSH com <ip-atual> e KUBECONFIG=~/.kube/config no servidor (k3s.yaml so do root). As 2 citacoes antigas (tunel SSH e KUBE_CONFIG) passam a apontar para esse paragrafo. Verificacao: grep -rc '192.168.2.123' docs/ sem nenhuma ocorrencia. progress.md mantem o IP antigo nas entradas historicas, de proposito. Sem mudanca de codigo."
     },
     {
       "id": "epic-049",
@@ -594,6 +594,15 @@
           }
         ]
       }
+    },
+    {
+      "id": "epic-052",
+      "name": "Mostrar na tela Vincular Telegram se o usuario ja tem conta do Telegram vinculada",
+      "description": "Pedido do usuario na sessao do TCC 2 de 2026-11-02. Hoje a tela /telegram-link (apps/web, pages/telegram-link) so gera o codigo de vinculo e nao diz se o usuario logado ja esta vinculado; o usuario precisa mandar mensagem ao bot para descobrir. No auth-service o vinculo fica na tabela telegram_accounts (migration V20260903190901), mas so existe consulta por telegramUserId (GET /api/v1/telegram-accounts/{telegramUserId}, usada pelo ServiceKeyAuthenticationFilter do api-gateway com X-Service-Key); nao ha rota para o usuario autenticado por PASETO consultar o proprio vinculo. Implementar: (1) auth-service: rota autenticada que devolve o status do vinculo do usuario logado (vinculado ou nao e, se vinculado, a data do vinculo; decidir no Plan Reviewer se expoe o telegramUserId ou um identificador mascarado), sem expor vinculos de outros usuarios nem de outras organizacoes; conferir se o RouteConfig do api-gateway ja encaminha o caminho escolhido (hoje encaminha /api/v1/telegra*). (2) apps/web: a tela Vincular Telegram mostra o estado (vinculado desde <data> / nao vinculado) antes do botao Gerar codigo, nos 3 locales, e atualiza depois de um vinculo novo. Desvincular fica fora deste epic, salvo decisao contraria no Plan Reviewer. Definicao de pronto: feature no auth-service e no apps/web done em develop, cada uma com testes (rota: usuario vinculado, nao vinculado, isolamento entre usuarios/tenants; web: os dois estados e erro de rede), docs/contratos-de-api.md e docs/services/telegram-integration.md (passo do vinculo) atualizados, evidencia aqui e nos feature_list.json dos harnesses.",
+      "dependencies": [],
+      "status": "not-started",
+      "harness": "multiplos: services/auth-service (rota do status do vinculo) e apps/web (tela Vincular Telegram) - nesta ordem",
+      "evidence": ""
     }
   ]
 }

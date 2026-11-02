@@ -268,6 +268,14 @@ comando), e o sintoma (`MountVolume.SetUp failed ... configmap "rabbitmq-definit
 found`) só aparece no `kubectl describe pod` do Job, não no `kubectl get pods` nem nos logs do
 RabbitMQ em si.
 
+**Acesso ao servidor (atualizado em 2026-11-02)**: o servidor responde hoje em `192.168.2.124`
+(SSH e `https://192.168.2.124`). O IP **não é fixo** (sem reserva DHCP nem IP estático, confirmado
+pelo usuário): já mudou uma vez em 2026-10 e pode mudar de novo. Se SSH ou `https` não
+responderem, conferir o IP atual com o usuário antes de suspeitar do cluster. Túnel para o
+`kubectl` local: `ssh -L 6443:127.0.0.1:6443 eduardo@<ip-atual>`. **No próprio servidor**, o
+`kubectl` do usuário `eduardo` funciona com `KUBECONFIG=~/.kube/config`; o
+`/etc/rancher/k3s/k3s.yaml` só o root lê.
+
 ### Env vars de orquestração de tenant no k3s (`infra/feat-006`, 2026-09-15)
 
 `auth-service feat-015` (repositório próprio) passou a chamar `bets-service`/`stats-service` em
@@ -332,7 +340,7 @@ The connection to the server 127.0.0.1:6443 was refused
 
 **Causa raiz**: o `KUBE_CONFIG` gerado por `tools/kube_deploy_setup.py` capturou o `server:` do
 contexto `kubectl` local no momento em que o usuário rodou o script — que era
-`https://127.0.0.1:6443`, o **túnel SSH local** (`ssh -L 6443:127.0.0.1:6443 eduardo@192.168.2.123`,
+`https://127.0.0.1:6443`, o **túnel SSH local** (`ssh -L 6443:127.0.0.1:6443 eduardo@<ip-atual>`,
 ver `infra/session-handoff.md`), não o endereço real do k3s. Um runner hospedado do GitHub Actions
 é uma máquina completamente diferente, sem esse túnel — `127.0.0.1:6443` ali aponta pra ele mesmo
 (nada escutando), daí "connection refused", não um erro de credencial/RBAC. **Isso não é um bug
@@ -359,7 +367,7 @@ mesmo padrão de sempre).
 agora"** (bloqueio real de arquitetura de rede, mesma categoria dos bloqueios de acesso de
 produção já documentados nesta sessão): o certificado TLS do k3s só é válido para
 `127.0.0.1`/`localhost` (mesma limitação já documentada acima para acesso manual) — trocar só o
-endereço no `KUBE_CONFIG` pelo IP da LAN (`192.168.2.123`) sem regenerar o certificado quebraria a
+endereço no `KUBE_CONFIG` pelo IP da LAN (ver "Acesso ao servidor") sem regenerar o certificado quebraria a
 validação TLS. Três caminhos possíveis, nenhum escolhido ainda:
 1. Regenerar o certificado do servidor k3s com `--tls-san <endereço alcançável>` e expor a porta
    6443 pra fora da rede local (VPN/firewall/DDNS) — runners hospedados do GitHub Actions rodam na
