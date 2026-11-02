@@ -78,6 +78,16 @@ citadas explicitamente no escopo do TCC:
 7. Manter o lócus de controle com o usuário.
 8. Reduzir a carga de memória de curto prazo.
 
+**`Idempotency-Key` fora de contexto seguro (`apps/web feat-073`, `epic-045`)**: a chave do
+`POST /api/v1/bets` vem de `core/random-uuid.ts` (`randomUuid()`), nunca de
+`crypto.randomUUID()` direto. O navegador só expõe `crypto.randomUUID` em contexto seguro
+(https, `localhost` ou `127.0.0.1`); por `http://<ip-da-lan>` a chamada lança `TypeError` e a
+tela de registro não abre. O fallback monta um UUID v4 com `crypto.getRandomValues`, que existe
+em qualquer contexto. Os testes Playwright rodam em `127.0.0.1`, que é contexto seguro, então
+só pegam essa regressão se removerem `Crypto.prototype.randomUUID` no `addInitScript` (ver
+`e2e/register-bet.spec.ts`). Qualquer outro uso de API `[SecureContext]` no app tem o mesmo
+risco.
+
 ## Date picker: mat-datepicker + mat-timepicker (`apps/web feat-022`, `epic-024` da raiz)
 
 Todos os campos de data do app (`period-preset-filter` — compartilhado por dashboard/
