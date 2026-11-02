@@ -483,9 +483,9 @@
       "name": "Unidade de aposta com uma unica base: saldo inicial do periodo",
       "description": "Nasce da revisao das equacoes do TCC 2 contra o sistema (2026-10-16). A conversao de reais em unidades (saldo x unitPercent) usa saldoFinal no Relatorio e na Comparacao de periodos e o saldo de agora no dashboard e na Visao geral, enquanto docs/estatisticas.md diz saldoAtual. Correto: saldo no inicio do periodo (bate com o print de referencia do usuario: 264,20 / 1195,05 = 22,11% e 22,11u). Harness: apps/web (feat-072), so cliente, sem mudanca de backend. Definicao de pronto: todas as telas com a mesma base, docs/estatisticas.md e docs/services/web.md com uma unica definicao, evidencia no campo evidence deste epic e em apps/web/feature_list.json.",
       "dependencies": [],
-      "status": "not-started",
+      "status": "done",
       "harness": "apps/web",
-      "evidence": ""
+      "evidence": "2026-11-02: apps/web feat-072 done (SV-803, PRs #302/#303 em develop, CI e SonarCloud verdes). Relatorio, Comparativo, dashboard (cards e grade mensal) e Visao geral convertem reais em unidades com o saldo inicial do periodo (Visao geral: saldo na primeira aposta); o print de referencia fecha em 22,11u. Specs com a base antiga falharam e passam; init.sh verde; e2e 113/113; Delivery Reviewer e Test Suite Auditor PASS. docs/estatisticas.md com uma unica base. Producao pendente: release do web segurado ate o rollout do auth-service (feat-078 depende dele)."
     },
     {
       "id": "epic-044",
