@@ -523,7 +523,11 @@ Cada um vira um componente Angular standalone (`app-*`), estilizado com SCSS por
       fixar estatística ainda atrasada pela consistência eventual (`stats-service` via
       RabbitMQ). Corpo servido via `structuredClone` (mutação no componente não altera o cache).
       Limite aceito: aposta registrada pelo Telegram ou em outra aba só aparece no web depois do
-      TTL ou de uma mutação feita no próprio web.
+      TTL ou de uma mutação feita no próprio web. **Exceção por requisição** (`apps/web feat-078`):
+      GET com `context: new HttpContext().set(BYPASS_HTTP_CACHE, true)` (exportado de
+      `core/http-cache-interceptor.ts`) vai sempre ao backend e não grava. Usado no status do
+      vínculo Telegram (`TelegramLinkApi.status()`), que muda fora do app (no bot): com cache, o
+      "Verificar novamente" mostraria a resposta antiga por até 5 min.
 
 ## Integração com Angular Material (M3)
 

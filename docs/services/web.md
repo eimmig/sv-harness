@@ -385,6 +385,14 @@ pela resposta do último `POST` bem-sucedido e mostra o detail RFC 7807 em caso 
 comportamento correto nos dois cenários possíveis do backend, sem acoplamento a qual deles é o
 real.
 
+**Status do vínculo (`apps/web feat-078`, `epic-052`, 2026-11-02)**: a tela consulta
+`GET /api/v1/telegram-links/me` ao abrir (`TelegramLinkApi.status()`, ver [[contratos-de-api]]) e
+mostra "vinculada desde {data}" (`formatDate`, só a data no formato do idioma) ou "nenhuma conta
+vinculada", acima do botão. "Verificar novamente" relê o status, porque o vínculo é feito no bot
+e a tela não recebe aviso; a requisição pula o cache HTTP (`BYPASS_HTTP_CACHE`, ver
+[[sistema-de-design]]). Com a conta vinculada, "Gerar código" some: o `auth-service` recusa um
+segundo vínculo e desvincular está fora do escopo.
+
 ## 4 achados de UX ad-hoc pós-deploy (`feat-034`, sem epic próprio — mesmo precedente de `feat-032`/`033`)
 
 Achados do usuário em uso real, investigados contra o dev server (screenshots reais) antes de
