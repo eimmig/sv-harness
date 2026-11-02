@@ -501,9 +501,9 @@
       "name": "Registrar aposta quebra quando acessado por http (crypto.randomUUID)",
       "description": "Achado nas capturas de tela do TCC 2 (2026-10-25), com Playwright contra a producao (https://192.168.2.124, tenant loadtest-0086b111). Por http://192.168.2.124 a tela register-bet fica em branco ('crypto.randomUUID is not a function': a API so existe em contexto seguro). Por https funciona. Harness: apps/web (feat-073), so cliente. Definicao de pronto: tela funcionando por http e https em producao, evidencia aqui e em apps/web/feature_list.json.",
       "dependencies": [],
-      "status": "not-started",
+      "status": "done",
       "harness": "apps/web",
-      "evidence": ""
+      "evidence": "2026-11-02: apps/web feat-073 done (SV-788, PRs #291/#292/#293 em develop e #294 em main, CI e SonarCloud verdes). randomUuid() com fallback para crypto.getRandomValues fora de contexto seguro; e2e sem Crypto.prototype.randomUUID falhou antes e passa. Rollout manual do web no k3s e Playwright contra producao: http://192.168.2.124 (isSecureContext=false) e https registram aposta sem erro. init.sh verde; Delivery Reviewer e Test Suite Auditor PASS."
     },
     {
       "id": "epic-046",
