@@ -81,7 +81,8 @@ e [[convencoes]] para arquitetura/código.
   `year` no cliente antes de indexar por `month`.
 - **`overall` de `GET /api/v1/statistics` ganha campos novos** (`stats-service`, `epic-014` da
   raiz, extensão do dashboard consolidado, 2026-09-10): `wonCount`/`lostCount`/`voidCount`
-  (contagens brutas — `winRate` já existente continua sendo a fração), `preCount`/`liveCount`
+  (contagens brutas — `winRate` continua sendo a fração, `wonCount / (wonCount + lostCount)`
+  desde `stats-service feat-032`, igual em `/statistics/search`), `preCount`/`liveCount`
   (a partir de `BET.betType`, que vira enum `PRE`/`LIVE` em `bets-service feat-013` — apostas com
   `betType` nulo não entram em nenhum dos dois), `avgOdd` (`AVG(odd)` do recorte liquidado, reusa
   a coluna `odd` de `FACT_BET` já introduzida por `epic-011`):

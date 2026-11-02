@@ -170,6 +170,10 @@ Meta de performance (RNF03): resposta de dashboard < 300 ms (depende do cache es
 > agregação), então uma aposta devolvida conta no denominador da taxa de acerto sem contar como
 > vitória nem derrota (decisão de interpretação, RN04/RN09 não desambiguam o denominador).
 > Divisão por zero (nenhuma aposta liquidada ainda) retorna `BigDecimal.ZERO`, não lança exceção.
+> **Substituído em `feat-032` (2026-11-02, `epic-042`)**: `winRate = wonCount / (wonCount +
+> lostCount)` em `CalculateMetricsService` e em `SearchStatisticsService`. A query da busca
+> (`aggregateForSearch`) passou a contar `lostCount`, e `void` fica fora do denominador. Sem
+> ganhas nem perdidas, devolve `0`. Definição em [[estatisticas]], seção "Taxa de acerto".
 > Sem endpoint HTTP ainda (`feat-006`) nem cache (`feat-005`) — métricas verificadas por teste
 > direto (integração no repositório, unitário no cálculo).
 

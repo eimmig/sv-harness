@@ -34,13 +34,20 @@ casa/time) — sempre sobre o subconjunto daquele agrupamento, nunca a base inte
 ### Taxa de acerto (win rate)
 
 ```
-taxaDeAcerto = apostasGanhas / apostasLiquidadas
+taxaDeAcerto = apostasGanhas / (apostasGanhas + apostasPerdidas)   [void fora do denominador]
 ```
 
-**`apostasLiquidadas` inclui `void`** (devolvida) — decisão de interpretação registrada em
-`stats-service feat-004` (RN06 já inclui `void` na agregação; RN04/RN09 não desambiguam o
-denominador da taxa de acerto). Uma aposta devolvida conta no denominador sem contar como vitória
-nem derrota.
+Definição única do sistema desde `stats-service feat-032` (`epic-042`, 2026-11-02, decisão do
+usuário de 2026-10-16): vale para o campo `winRate` de `GET /api/v1/statistics` (geral,
+segmentos e meses) e de `GET /api/v1/statistics/search`, e para `taxaDeAcertoEntradas` do
+Relatório do período, que é o mesmo número. A aposta devolvida não é vitória nem derrota e fica
+fora da conta, como na equação do TCC 2 (seção 2.5). Recorte sem ganhas nem perdidas (só
+devolvidas, ou vazio) → `0`, porque `winRate` nunca é `null` no contrato.
+
+> **Até `feat-032`** o denominador era `apostasLiquidadas` (com `void`), decisão de interpretação
+> de `stats-service feat-004`. Com devolvidas no recorte, o número antigo era menor que o atual
+> (ex.: 1 ganha, 1 perdida e 1 devolvida davam 33,33%; agora 50%). Depois do deploy, métricas já
+> no Redis mantêm o valor antigo por no máximo 1 h (`SAFETY_NET_TTL`).
 
 ### Lucro/prejuízo líquido e volume
 
@@ -69,8 +76,8 @@ apostasPerdidas = COUNT(*)                  WHERE isWin = false (apostas liquida
 oddMedia        = AVG(odd)                  (apostas liquidadas do recorte)
 ```
 
-`apostasVencidas`/`apostasPerdidas` são os números absolutos por trás da taxa de acerto já
-existente (`taxaDeAcerto = apostasGanhas / apostasLiquidadas`, seção acima) — apresentados juntos
+`apostasVencidas`/`apostasPerdidas` são os números absolutos por trás da taxa de acerto
+(`taxaDeAcerto = apostasGanhas / (apostasGanhas + apostasPerdidas)`, seção acima) — apresentados juntos
 no card, não substituem a fração. `oddMedia` reaproveita a mesma coluna `odd` de `FACT_BET`
 introduzida por `epic-011` (persistência compartilhada entre as duas epics — a que implementar
 primeiro grava a coluna, ver `docs/services/stats-service.md`).
@@ -184,9 +191,9 @@ aplicada ao `netProfit` em vez de ao `totalStaked` — mesma simplificação del
 taxaDeAcertoEntradas = apostasGanhas / (apostasGanhas + apostasPerdidas)   [void EXCLUÍDO do denominador]
 ```
 
-**Diferente da taxa de acerto já existente** (`taxaDeAcerto = apostasGanhas / apostasLiquidadas`,
-que inclui `void` no denominador) — esta é só "vitórias contra derrotas", sem contar devolvidas
-de nenhum dos lados. Confirmado contra o print de referência: `74 / (74 + 126) = 37,00%`.
+**Igual à `taxaDeAcerto` do dashboard desde `stats-service feat-032`** (antes, o `winRate` do
+backend incluía `void` no denominador e os dois números divergiam) — só "vitórias contra
+derrotas", sem contar devolvidas de nenhum dos lados. Confirmado contra o print de referência: `74 / (74 + 126) = 37,00%`.
 
 ```
 EV = taxaDeAcertoEntradas − (1 / oddMedia)
