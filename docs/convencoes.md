@@ -685,6 +685,11 @@ com o timestamp em si (`Instant`/UTC continua correto para armazenamento — só
     nunca passa por `Date.parse()` de string) — só o caminho de digitação de texto livre é
     afetado. Qualquer máscara/parsing de data futura neste app **não pode** assumir que o locale
     ativo controla a ordem esperada por `matDatepicker`; controla só a exibição.
+    **Atualizado em `apps/web feat-074` (2026-11-02)**: o app não usa mais o `NativeDateAdapter`
+    puro, e sim `LocaleDateAdapter` (`core/locale-date-adapter.ts`), cujo `parse()` lê `d/m/aaaa`
+    na ordem do locale ativo. Com ele, o locale passa a controlar a ordem da digitação também, e a
+    máscara (`appDateMask`) segue a mesma `dateSegmentOrder(locale)`. A regra acima continua valendo
+    para quem trocar o adapter: o `Date.parse()` do `NativeDateAdapter` é sempre M/D/A.
   - **JSDOM nunca resolve um `Date` real através de `input+matDatepicker+ngModel`, mesmo para um
     valor completo e corretamente formatado setado diretamente (sem digitação)** (achado real,
     mesma feature): um harness mínimo (`date-mask.directive.spec.ts`) que seta `input.value =

@@ -439,6 +439,16 @@ mesmo setando um valor completo diretamente, sem a diretiva) — a prova do `Dat
 fica no e2e (`period-report.spec.ts`), que foi o teste que efetivamente capturou o bug antes do
 fix.
 
+> **Substituído em `apps/web feat-074` (2026-11-02, `epic-046`)**: M/D/Y fixo deixava pt-BR e es
+> exibindo D/M/A (o `format()` do adapter usa `Intl`) e exigindo M/D/A na digitação; `25082026`
+> virava campo inválido. Agora o parse é que segue o idioma: `core/locale-date-adapter.ts`
+> (`LocaleDateAdapter extends NativeDateAdapter`, registrado por `provideLocaleDateAdapter()` em
+> `app.config.ts`) lê `d/m/aaaa` na ordem de `dateSegmentOrder(locale)` (`Intl.DateTimeFormat(...)
+> .formatToParts()`) e devolve `invalid()` para data impossível (31/02). A máscara usa a mesma
+> função, então máscara, parse e exibição nunca divergem. en-US continua M/D/A. `parseTime` (hora
+> do `mat-timepicker`) não passa pelo `parse` novo. Prova: `e2e/period-report.spec.ts` em pt-BR
+> digita `05082026`/`25082026` e espera `from=2026-08-05`/`to=2026-08-25`.
+
 Story SV-518 (subtasks SV-519..522), PRs #152-155, CI+SonarCloud verdes. `Delivery Reviewer`/
 `Test Suite Auditor` (self-review): `PASS`. `./init.sh` e `npx playwright test` completos verdes
 (56→57 arquivos de teste, 81 e2e).
