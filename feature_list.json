@@ -510,9 +510,9 @@
       "name": "Campos de data esperam mes/dia/ano em pt-BR",
       "description": "Achado nas capturas de tela do TCC 2 (2026-10-25), com Playwright contra a producao (https://192.168.2.124, tenant loadtest-0086b111). core/date-mask.directive.ts monta mes/dia/ano e o NativeDateAdapter faz o parse no formato americano, mas a tela exibe dia/mes/ano: quem digita 25/08/2026 recebe campo invalido. Afeta todos os campos de data (periodo personalizado, historico, busca, registro de aposta). Harness: apps/web (feat-074). Definicao de pronto: data digitada no formato do idioma ativo aceita em todos os campos, evidencia aqui e em apps/web/feature_list.json.",
       "dependencies": [],
-      "status": "not-started",
+      "status": "done",
       "harness": "apps/web",
-      "evidence": ""
+      "evidence": "2026-11-02: apps/web feat-074 done (SV-797, PRs #295-#297 em develop e #298 em main, CI e SonarCloud verdes). LocaleDateAdapter faz o parse de d/m/aaaa na ordem do idioma ativo (Intl) e a mascara segue a mesma ordem; pt-BR e es dd/mm/aaaa, en-US mm/dd/aaaa. e2e em pt-BR (25082026 -> 2026-08-25) falhou antes e passa. Producao conferida apos rollout do web: pt-BR envia 2026-08-05/2026-08-25 ao digitar 05082026/25082026. init.sh verde; Delivery Reviewer e Test Suite Auditor PASS."
     },
     {
       "id": "epic-047",
