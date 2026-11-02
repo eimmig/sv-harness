@@ -127,10 +127,13 @@ mantidos como fonte visual autoritativa a partir de agora pelo mesmo motivo de [
 ### 1. Registro manual (web)
 
 `POST /api/v1/bets` → API Gateway valida token → `bets-service` persiste a aposta no Postgres
-local e responde `201 Created` **antes** de qualquer processamento estatístico → publica
-`BetCreated` no RabbitMQ → `stats-service` consome de forma assíncrona, faz *insert* em
-`FACT_BET` (ainda `status: pending`, fora das métricas por RN06) e atualiza o cache Redis. A
-resposta ao usuário nunca espera o pipeline analítico.
+local e grava o evento `BetCreated` na tabela `outbox_event`, na mesma transação, e responde
+`201 Created` **antes** de qualquer processamento estatístico → o relay do outbox
+(`OutboxRelay`, a cada 200 ms) publica o evento no RabbitMQ com *publisher confirms* e só então
+apaga a linha (`bets-service feat-024`) → `stats-service` consome de forma assíncrona e faz
+*insert* em `FACT_BET` (ainda `status: pending`, fora das métricas por RN06). Aposta pendente não
+entra nas métricas, então o `BetCreated` não mexe no cache Redis. A resposta ao usuário nunca
+espera o pipeline analítico.
 
 ```mermaid
 sequenceDiagram
@@ -147,14 +150,15 @@ sequenceDiagram
     U->>FE: preenche formulário
     FE->>GW: POST /api/v1/bets
     GW->>BS: encaminha (valida PASETO, injeta X-User-Id)
-    BS->>BDB: salva aposta (status: pending)
+    BS->>BDB: salva aposta (status: pending) + BetCreated em outbox_event (mesma transação)
     BDB-->>BS: OK
-    BS->>MQ: publica BetCreated
     BS-->>FE: 201 Created
     Note over BS,FE: resposta nunca espera o consumo abaixo (consistência eventual)
+    BS->>BDB: relay lê outbox_event (a cada 200 ms)
+    BS->>MQ: publica BetCreated (publisher confirm)
+    BS->>BDB: apaga a linha do outbox após o confirm
     MQ->>SS: entrega evento (assíncrono)
     SS->>SDB: insert em FACT_BET (status: pending, fora de RN06)
-    SS->>R: atualiza cache
     SS-->>MQ: ACK
 ```
 
@@ -187,7 +191,7 @@ sequenceDiagram
     GW->>AUTH: GET /api/v1/telegram-accounts/{telegramUserId}
     AUTH-->>GW: userId vinculado (404 se não houver vínculo)
     GW->>BS: encaminha (injeta X-User-Id resolvido)
-    BS->>MQ: publica BetCreated
+    BS->>BS: salva aposta + BetCreated no outbox (relay publica, como no fluxo 1)
     BS-->>GW: 201 Created
     GW-->>TI: 201 Created
     TI-->>TG: confirmação
@@ -204,10 +208,13 @@ implementação para fechar essa lacuna, não uma divergência por engano.
 
 ### 3. Liquidação de aposta
 
-`PUT /api/v1/bets/{id}/result` → API Gateway valida token → `bets-service` atualiza `status` e
-calcula `profit` (RN02/RN03), responde `200 OK` → publica `BetSettled` (evento distinto de
-`BetCreated`, ver [[contratos-de-api]]) → `stats-service` consome de forma assíncrona e faz *upsert*
-na linha de `FACT_BET` já existente (por `betId`), passando a contar nas métricas (RN06).
+`PATCH /api/v1/bets/{id}/status` (`BetsController`) → API Gateway valida token → `bets-service`
+atualiza `status`, calcula `profit` (RN02/RN03) e grava `BetSettled` (evento distinto de
+`BetCreated`, ver [[contratos-de-api]]) no `outbox_event` na mesma transação, responde `200 OK` →
+o relay publica como no fluxo 1 → `stats-service` consome de forma assíncrona, faz *upsert* na
+linha de `FACT_BET` já existente (por `betId`), passando a contar nas métricas (RN06), e, depois
+do commit, invalida o cache Redis do mês da liquidação (`afterCommit`, `stats-service feat-029`).
+A próxima leitura recalcula e grava o cache (fluxo 4).
 
 ```mermaid
 sequenceDiagram
@@ -222,14 +229,14 @@ sequenceDiagram
     participant R as Redis
 
     U->>FE: atualiza resultado
-    FE->>GW: PUT /api/v1/bets/{id}/result
+    FE->>GW: PATCH /api/v1/bets/{id}/status
     GW->>BS: encaminha requisição
-    BS->>BDB: atualiza status e profit (RN02/RN03)
-    BS->>MQ: publica BetSettled
+    BS->>BDB: atualiza status e profit (RN02/RN03) + BetSettled em outbox_event
     BS-->>FE: 200 OK
+    BS->>MQ: relay publica BetSettled (publisher confirm)
     MQ->>SS: entrega evento (assíncrono)
     SS->>SDB: upsert em FACT_BET por betId (RN06: passa a contar nas métricas)
-    SS->>R: atualiza cache
+    SS->>R: após o commit, invalida o cache do mês
     SS-->>MQ: ACK
 ```
 

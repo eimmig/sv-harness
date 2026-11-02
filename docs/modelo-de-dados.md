@@ -103,6 +103,9 @@ erDiagram
     LEAGUE ||--o{ BET : classifica
     MARKET ||--o{ BET : especifica
     TIPSTER ||--o{ BET : indica
+    SPORT ||--o{ TEAM : escopa
+    TEAM ||--o{ BET : "mandante (team1Id)"
+    TEAM ||--o{ BET : "visitante (team2Id)"
     BET ||--o| BET_RESULT : obtem
 
     BETTING_HOUSE {
@@ -134,6 +137,11 @@ erDiagram
         uuid id PK
         varchar name
     }
+    TEAM {
+        uuid id PK
+        varchar name "unico por sportId"
+        uuid sportId FK
+    }
     BET {
         uuid id PK
         uuid bettingHouseId FK
@@ -143,8 +151,8 @@ erDiagram
         uuid tipsterId FK
         uuid createdByUserId "quem registrou, dentro do tenant"
         varchar ticketNumber
-        varchar team1
-        varchar team2
+        uuid team1Id FK "nullable"
+        uuid team2Id FK "nullable"
         varchar description
         varchar betType "enum PRE/LIVE desde epic-013, nullable (apostas antigas em texto livre)"
         varchar playType
@@ -152,6 +160,7 @@ erDiagram
         decimal odd
         varchar status
         timestamp betDate
+        varchar idempotencyKey "unique, nullable"
     }
     BET_RESULT {
         uuid id PK
@@ -167,6 +176,28 @@ erDiagram
 ```
 
 ![bets-service ERD original](diagrams/database/bets-service-erd.png)
+
+> **ERD alinhado às migrations em 2026-11-02** (`epic-044` da raiz). Três mudanças em relação ao
+> PNG original: `TEAM` vira catálogo próprio, escopado por esporte
+> (`V20260915145002__create_team_table.sql`), e `BET` troca `team1`/`team2` texto livre por
+> `team1Id`/`team2Id` (`V20260915150500__migrate_bet_teams_to_catalog.sql`); `BET.idempotencyKey`
+> existe desde a criação da tabela (`V20260905224836`, header `Idempotency-Key` do
+> `POST /api/v1/bets`); e o schema `public`, fora dos tenants, guarda o `OUTBOX_EVENT`
+> (`db/migration-public/V20260930130000__create_outbox_event.sql`, `bets-service feat-024`):
+> o evento é gravado na mesma transação da aposta e o relay o publica no RabbitMQ (ver
+> [[arquitetura]] fluxos 1 e 3).
+
+```mermaid
+erDiagram
+    OUTBOX_EVENT {
+        bigserial id PK
+        varchar routingKey "bet.created / bet.settled"
+        text payload "JSON do evento"
+        varchar tenantSlug "schema de origem"
+        uuid betId "sem FK: BET vive no schema do tenant"
+        timestamptz createdAt
+    }
+```
 
 `status` armazena `pending`/`won`/`lost`/`void` (inglês, ver [[contratos-de-api]]). `BET_RESULT` só
 existe quando a aposta é liquidada — não é criado junto com `BET` (ver [[bets-service]] seção
@@ -291,6 +322,8 @@ erDiagram
 > (`team1Id`/`team2Id`, ambas nullable — nem toda aposta tem confronto de dois lados,
 > ex. handicap de jogador) em vez de uma dimensão-ponte; filtrar "por time" nas estatísticas é
 > `team1Id = X OR team2Id = X`. Ver [[stats-service]] para o endpoint que consome isso.
+> **Superado em 2026-09-15**: `bets-service` ganhou o catálogo `TEAM` (ERD acima) e os eventos
+> passaram a levar `team1Id`/`team2Id`; o `DimensionResolver.resolveTeam` recebe o id e o nome.
 
 > **`DIM_TEAM` ganha `sportId` no mesmo dia** (addendum descoberto planejando a tela "Buscar
 > Estatísticas" — decisão do usuário): a chave natural passa de `name` sozinho para **`(name,

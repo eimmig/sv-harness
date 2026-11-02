@@ -104,9 +104,14 @@ Ver [[modelo-de-dados]] para o ERD completo (Mermaid + PNG original do TCC1).
 O próprio serviço decide quando ler/gravar cache — não é responsabilidade de um proxy externo.
 Chaves padronizadas (inglês, mesma decisão de nomenclatura técnica — ver [[contratos-de-api]]):
 
-- `tenant:{tenantId}:dashboard:consolidated` — ROI total, taxa de acerto macro, saldo unificado.
-- `tenant:{tenantId}:stats:monthly:{year}_{month}` — série histórica para gráficos de linha.
-- `tenant:{tenantId}:segment:{sport|market|house}` — ranking de performance por segmento.
+- `tenant:{slug}:dashboard:consolidated` — ROI total, taxa de acerto macro, saldo unificado.
+- `tenant:{slug}:stats:monthly:{year}_{month}` — série histórica para gráficos de linha.
+- `tenant:{slug}:segment:{sport|market|house|league|tipster|team|byBetType}` — ranking de
+  performance por segmento.
+
+O identificador é o **slug** do tenant (`TenantContextHolder.current().slug()`, em
+`RedisMetricsCacheRepository`), o mesmo que nomeia o schema, não o `tenantId` (UUID). Conferido
+no código em 2026-11-02 (`epic-044`).
 
 > **Corrigido em 2026-08-02** (ver [[DECISIONS-LOG]]): as chaves eram `user:{id}:...`, coerente
 > com o modelo antigo (tenant = usuário). Como `FACT_BET` é isolado por schema de **tenant**, não
