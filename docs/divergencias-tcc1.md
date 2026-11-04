@@ -59,7 +59,7 @@ atualizadas, não é mais uma divergência.
 
 | TCC 1 diz | Foi feito | Ajustar no texto |
 |---|---|---|
-| Kanban individual com **WIP máximo 1** no quadro todo. | WIP máximo 1 **por serviço** (permite trabalho paralelo entre serviços). Colunas do quadro Jira reproduzem as 5 do TCC (Backlog, To Do, In Progress, Review, Done), derivadas do `feature_list.json`. Cobertura mínima de 80% verificada em CI e no SonarCloud. | Seção 3.2 e a Figura 1. |
+| Kanban individual com **WIP máximo 1** no quadro todo. | WIP máximo 1 **por serviço** (permite trabalho paralelo entre serviços). Decisão de 2026-11-01: o texto do TCC 2 mantém o WIP 1 do TCC 1, sem detalhar o fluxo de desenvolvimento. Colunas do quadro Jira reproduzem as 5 do TCC (Backlog, To Do, In Progress, Review, Done), derivadas do `feature_list.json`. Cobertura mínima de 80% verificada em CI e no SonarCloud. | Seção 3.2 e a Figura 1. |
 | Trabalho individual; sem menção a ferramentas de apoio. | Desenvolvimento com **agentes de IA** (Claude Code) seguindo um harness (arquivos `CLAUDE.md`, `feature_list.json`, skills de revisão) e **8 repositórios Git** independentes (6 serviços, `infra/` e o `sv-harness` de documentação), cada um com CI própria. | Mencionar em 3.2, se a banca esperar rastreabilidade do processo. |
 
 ## 5. Extensões que não contradizem o texto (citar como "além do proposto")

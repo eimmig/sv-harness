@@ -3,82 +3,46 @@
 > Estado atual, não histórico. O diário cronológico é o `progress.md` — este arquivo é reescrito
 > a cada sessão para responder "o que a próxima sessão precisa saber agora".
 
-**Última atualização:** 2026-10-06
+**Última atualização:** 2026-11-04
 
 ## Objetivo atual
 
-Escrever a **4.4 Avaliação experimental** do TCC e ajustar o texto pelas divergências. A evidência de
-produção (carga, escalonamento, DLQ, cache) foi **coletada** em 2026-10-04; falta empacotá-la
-(`05-coleta.sh` + `scp`) e transformar em texto. Números e leitura honesta: `docs/testes-de-producao.md`
-seção "Resultados da rodada de 2026-10-04"; frases do TCC 1 afetadas: `docs/divergencias-tcc1.md` seção 6.
+Desenvolvimento encerrado: 51 de 52 epics `done`. O que falta é levar a produção (k3s) até o código
+que já está em `main`/`develop`.
 
-## Backlog dos serviços (2026-10-06)
+## Backlog
 
-Zerado nos 6 serviços e no `infra/`, exceto `apps/web feat-056` (rollout manual do `web` no k3s, depende do túnel SSH e do
-reteste do usuário). `stats-service feat-028` fechou a corrida de `fact_bet` que a rodada de 2026-10-04 expôs (18 apostas
-`pending`): atualizar a leitura em `docs/testes-de-producao.md` e `docs/divergencias-tcc1.md` seção 6 ao escrever a 4.4, e
-**reexecutar a carga** se for citar a reconciliação como evidência, pois o número medido era anterior à correção.
+- `epic-049` (telegram-integration `feat-014`), `not-started` **de propósito**: o usuário vai usá-lo
+  como exemplo do harness numa palestra. Não pegar sem ele pedir. O bot espera 401 para conta sem
+  vínculo e o gateway devolve 404 `telegram-account-not-found`, então a orientação de `/vincular`
+  nunca chega.
+- `apps/web feat-077`: specs de página estouram o timeout de 5 s só com a suíte inteira.
 
-## Concluído
+Os 7 repositórios estão em `develop`, com working tree limpo.
 
-- [x] `epic-041` fechado e liberado em `main` nos 7 repositórios (HPAs, PG18/Redis 8, consumo concorrente do
-      stats, outbox transacional com confirms). Produção atualizada à mão (o deploy do CI não alcança o k3s).
-- [x] Scripts `tools/evidence/01` a `04` **validados no cluster real** (`05-coleta.sh` ainda sem uso).
-      `03-dlq.sh` corrigido para esperar o contador da fila quorum zerar antes de gravar o resultado.
-- [x] Rodada real (100.000 apostas, 128 threads, pasta `evidence/final` no Debian, tenant `loadtest-0086b111`)
-      com capturas de tela: baseline, HPA escalando, fila RabbitMQ (4 consumidores), reconciliação, redução de
-      réplicas, DLQ (mensagem fora do contrato e recuperação), cache.
+## Pendente de produção
 
-## Resultados medidos (resumo; completo em `docs/testes-de-producao.md`)
+O deploy do CI falha sempre (`connection refused` em `127.0.0.1:6443`), então todo rollout é manual.
+Script: `tools/rollout-producao.sh` (kubectl por SSH no servidor; `HOST=<ip>` se o IP mudar).
 
-- **HPA:** 4 serviços subiram para 3 ou 4 réplicas em 41 a 62 s (pico de CPU 172% a 501% do request) e
-  voltaram a 1 em ~9 min. **Sem ganho de vazão:** 32,4 apostas/s contra 43,2 da rodada 1 (1 réplica); o
-  gargalo é o `postgres-bets` (501m de CPU, `pg_isready` estourando 1 s).
-- **Eventos:** 193.998 esperados = 193.998 processados, `fact_bet` = 99.998, outbox e DLQ vazios (PASS).
-  **Mas 18 apostas ficaram `pending` no stats** (liquidadas no `bets-service`): não escrever "perda zero de
-  estado".
-- **Cache:** RNF03 PASS (p95 206,2 ms com cache quente, miss de 2.189,5 ms).
-- **Probes:** `bets-service` reiniciou 2 vezes na carga por liveness de 1 s com CPU limitada a 500m (26 erros
-  no gerador).
+1. `bash tools/rollout-producao.sh backend`: `auth-service` e `stats-service`. As imagens de `main`
+   já estão no GHCR (`build-and-push-image` verde nos runs 41523758410 e 41523746988).
+2. Só depois, `bash tools/rollout-producao.sh web`: abre o PR de release `develop -> main` do
+   `sv-frontend` (leva `feat-078` e `feat-072`), espera a CI, faz o merge, espera o
+   `build-and-push-image` **daquele merge** e reinicia o `web`. Inverter a ordem quebra a tela
+   Vincular Telegram, que depende de `GET /api/v1/telegram-links/me`.
 
-## Ajuste de produção entregue (`infra feat-012`, story SV-732, na `develop`)
-
-Probes de liveness/readiness separados, `Recreate` nos PostgreSQL, `postgres-bets` com CPU 2000m, 2Gi e
-`shared_buffers=512MB`, memória dos Java a 1Gi. **Já aplicado no k3s.** Prova real **parcial**: carga cancelada
-após ~4 min (0 restarts, banco a 216m de CPU); vazão e reconciliação do pós-ajuste **não foram medidas**. Próximo
-teto provável: limite de CPU dos pods Java (500m). Release `infra` **v0.3.0** feita em 2026-10-04
-(`develop` para `main`, tag e GitHub Release; `main` sincronizada de volta na `develop`).
-
-## Backlog aberto por esta rodada (nenhum com `plan_review`)
-
-- `stats-service feat-028` (já existia; ganhou a evidência de produção): corrida `BetCreated`/`BetSettled` em
-  `fact_bet` **não converge** pelo retry, 18 apostas ficaram `pending`.
-- `api-gateway feat-020`, `auth-service feat-025`, `bets-service feat-025` e `stats-service feat-030` (novas): teste de
-  `/actuator/health/liveness` no `HealthChecksTest`.
-- `stats-service feat-029` (já existia): cache em `afterCommit`, `existsById` morto.
-
-## Falta
-
-- `bash tools/evidence/05-coleta.sh evidence/final` no Debian e `scp` do `.tar.gz` para o PC (a pasta
-  `evidence/` nunca foi versionada: guardar fora do repositório e **nunca apagar**).
-- Capturas que podem faltar: DLQ com `Ready 2` na mesma rodada, Redis no RedisInsight, tabela do
-  `02-resumo.txt` (gerada depois com `resumo_carga.py`).
-- Escrever **4.4 Avaliação experimental** (estrutura: ambiente, escalabilidade horizontal, perda de eventos e
-  estado, DLQ e recuperação, cache e RNF03, limitações) e ajustar o texto pelas divergências (Quadro 2, modelo de
-  tenant, rotas em inglês, chaves de cache, método Kanban).
+Em 2026-11-02 o classificador do auto mode bloqueou esses passos ("Production Deploy"): o usuário
+roda o script ou autoriza explicitamente.
 
 ## Bloqueios / Riscos
 
-- **Deploy automático do CI** (`epic-028`) nunca alcançou o k3s: `KUBE_CONFIG` aponta para `127.0.0.1:6443`.
-  Aceito pelo usuário; todo deploy é manual.
-- **Limite de memória 1Gi é temporário** no cluster (`kubectl set resources`); um `kubectl apply` volta a 512Mi.
-- Depois de um boot do servidor, esperar 10 a 15 min antes de medir: a partida das JVMs sobe réplicas sem tráfego.
-- `rabbitmq` usa 200 a 880m de CPU mesmo com pouca carga; olhar se atrapalhar.
+- IP do servidor não é fixo (`docs/services/infra.md`, "Acesso ao servidor"). Servidor nem sempre
+  ligado: perguntar antes de depender dele.
+- Depois de um boot do servidor, esperar 10 a 15 min antes de medir qualquer coisa.
 
 ## Próxima sessão — por onde começar
 
-1. Rodar `./init.sh` na raiz (deve sair `0`).
-2. Ler `docs/testes-de-producao.md` e `docs/divergencias-tcc1.md`.
-3. Se o usuário quiser corrigir os achados (`stats-service feat-028` ou subir o limite de CPU dos Java), seguir o fluxo do harness:
-   `Plan Reviewer`, `plan_review`, story no Jira, branch pela chave, PRs com CI, auditorias na última subtask.
-4. Se for escrever o capítulo, usar as tabelas "Números para o texto do TCC" e "Resultados da rodada".
+1. `./init.sh` na raiz.
+2. Se o servidor estiver ligado, seguir "Pendente de produção" e registrar o resultado no
+   `progress.md`.
