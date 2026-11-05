@@ -31,9 +31,12 @@ em [[auth-service]] confirmar e persistir o vínculo. A tela pode consultar o v�
 usuário logado em `GET /api/v1/telegram-links/me` (`auth-service feat-026`, ver
 [[contratos-de-api]]), sem mandar mensagem ao bot. Sem vínculo, o [[api-gateway]] rejeita a
 chamada de captura automática (ver abaixo) e o bot deve responder ao usuário pedindo para
-vincular a conta primeiro (comportamento de `telegram-integration feat-004`, tratando o `401` do
-Gateway na submissão final — ver passo 6 abaixo) — nunca deve tentar adivinhar ou criar um tenant
-novo a partir de uma mensagem do Telegram.
+vincular a conta primeiro (`bet_submit_no_link`) — nunca deve tentar adivinhar ou criar um tenant
+novo a partir de uma mensagem do Telegram. O Gateway sinaliza a falta de vínculo com `404` e
+`type` `https://docs/errors/telegram-account-not-found` em qualquer rota chamada com
+`X-Service-Key`, e quem recebe primeiro é a busca de catálogo do passo 4, não o envio do passo 6
+(`telegram-integration feat-014`, 2026-11-04: até então o bot esperava `401`, tratava todo `404`
+como item de catálogo inexistente e respondia erro genérico ao usuário sem vínculo).
 
 > **Decisão de 2026-09-08** (ver [[DECISIONS-LOG]]): a chamada de confirmação
 > (`POST /api/v1/telegram-accounts`) vai **direto** em `auth-service`, sem passar pelo
@@ -66,7 +69,9 @@ novo a partir de uma mensagem do Telegram.
    pergunta por lista numerada** para `sport`/`league`/`market`; para `betting_house`, tenta fuzzy
    match contra o nome extraído primeiro, caindo pra lista se não achar. Catálogo vazio para
    algum campo: bot **não cria** a entrada — orienta o usuário a cadastrar em [[web]] primeiro e
-   não conclui a captura.
+   não conclui a captura. Busca de catálogo que recebe o `404` sem vínculo responde
+   `bet_submit_no_link` e preserva o estado, como o envio do passo 6; qualquer outra falha
+   (rede, outro status) responde `generic_error_pending`, também preservando o estado.
 5. Chama `POST /api/v1/bets` através do [[api-gateway]], autenticando com um header `X-Service-Key`
    (credencial de serviço, não token PASETO — não há usuário logado neste fluxo) e informando o
    autor da mensagem via `X-Telegram-User-Id` (decisão de 2026-09-07, ver [[DECISIONS-LOG]] —
@@ -85,16 +90,19 @@ novo a partir de uma mensagem do Telegram.
    `bettingHouseId`/`sportId`/`leagueId`/`marketId` resolvidos no passo 4; `betDate` convertido de
    data pura (`aaaa-mm-dd`) para instante completo (`aaaa-mm-ddT00:00:00Z`) — `CreateBetRequest`
    exige `Instant`, não data pura. Resposta do Gateway vira uma destas mensagens localizadas:
-   sucesso (`201` ou reenvio idempotente `200`), sem vínculo (`401` — orienta `/vincular`), FK não
-   encontrada (`404`, raro — a resolução do passo 4 já validou os IDs momentos antes), validação
+   sucesso (`201` ou reenvio idempotente `200`), sem vínculo (`404` com `type`
+   `telegram-account-not-found` — orienta `/vincular`), FK não encontrada (outro `404`, raro — a
+   resolução do passo 4 já validou os IDs momentos antes), validação
    de negócio falhou (`422`, RN07), outro `4xx` permanente (`bet_submit_rejected`, `feat-015` —
-   qualquer `4xx` não listado, exceto `408`/`429`) ou erro com estado guardado
-   (`generic_error_pending`: `5xx`, `408`, `429` ou rede — cita `/cancelar`). **Limpeza do estado da
-   conversa depende de qual parte falhou, não só de sucesso/falha genérico**: sem vínculo (`401`)
-   e erro genérico (indisponibilidade) preservam os campos/IDs já resolvidos no Redis — o dado da
+   qualquer `4xx` não listado, exceto `401`/`408`/`429`) ou erro com estado guardado
+   (`generic_error_pending`: `5xx`, `401`, `408`, `429` ou rede — cita `/cancelar`; o `401` vem de
+   `X-Service-Key` inválida ou `X-Telegram-User-Id` ausente, é falha de configuração e sai com log
+   de erro). **Limpeza do estado da
+   conversa depende de qual parte falhou, não só de sucesso/falha genérico**: sem vínculo (`404`
+   `telegram-account-not-found`) e erro genérico (indisponibilidade) preservam os campos/IDs já resolvidos no Redis — o dado da
    aposta está correto, só uma condição externa precisa mudar (vincular a conta; a infra voltar),
    então a próxima mensagem do usuário repete a tentativa de envio imediatamente, sem pedir os
-   dados de novo. FK não encontrada (`404`) e validação de negócio (`422`) **limpam o estado**
+   dados de novo. FK não encontrada (outro `404`) e validação de negócio (`422`) **limpam o estado**
    como sucesso — insistir com o mesmo `catalogId` obsoleto ou a mesma `odd`/`stake` inválida só
    repetiria a falha para sempre; a próxima mensagem do usuário começa uma conversa nova (achado
    real corrigido durante a implementação, não previsto no Plan Review original). O mesmo vale

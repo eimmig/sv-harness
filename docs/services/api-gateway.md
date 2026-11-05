@@ -96,9 +96,11 @@ de domínio — é infraestrutura de aplicação, sem banco de dados (stateless)
      > **Resolvido em 2026-08-02** (ver [[DECISIONS-LOG]] item 15): `auth-service` resolve esse
      > lookup consultando um diretório `TELEGRAM_LINK` no schema `public` (fora de qualquer
      > schema de tenant) — não precisa mais assumir um `USER` global nem varrer schemas.
-   - Se não houver vínculo, o Gateway responde `401`/`404` (RFC 7807) — `telegram-integration`
-     deve tratar isso como "usuário precisa vincular a conta antes de registrar apostas pelo
-     bot" e informar o usuário via mensagem no Telegram, não tentar adivinhar o tenant.
+   - Se não houver vínculo, o Gateway responde `404` (RFC 7807, `type`
+     `https://docs/errors/telegram-account-not-found`) — `telegram-integration` trata isso como
+     "usuário precisa vincular a conta antes de registrar apostas pelo bot" e informa o usuário
+     via mensagem no Telegram, sem tentar adivinhar o tenant (`telegram-integration feat-014`).
+     `401` só sai para `X-Service-Key` inválida ou `X-Telegram-User-Id` ausente.
    - Se houver vínculo, injeta `X-User-Id`/`X-Tenant-Id` resolvidos e roteia normalmente para
      `POST /api/v1/bets` em [[bets-service]] — o mesmo endpoint usado pelo formulário web.
 

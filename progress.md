@@ -3279,3 +3279,14 @@ de `#2fa85c` para `#20733f`. Produção ainda sem o deploy (rollout manual).
   `develop -> main` do web (leva `feat-078` e `feat-072`) e rollout do `web`. Antes disso, não promover o web:
   sem `/api/v1/telegram-links/me` em produção a tela Vincular Telegram mostra erro.
 - Backlog novo: web `feat-077` (testes intermitentes por timeout na suíte inteira).
+
+
+### Atualização de 2026-11-04
+
+- **`epic-049` fechado** com telegram-integration `feat-014` (story SV-806, PRs #62..#65): usuário sem
+  vínculo recebe `bet_submit_no_link` na busca de catálogo e no envio; `401` do gateway virou
+  indisponibilidade. Vault: `docs/services/telegram-integration.md` e `docs/services/api-gateway.md`.
+  52 de 52 epics `done`.
+- `./init.sh` da raiz só passa com o Docker Desktop aberto (Testcontainers nos serviços Java e no Python).
+- **Pendente de produção**: além do que já estava (rollout `backend`, depois `web`), release
+  `develop -> main` do telegram-integration e `kubectl rollout restart` dele.

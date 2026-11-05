@@ -537,9 +537,9 @@
       "name": "Bot nao orienta /vincular quando a conta do Telegram nao tem vinculo",
       "description": "Achado na sessao do TCC 2 de 2026-11-01, por leitura de codigo. O api-gateway responde 404 (telegram-account-not-found) para telegramUserId sem vinculo; o telegram-integration espera 401 e trata 404 como item de catalogo inexistente. Como a busca de catalogo vem antes do envio, o usuario sem vinculo recebe a mensagem de erro generico, nunca a orientacao para usar /vincular. Harness: services/telegram-integration (feat-014). Definicao de pronto: mensagem bet_submit_no_link entregue ao usuario sem vinculo, notas do vault alinhadas ao status real, evidencia aqui e em services/telegram-integration/feature_list.json.",
       "dependencies": [],
-      "status": "not-started",
+      "status": "done",
       "harness": "services/telegram-integration",
-      "evidence": ""
+      "evidence": "Fechado em 2026-11-04 com services/telegram-integration feat-014 (story SV-806, PRs #62..#65, CI e SonarCloud verdes). Catalogo e envio reconhecem o 404 telegram-account-not-found pelo type do problem+json e respondem bet_submit_no_link nos 3 locales, preservando a conversa; 401 virou indisponibilidade com log de erro. docs/services/telegram-integration.md e docs/services/api-gateway.md alinhados. init.sh do servico verde (133 testes, cobertura 100%). Pendente: release develop -> main e rollout manual em producao."
     },
     {
       "id": "epic-050",
