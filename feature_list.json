@@ -549,24 +549,24 @@
       "status": "done",
       "harness": "services/api-gateway",
       "evidence": {
-      "resumo": "Fechado em 2026-11-01 com services/api-gateway feat-021 (story SV-777) done em develop.",
-      "secoes": [
-        {
-          "titulo": "O que foi feito",
-          "itens": [
-            "PasetoClaims ganha isComplete() e isExpired(long); PasetoAuthenticationFilter.doFilterInternal usa if (!claims.isComplete() || claims.isExpired(Instant.now().getEpochSecond())). Refatoracao pura.",
-            "Texto final de doFilterInternal para a Listagem do TCC (tcc-014) em services/api-gateway/progress.md."
-          ]
-        },
-        {
-          "titulo": "Como foi verificado",
-          "itens": [
-            "PRs #66, #67 e #68 em eimmig/sv-api-gateway, CI e SonarCloud verdes; init.sh do servico verde (73 testes, cobertura 99,3%).",
-            "Delivery Reviewer e Test Suite Auditor: PASS. Evidencia completa em services/api-gateway/feature_list.json (feat-021)."
-          ]
-        }
-      ]
-    }
+        "resumo": "Fechado em 2026-11-01 com services/api-gateway feat-021 (story SV-777) done em develop.",
+        "secoes": [
+          {
+            "titulo": "O que foi feito",
+            "itens": [
+              "PasetoClaims ganha isComplete() e isExpired(long); PasetoAuthenticationFilter.doFilterInternal usa if (!claims.isComplete() || claims.isExpired(Instant.now().getEpochSecond())). Refatoracao pura.",
+              "Texto final de doFilterInternal para a Listagem do TCC (tcc-014) em services/api-gateway/progress.md."
+            ]
+          },
+          {
+            "titulo": "Como foi verificado",
+            "itens": [
+              "PRs #66, #67 e #68 em eimmig/sv-api-gateway, CI e SonarCloud verdes; init.sh do servico verde (73 testes, cobertura 99,3%).",
+              "Delivery Reviewer e Test Suite Auditor: PASS. Evidencia completa em services/api-gateway/feature_list.json (feat-021)."
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "epic-051",
@@ -603,6 +603,40 @@
       "status": "done",
       "harness": "multiplos: services/auth-service (rota do status do vinculo) e apps/web (tela Vincular Telegram) - nesta ordem",
       "evidence": "2026-11-02: auth-service feat-026 (SV-794, PRs #98-#100 em develop, #101 em main) e apps/web feat-078 (SV-800, PRs #299-#301 em develop) done. GET /api/v1/telegram-links/me devolve {linked, linkedAt}; linked exige telegram_accounts e o telegram_link publico apontando para o mesmo tenant e usuario (vinculo sobrescrito por outro tenant volta false). A tela mostra vinculada desde dd/mm/aaaa ou nenhuma conta vinculada, com Verificar novamente (sem cache HTTP, BYPASS_HTTP_CACHE) e Gerar codigo so quando nao vinculado. Testes HTTP (Testcontainers) e e2e falharam antes e passam; init.sh dos dois verde; revisores PASS. Producao pendente: rollout do auth-service (imagem no GHCR, bloqueado pelo classificador de auto mode) e, depois dele, release e rollout do web."
+    },
+    {
+      "id": "epic-053",
+      "name": "Vantagem sobre a probabilidade implicita, intervalos de confianca e aviso de resultado indistinguivel do acaso",
+      "description": "Devolutiva da orientadora do TCC 2 (2026-11-08). (a) O '+EV' do Relatorio do periodo (apps/web period-report-metrics.ts) e TA - 1/avgOdd, com avgOdd = AVG(odd) do stats-service incluindo devolvidas, enquanto a TA as exclui; 1/media das odds tambem nao e a media das probabilidades implicitas. Usuario decidiu renomear para 'vantagem sobre a probabilidade implicita' = TA - media de 1/odd sobre ganhas e perdidas (a probabilidade implicita nao e a real, entao nao e um valor esperado). (b) ROI e taxa de acerto sao mostrados sem intervalo de confianca, o que pode reforcar vies de amostra pequena: intervalo de 95% sempre visivel (Wilson para a taxa de acerto, metodo delta para o ROI) e aviso quando o intervalo da TA contem a probabilidade implicita ou o do ROI contem zero. Ordem: services/stats-service (campos novos em BetMetrics: impliedProbability, edge, winRateLower/Upper, roiLower/Upper, em todos os agregados de GET /api/v1/statistics) e depois apps/web (cards do dashboard, segmentos e Relatorio do periodo, 3 locales). Definicao de pronto: as duas features done em develop com testes, CI e SonarCloud verdes, vault atualizado (estatisticas.md, contratos-de-api.md, notas dos servicos), imagem implantada no servidor.",
+      "dependencies": [
+        "epic-042",
+        "epic-043"
+      ],
+      "status": "done",
+      "harness": "multiplos: services/stats-service e apps/web - nesta ordem",
+      "evidence": "stats-service feat-033 (v0.4.0) e apps/web feat-079 (v2.2.0) em main em 2026-11-08, implantados no k3s (rollout restart); GET /api/v1/statistics devolve impliedProbability, edge, winRateLower/Upper e roiLower/Upper (evidencias/20261108-cache/04-redis-chaves.txt)."
+    },
+    {
+      "id": "epic-054",
+      "name": "RabbitMQ que sobrevive a recriacao do pod e consumidor que se recupera sozinho",
+      "description": "Achado da injecao de falhas pedida pela orientadora do TCC 2 (2026-11-08, evidencias/20261108-falhas). Apagar o pod do RabbitMQ durante a carga subiu um broker vazio: o nome do no e rabbit@<hostname do pod>, que muda a cada pod do Deployment, e o no novo cria outro diretorio no PVC rabbitmq-data, sem exchange, filas nem mensagens (o Job one-shot rabbitmq-init ja tinha rodado). O OutboxRelay do bets-service reteve 191.115 eventos (NOT_FOUND no exchange bets.events) ate a topologia ser reaplicada a mao; as mensagens que estavam na fila no momento se perderam; o stats-service parou os consumidores ('missing queues exception, fatal=true') e so voltou com rollout restart. Alem disso o Deployment ao vivo do RabbitMQ estava sem resources (deriva do manifesto) e a liveness exec com timeout de 10 s reiniciou o broker 4 vezes na C2 e 16 na C3 com o no saturado. Corrigir no infra: hostname fixo, Recreate, resources dimensionados pelos picos medidos, sondas tolerantes, missing-queues-fatal=false no stats-service, hostname fixo tambem no docker-compose. Definicao de pronto: feature done em develop, implantada no servidor, 06-falhas.sh repetido com as contagens e o estado por aposta coincidindo.",
+      "dependencies": [
+        "epic-010"
+      ],
+      "status": "done",
+      "harness": "infra",
+      "evidence": "infra feat-013 em main (v0.3.1) e implantado; 06-falhas.sh repetido sem divergencia (evidencias/20261108-falhas-pos-correcao)."
+    },
+    {
+      "id": "epic-055",
+      "name": "Serie mensal do dashboard no cache do Redis (RNF03)",
+      "description": "Medicao de 2026-11-08 (tools/evidence/04-cache.sh no servidor, tenant de 100.000 apostas, stats-service v0.4.0 estavel com 1 replica): com cache quente, GET /api/v1/statistics levou p50 277,9 ms e p95 302,2 ms, acima dos 300 ms do RNF03; em 01/11 eram 156,8 e 193,6 ms. Causa: GetStatisticsDashboardService.getDashboard sem filtro le os 8 agregados do cache, mas calcula a serie mensal (calculateMonthly) no banco a cada requisicao, desde 2026-09-11; a feat-033 deixou essa consulta mais pesada (colunas dos intervalos). Corrigir no stats-service: cachear a serie mensal do dashboard sem filtro numa chave propria, invalidada pelo mesmo evict dos eventos. Definicao de pronto: feature done em main, implantada, 04-cache.sh no servidor com p95 abaixo de 300 ms.",
+      "dependencies": [
+        "epic-053"
+      ],
+      "status": "done",
+      "harness": "services/stats-service",
+      "evidence": "stats-service feat-034 em main (v0.4.1) e implantado; 04-cache.sh no servidor: p50 87,2 ms, p95 187,2 ms, 441 acertos e 9 falhas (evidencias/20261108-cache-servidor/cache-pos-034); antes, v0.4.0: p50 277,9 e p95 302,2 ms."
     }
   ]
 }

@@ -99,6 +99,22 @@ e [[convencoes]] para arquitetura/código.
   Os mesmos campos novos aninham em `bySport`/`byMarket`/`byBettingHouse`/`byLeague`/`byTipster`/
   `monthly` também (RN09 já aplica as métricas existentes por segmento — os campos novos seguem
   a mesma regra, sem exceção documentada). Ver [[estatisticas]] para as fórmulas.
+- **`BetMetrics` ganha vantagem e intervalos de confiança** (`stats-service feat-033`,
+  `epic-053` da raiz, 2026-11-08), em `overall` e em todo segmento, mês e tipo de aposta:
+  `impliedProbability` (média de `1/odd` das ganhas e perdidas com odd), `edge`
+  (`winRate − impliedProbability`), `winRateLower`/`winRateUpper` (Wilson, 95%) e
+  `roiLower`/`roiUpper` (método delta, 95%). Todos opcionais (`null` quando indefinidos), ao final
+  do objeto; nenhum campo existente muda. Fórmulas e casos-limite em [[estatisticas]].
+  ```json
+  {
+    "overall": {
+      "totalStaked": 200.00, "netProfit": 0.00, "roi": 0.0000, "winRate": 0.5000, "settledCount": 2,
+      "wonCount": 1, "lostCount": 1, "voidCount": 0, "preCount": 0, "liveCount": 0, "avgOdd": 1.80,
+      "impliedProbability": 0.5625, "edge": -0.0625,
+      "winRateLower": 0.0945, "winRateUpper": 0.9055, "roiLower": -1.9600, "roiUpper": 1.9600
+    }
+  }
+  ```
 - **`byBetType` novo em `GET /api/v1/statistics` (`stats-service`, `epic-014` da raiz, pedido da
   tela "Visão geral" de `epic-021`, 2026-09-10)**: 6º segmento, mesmo formato dos outros 5 — só
   que com exatamente 2 itens fixos (`PRE`/`LIVE`, apostas sem `betType` classificado não entram

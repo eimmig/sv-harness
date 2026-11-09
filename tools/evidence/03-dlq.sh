@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/lib.sh"
-require kubectl curl python3
+require kubectl curl
+PY="${PYTHON:-python3}"
 
 RMQ="http://localhost:15672/api"
 SLUG="dlq-$(date +%s)"
 
 make_event() {
-  python3 - "$1" <<'PY'
+  "$PY" - "$1" <<'PY'
 import json, sys, uuid, datetime
 now = datetime.datetime.now(datetime.timezone.utc).isoformat()
 print(json.dumps({
@@ -24,7 +25,7 @@ PY
 }
 
 publish() {
-  python3 - "$1" "$2" <<'PY' | rabbit_api -X POST -d @- "$RMQ/exchanges/%2F/bets.events/publish"
+  "$PY" - "$1" "$2" <<'PY' | rabbit_api -X POST -d @- "$RMQ/exchanges/%2F/bets.events/publish"
 import json, sys
 print(json.dumps({"properties": {"delivery_mode": 2, "content_type": "application/json"},
                   "routing_key": sys.argv[1], "payload": sys.argv[2], "payload_encoding": "string"}))
@@ -33,7 +34,7 @@ PY
 }
 
 dlq_get() {
-  python3 -c "import json; print(json.dumps({'count': 50, 'ackmode': '$1', 'encoding': 'auto'}))" \
+  "$PY" -c "import json; print(json.dumps({'count': 50, 'ackmode': '$1', 'encoding': 'auto'}))" \
     | rabbit_api -X POST -d @- "$RMQ/queues/%2F/stats.bet-events.dlq/get"
 }
 
@@ -51,7 +52,7 @@ publish bet.created '{"eventId":"nao-e-uuid","eventType":"BetCreated"}' | tee -a
 
 log "cenario B: evento valido de um tenant que ainda nao existe (retry e depois DLQ)"
 EVENT_B="$(make_event "$SLUG")"
-BET_B="$(python3 -c "import json,sys; print(json.loads(sys.argv[1])['payload']['betId'])" "$EVENT_B")"
+BET_B="$("$PY" -c "import json,sys; print(json.loads(sys.argv[1])['payload']['betId'])" "$EVENT_B")"
 publish bet.created "$EVENT_B" | tee -a "$OUT/03-publicacoes.txt"
 
 log "esperando o consumidor esgotar as tentativas"
@@ -61,7 +62,7 @@ for _ in $(seq 1 30); do
   sleep 2
 done
 snapshot 03-durante
-dlq_get ack_requeue_true | python3 -m json.tool >"$OUT/03-dlq-mensagens.json"
+dlq_get ack_requeue_true | "$PY" -m json.tool >"$OUT/03-dlq-mensagens.json"
 k logs deploy/stats-service --since=10m | grep -iE "reject|retry|attempt|dead|unprovision|tenant|schema" >"$OUT/03-logs-stats.txt" || true
 
 log "DLQ tem ${dlq:-?} mensagens (esperado 2); conteudo em 03-dlq-mensagens.json"
@@ -75,7 +76,7 @@ curl -s -X POST localhost:18081/api/v1/admin/tenants -H "X-Admin-Api-Key: $(secr
   -H 'content-type: application/json' -d "{\"slug\":\"$SLUG\",\"tenantName\":\"DLQ\"}" >"$OUT/03-tenant.json"
 
 dlq_get ack_requeue_false >"$OUT/03-dlq-drenada.json"
-python3 - "$SLUG" "$OUT/03-dlq-drenada.json" >"$OUT/03-reenvio.json" <<'PY'
+"$PY" - "$SLUG" "$OUT/03-dlq-drenada.json" >"$OUT/03-reenvio.json" <<'PY'
 import json, sys
 for msg in json.load(open(sys.argv[2])):
     if sys.argv[1] in msg["payload"]:

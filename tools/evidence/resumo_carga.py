@@ -64,11 +64,28 @@ if top_file.exists():
     for service, (cpu, memory) in sorted(peaks.items()):
         result.append(f"{service:<22}{cpu:>18}{memory:>16}")
 
+node_file = out / "02-top-no.txt"
+if node_file.exists():
+    node_samples = []
+    for stamp, lines in read_blocks(node_file):
+        for line in lines:
+            parts = line.split()
+            if len(parts) >= 3 and parts[0] != "NAME" and parts[2].endswith("%"):
+                node_samples.append((stamp, parse_cpu(parts[1]), int(parts[2][:-1])))
+    if node_samples:
+        saturated = sum(1 for _, _, p in node_samples if p >= 90)
+        result.extend([
+            "",
+            "## No (kubectl top node)",
+            f"CPU pico: {max(m for _, m, _ in node_samples)} mCPU "
+            f"({max(p for _, _, p in node_samples)}%), amostras >= 90%: {saturated} de {len(node_samples)}",
+        ])
+
 load_file = out / "02-carga.txt"
 if load_file.exists():
     lines = load_file.read_text(encoding="utf-8", errors="replace").splitlines()
     result.append("")
     result.append("## Carga (saida do load_test_bets.py)")
-    result.extend(line.strip() for line in lines if any(k in line for k in ("apostas criadas", "tempo total", "won=")))
+    result.extend(line.strip() for line in lines if any(k in line for k in ("apostas criadas", "tempo total", "won=", "latencia", "PATCH /bets")))
 
 print("\n".join(result))

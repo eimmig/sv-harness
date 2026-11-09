@@ -194,7 +194,7 @@ Mesma conversão de `unidadesApostadas` (seção "Métricas novas do dashboard c
 aplicada ao `netProfit` em vez de ao `totalStaked` — mesma simplificação deliberada (usa
 `saldoInicial` do período e `unitPercent` vigente, não histórico).
 
-### Taxa de acerto das entradas (excluindo devolvidas) e +EV
+### Taxa de acerto das entradas (excluindo devolvidas) e +EV (histórico, substituído pela vantagem)
 
 ```
 taxaDeAcertoEntradas = apostasGanhas / (apostasGanhas + apostasPerdidas)   [void EXCLUÍDO do denominador]
@@ -217,6 +217,49 @@ probabilidade implícita da odd média (sem descontar a margem da casa) — `EV`
 a taxa de acerto real do usuário superou o que a odd média "precificava" como necessário para
 empatar. Casos-limite: sem apostas liquidadas no período (denominador zero) → `EV` indefinido
 (`null`), mesmo tratamento de outras razões com denominador zero neste documento.
+
+**Renomeado para "vantagem sobre a probabilidade implícita" (`epic-053`, decisão do usuário em
+2026-11-08, após a devolutiva da orientadora do TCC 2).** Dois problemas na fórmula acima: (1)
+`oddMedia` é o `avgOdd` do backend, que inclui as devolvidas, enquanto a taxa de acerto as
+exclui; (2) `1 / oddMedia` não é a média das probabilidades implícitas `1 / oᵢ` (pela
+desigualdade de Jensen, fica menor ou igual a ela, e a vantagem sai inflada). Além disso, a
+medida não é um valor esperado: a probabilidade implícita é a da casa, não a real, e um EV
+calculado com ela seria zero por construção (`(1/o)·o − 1`). A versão nova é o campo `edge` do
+backend, seção "Vantagem sobre a probabilidade implícita e intervalos de confiança" abaixo; o
+Relatório do período passa a usá-lo na feature do `apps/web` do mesmo epic.
+
+### Vantagem sobre a probabilidade implícita e intervalos de confiança
+
+`stats-service feat-033` (`epic-053`). Campos de `BetMetrics`, em todo agregado de
+`GET /api/v1/statistics` (geral, segmentos, mensal e tipo de aposta):
+
+```
+decididas            = ganhas + perdidas
+impliedProbability   = média de 1/oddᵢ das decididas com odd > 0        [devolvidas e odd nula ou zero fora]
+edge                 = winRate − impliedProbability
+winRateLower/Upper   = intervalo de Wilson de 95% para ganhas / decididas (z = 1,96)
+roiLower/Upper       = ROI ± 1,96 · EP,  ROI = Σlᵢ / Σsᵢ sobre as liquidadas (devolvidas dentro)
+EP                   = sqrt( Σdᵢ² / (n − 1) / n ) / (Σsᵢ / n),   dᵢ = lᵢ − ROI · sᵢ
+Σdᵢ²                 = Σlᵢ² − 2 · ROI · Σlᵢsᵢ + ROI² · Σsᵢ²
+```
+
+Wilson em vez do intervalo normal (Wald) porque continua dentro de [0, 1] e tem cobertura
+melhor com poucas apostas e taxas extremas. O ROI é um estimador de razão (lucro total sobre
+total apostado), por isso o erro padrão sai pelo método delta sobre os resíduos `dᵢ`, e não pela
+média simples dos retornos por aposta. As queries devolvem `Σlᵢ²`, `Σsᵢ²` e `Σlᵢsᵢ`, e o domínio
+(`ConfidenceIntervals`) calcula o intervalo sem reler as apostas.
+
+Casos-limite, todos `null`: sem decididas (implícita, vantagem e Wilson), nenhuma decidida com odd
+(implícita e vantagem), alguma decidida sem odd (vantagem: a taxa de acerto e a implícita teriam
+populações diferentes, achado do `/code-review` de `feat-033`), menos de duas liquidadas, total apostado zero ou `Σdᵢ² ≤ 0`, isto é,
+todas as apostas com o mesmo retorno (intervalo do ROI). Escala 4, `HALF_UP`, como os demais.
+`profit` nulo entra como zero em todos os somatórios, como em `SUM(profit)`, para manter a
+identidade dos resíduos. O cálculo usa `DECIMAL128` e trata como zero uma soma de resíduos abaixo
+de `1E-20` da soma dos quadrados (cancelamento numérico quando todas as apostas têm o mesmo
+retorno). Entradas antigas no Redis devolvem os campos novos `null` até expirar (TTL de 1 h).
+
+Uso no front (`apps/web`, mesmo epic): o aviso de resultado que não se distingue do acaso aparece
+quando `winRateLower ≤ impliedProbability ≤ winRateUpper` ou `roiLower ≤ 0 ≤ roiUpper`.
 
 ### Dias e entradas "green"/"red"
 

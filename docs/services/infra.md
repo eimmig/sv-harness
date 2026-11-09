@@ -466,6 +466,36 @@ Resposta aos dois achados acima, em `k8s/`:
 
 Ordem de aplicação no cluster: PostgreSQL primeiro, esperar `kubectl rollout status` dos três, depois os 4 Java.
 
+### RabbitMQ com nome de nó estável (`infra/feat-013`, 2026-11-08)
+
+Achado da injeção de falhas pedida pela orientadora do TCC 2 (`tools/evidence/06-falhas.sh`, F1 apaga o pod do
+broker durante a carga). O nome do nó do RabbitMQ é `rabbit@<hostname>` e o diretório de dados em
+`/var/lib/rabbitmq/mnesia/` leva esse nome. Num Deployment, cada pod novo tem outro hostname
+(`rabbitmq-<hash>-<id>`), então o pod novo subia um nó **vazio** num diretório novo do PVC, sem exchange, filas nem
+mensagens — os diretórios dos nós antigos continuam no PVC. A topologia só volta com o `Job` `rabbitmq-init`, que é
+one-shot. Efeitos medidos: o `OutboxRelay` do bets-service reteve 191.115 eventos (`NOT_FOUND - no exchange
+'bets.events'`), sem perda no produtor; as mensagens que estavam na fila no instante se perderam; o stats-service
+parou os consumidores para sempre (`missing queues exception, fatal=true`) até um `rollout restart`. Reinício de
+**container** (liveness) não tinha o problema: o hostname do pod continua o mesmo.
+
+Correção:
+
+- `hostname: rabbitmq` no pod e `hostname: rabbitmq` no `docker-compose.yml`: o nó passa a ser sempre
+  `rabbit@rabbitmq`, com o mesmo diretório entre pods (nó único; cluster de vários nós pediria StatefulSet).
+- `strategy: Recreate`: com nome fixo, dois pods no mesmo PVC seriam dois nós iguais no mesmo diretório.
+- Recursos: requests 500m e 512Mi, limits 2000m e 1Gi, pelos picos das rodadas de 2026-11-08 (1.005 mCPU e
+  488 MiB). O Deployment ao vivo estava **sem** `resources` (o commit `2e9923f` nunca tinha sido aplicado no
+  cluster), e o 500m/512Mi do manifesto estrangularia o broker.
+- Sondas: liveness com `timeoutSeconds: 30`, `periodSeconds: 20`, `failureThreshold: 6`; readiness com
+  `timeoutSeconds: 20`. Com o nó a 98-99% de CPU o `check_running` passava de 10 s e o kubelet reiniciou o broker
+  4 vezes na C2 e 16 na C3; cada reinício devolve as mensagens sem ack, e 48 passaram do `x-delivery-limit` 3.
+- stats-service: `SPRING_RABBITMQ_LISTENER_SIMPLE_MISSING_QUEUES_FATAL=false` no manifesto; o listener tenta de novo
+  a cada `recovery-interval` (5 s) quando a fila some, em vez de parar.
+
+Migração (feita uma vez, troca o nome do nó): fila e outbox zerados, `kubectl apply` do Deployment, `rollout
+status`, `delete` + `apply` do `Job` `rabbitmq-init`, `list_queues`, depois o stats-service. Saídas de `kubectl diff`
+em `D:/UTFPR/TCC/evidencias/20261108-feat013`.
+
 ## Onde fica
 
 `infra/docker-compose.yml` (criado em `feat-001`, 2026-08-03), mais:

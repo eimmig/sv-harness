@@ -599,7 +599,7 @@ Tudo o resto é calculado no cliente, sem campo novo de backend além de `epic-0
 (preenchendo com zero os dias sem aposta que não vêm no array esparso), profit em unidades e R$,
 `roiBankroll` (**distinto** do `roi` já existente — ver [[estatisticas]]), ROI médio diário ("Average
 Profit"), stake médio (`totalStaked/settledCount`, já existe desde `feat-006`), dias
-green/red, taxa de acerto das entradas sem `void` e `+EV`. Fórmulas completas e a decisão de
+green/red, taxa de acerto das entradas sem `void` e `+EV` (**renomeado para vantagem e passado ao backend em `web feat-079`**, ver abaixo). Fórmulas completas e a decisão de
 deixar "Cashout Favor/Contra" (do print de referência) fora do escopo em [[estatisticas]] seção
 "Métricas da página \"Relatório do período\"".
 
@@ -755,3 +755,18 @@ pendentes).
 - [[auth-service]], [[bets-service]], [[stats-service]] — APIs consumidas via API Gateway.
 - [[DECISIONS-LOG]] — racional do modelo de tenant multiusuário (item 11: operador usa API
   direta, sem UI de provisionamento; `role = member` não vê a tela de gestão de usuários).
+
+## Vantagem, intervalos de confiança e aviso de acaso (`epic-053` da raiz, `feat-079`)
+
+`BetMetrics` (`core/statistics-api.ts`) ganha `impliedProbability`, `edge`, `winRateLower`,
+`winRateUpper`, `roiLower` e `roiUpper`, opcionais (o cache do `stats-service` anterior a
+`feat-033` não os traz). Funções puras em `shared/statistics/chance.ts`: `winRateWithinChance`
+(o intervalo de Wilson contém a probabilidade implícita média), `roiWithinChance` (o intervalo do
+ROI contém zero), `withinChance` e `formatInterval`. No dashboard, os cards de ROI e de taxa de
+acerto mostram o intervalo no `secondary` do `KpiCard`, há um card novo de vantagem (ícone
+`insights`, valor com sinal e a probabilidade implícita no `secondary`), um aviso `role="status"`
+(`dashboard-chance-warning`) quando `withinChance(overall)` e um marcador `≈` com `title`/
+`aria-label` ao lado do ROI dos segmentos cujo intervalo contém zero. Cores só com os tokens já
+cobertos pelo teste de contraste do `epic-051`. No Relatório do período, o card `+EV` (calculado no
+cliente como `TA − 1/avgOdd`, com `avgOdd` incluindo devolvidas) vira "Vantagem" e mostra o `edge`
+do backend (`period-report-edge`). Fórmulas em [[estatisticas]].

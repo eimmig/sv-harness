@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/lib.sh"
-require kubectl curl python3
+require kubectl curl
+PY="${PYTHON:-python3}"
+CURL_K=(); [ "${INSECURE:-}" = "1" ] && CURL_K=(-k)
 
 SLUG="${1:?uso: 04-cache.sh <slug> <email> <senha> [requisicoes]}"
 EMAIL="${2:?uso: 04-cache.sh <slug> <email> <senha> [requisicoes]}"
@@ -9,13 +11,13 @@ REQUESTS="${4:-50}"
 
 log "saida em $OUT"
 
-TOKEN="$(curl -s -X POST "$BASE_URL/api/v1/auth/login" -H 'content-type: application/json' \
+TOKEN="$(curl -s "${CURL_K[@]}" -X POST "$BASE_URL/api/v1/auth/login" -H 'content-type: application/json' \
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" \
-  | python3 -c "import json,sys; print(json.load(sys.stdin)['token'])")"
+  | "$PY" -c "import json,sys; print(json.load(sys.stdin)['token'])")"
 [ -n "$TOKEN" ] || { log "login falhou"; exit 1; }
 
 stats_time() {
-  curl -s -o /dev/null -w '%{http_code} %{time_total}\n' -H "Authorization: Bearer $TOKEN" "$BASE_URL/api/v1/statistics"
+  curl -s "${CURL_K[@]}" -o /dev/null -w '%{http_code} %{time_total}\n' -H "Authorization: Bearer $TOKEN" "$BASE_URL/api/v1/statistics"
 }
 
 hits_misses() { redis info stats | grep -E "keyspace_(hits|misses)" | tr -d '\r'; }
@@ -44,11 +46,11 @@ redis --scan --pattern "*${SLUG}*" | tr -d '\r' >"$OUT/04-chaves-depois.txt"
   done <"$OUT/04-chaves-depois.txt"
   echo
   echo "## conteudo da chave do dashboard consolidado"
-  dash="$(grep -m1 "dashboard" "$OUT/04-chaves-depois.txt" || true)"
-  [ -n "$dash" ] && redis get "$dash" | python3 -m json.tool | head -40
+  dash="$(grep -m1 "dashboard:consolidated" "$OUT/04-chaves-depois.txt" || true)"
+  [ -n "$dash" ] && redis get "$dash" | "$PY" -m json.tool | head -40
 } >"$OUT/04-redis-chaves.txt" 2>&1
 
-python3 - "$OUT/04-tempos.txt" <<'PY' | tee "$OUT/04-resumo.txt"
+"$PY" - "$OUT/04-tempos.txt" <<'PY' | tee "$OUT/04-resumo.txt"
 import sys
 miss, hit = [], []
 for line in open(sys.argv[1]):

@@ -1855,3 +1855,15 @@ teste `AuthControllerIntegrationTest.shouldReturn401WhenLoggingIntoOneTenantWith
 reproduzir depois desta mudança, não só deixou de ser testado. Ver `docs/services/auth-service.md`
 seções "Autenticação" e "Criação de usuário dentro de um tenant", e `services/auth-service
 feature_list.json` (`feat-023`) pro detalhe de implementação completo.
+
+## 2026-11-08 — RabbitMQ com hostname fixo em vez de StatefulSet (`infra/feat-013`, `epic-054`)
+
+**Contexto**: a injeção de falhas mostrou que apagar o pod do RabbitMQ sobe um nó vazio, porque o nome do nó
+segue o hostname do pod do Deployment (detalhe em `docs/services/infra.md`, seção "RabbitMQ com nome de nó
+estável"). **Decisão**: `hostname: rabbitmq` no pod, `strategy: Recreate` e `missing-queues-fatal=false` no
+stats-service. **Alternativas rejeitadas**: StatefulSet (resolve o mesmo para um nó, mas troca o tipo do recurso e
+o nome do PVC, com migração maior, sem ganho enquanto há um nó só); as aplicações declararem a topologia
+(espalharia o contrato de `definitions.json` por dois serviços, com risco de `PRECONDITION_FAILED` se os argumentos
+divergirem — o mesmo motivo de 2026-08-03 para promovê-la a contrato do infra). **Consequência**: a topologia e as
+mensagens sobrevivem à recriação do pod enquanto o PVC existir; perder o PVC continua exigindo o `rabbitmq-init`.
+

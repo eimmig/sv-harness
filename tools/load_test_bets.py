@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import math
 import os
 import random
 import string
@@ -99,6 +100,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--pending-recent-days", type=int, default=int(os.environ.get("PENDING_RECENT_DAYS", "3")))
     p.add_argument("--progress-every", type=int, default=int(os.environ.get("PROGRESS_EVERY", "1000")))
     p.add_argument("--max-retries", type=int, default=int(os.environ.get("MAX_RETRIES", "3")))
+    p.add_argument("--latency-csv", default=os.environ.get("LATENCY_CSV"),
+                   help="grava uma linha por requisicao (inicio_s,operacao,status,latencia_ms)")
+    p.add_argument("--insecure", action="store_true", default=os.environ.get("INSECURE") == "1",
+                   help="nao valida o certificado TLS (servidor com certificado autoassinado)")
     args = p.parse_args()
     if not args.admin_api_key:
         sys.exit("ADMIN_API_KEY ausente - passe --admin-api-key ou exporte a variavel de ambiente "
@@ -107,11 +112,13 @@ def parse_args() -> argparse.Namespace:
 
 
 _thread_local = threading.local()
+_verify_tls = True
 
 
 def make_session() -> requests.Session:
     if not hasattr(_thread_local, "session"):
         s = requests.Session()
+        s.verify = _verify_tls
         adapter = HTTPAdapter(pool_connections=200, pool_maxsize=200, max_retries=0)
         s.mount("http://", adapter)
         s.mount("https://", adapter)
@@ -210,6 +217,39 @@ class Counters:
             setattr(self, field, getattr(self, field) + 1)
 
 
+class Latencies:
+    """Latencia de cada requisicao da fase de carga, medida no cliente, incluindo as
+    novas tentativas de request_with_retry (e o tempo que o usuario esperaria)."""
+
+    def __init__(self, t0: float) -> None:
+        self.lock = threading.Lock()
+        self.t0 = t0
+        self.rows: list[tuple[float, str, int, float]] = []
+
+    def record(self, op: str, started: float, status: int) -> None:
+        ms = (time.monotonic() - started) * 1000.0
+        with self.lock:
+            self.rows.append((started - self.t0, op, status, ms))
+
+    def summary(self, op: str) -> str:
+        values = sorted(r[3] for r in self.rows if r[1] == op and 200 <= r[2] < 300)
+        if not values:
+            return f"{op}: sem amostras"
+        def pct(p: float) -> float:
+            # percentil pelo posto mais proximo (nearest-rank)
+            k = max(0, min(len(values) - 1, math.ceil(p / 100.0 * len(values)) - 1))
+            return values[k]
+        mean = sum(values) / len(values)
+        return (f"{op}: n={len(values)} media={mean:.1f}ms mediana={pct(50):.1f}ms "
+                f"p95={pct(95):.1f}ms p99={pct(99):.1f}ms max={values[-1]:.1f}ms")
+
+    def write_csv(self, path: str) -> None:
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
+            f.write("inicio_s,operacao,status,latencia_ms\n")
+            for start_s, op, status, ms in sorted(self.rows):
+                f.write(f"{start_s:.3f},{op},{status},{ms:.2f}\n")
+
+
 def bet_worker(i: int, ctx: dict, counters: Counters, args: argparse.Namespace) -> None:
     gateway_base = ctx["gateway_base"]
     token = ctx["token"]
@@ -261,11 +301,14 @@ def bet_worker(i: int, ctx: dict, counters: Counters, args: argparse.Namespace) 
     }
     idem_key = hashlib.sha256(f"{slug}-{i}".encode()).hexdigest()[:32]
 
+    latencies: Latencies = ctx["latencies"]
+    started = time.monotonic()
     try:
         r = request_with_retry(
             "POST", f"{gateway_base}/api/v1/bets", args.max_retries,
             headers={**auth_headers(token), "Idempotency-Key": idem_key}, json=payload,
         )
+        latencies.record("POST /bets", started, r.status_code)
         r.raise_for_status()
         bet = r.json()
         counters.bump("created")
@@ -285,11 +328,13 @@ def bet_worker(i: int, ctx: dict, counters: Counters, args: argparse.Namespace) 
     else:
         status = "lost"
 
+    started = time.monotonic()
     try:
         r = request_with_retry(
             "PATCH", f"{gateway_base}/api/v1/bets/{bet['id']}/status", args.max_retries,
             headers=auth_headers(token), json={"status": status},
         )
+        latencies.record("PATCH /bets/status", started, r.status_code)
         r.raise_for_status()
         counters.bump(status)
     except requests.exceptions.RequestException:
@@ -321,7 +366,12 @@ def run_bounded(n: int, max_workers: int, submit_fn) -> None:
 
 
 def main() -> None:
+    global _verify_tls
     args = parse_args()
+    if args.insecure:
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        _verify_tls = False
     slug = "loadtest-" + uuid.uuid4().hex[:8]
     tenant_name = f"Teste de Carga {slug}"
 
@@ -380,6 +430,9 @@ def main() -> None:
 
     print(f"[4/5] Gerando {args.n_bets} apostas ({args.workers} threads em paralelo)...", flush=True)
     start = time.monotonic()
+    print(f"  inicio da carga (UTC): {datetime.now(timezone.utc).isoformat()}", flush=True)
+    latencies = Latencies(start)
+    ctx["latencies"] = latencies
     last_report = [0]
 
     def submit_fn(i: int) -> None:
@@ -400,6 +453,7 @@ def main() -> None:
     run_bounded(args.n_bets, args.workers, submit_fn)
 
     elapsed = time.monotonic() - start
+    print(f"  fim da carga (UTC): {datetime.now(timezone.utc).isoformat()}", flush=True)
     print("[5/5] Concluido.", flush=True)
     print("=" * 60, flush=True)
     print(f"tenant slug     : {slug}", flush=True)
@@ -408,7 +462,12 @@ def main() -> None:
     print(f"apostas criadas : {counters.created} / {args.n_bets} (erros={counters.errors})", flush=True)
     print(f"  won={counters.won} lost={counters.lost} void={counters.void} pending={counters.pending}", flush=True)
     print(f"tempo total     : {elapsed:.1f}s ({counters.created / elapsed:.1f} apostas/s)", flush=True)
+    print(f"latencia        : {latencies.summary('POST /bets')}", flush=True)
+    print(f"                  {latencies.summary('PATCH /bets/status')}", flush=True)
     print("=" * 60, flush=True)
+    if args.latency_csv:
+        latencies.write_csv(args.latency_csv)
+        print(f"latencias por requisicao em {args.latency_csv}", flush=True)
 
 
 if __name__ == "__main__":

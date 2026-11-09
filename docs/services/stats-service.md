@@ -106,6 +106,10 @@ Chaves padronizadas (inglês, mesma decisão de nomenclatura técnica — ver [[
 
 - `tenant:{slug}:dashboard:consolidated` — ROI total, taxa de acerto macro, saldo unificado.
 - `tenant:{slug}:stats:monthly:{year}_{month}` — série histórica para gráficos de linha.
+- `tenant:{slug}:dashboard:monthly` — série mensal inteira do dashboard sem filtro
+  (`stats-service feat-034`, 2026-11-08). Antes ela era recalculada no banco a cada
+  `GET /api/v1/statistics`, mesmo com os outros agregados no cache; com 100.000 apostas, o p95 com
+  cache quente ficou em 302 ms (RNF03 pede menos de 300). Apagada pelo mesmo `evict` dos eventos.
 - `tenant:{slug}:segment:{sport|market|house|league|tipster|team|byBetType}` — ranking de
   performance por segmento.
 
@@ -407,6 +411,17 @@ escopado por esporte, `sportId` obrigatório (mesma `MissingRequiredStatisticsFi
 `GET /api/v1/statistics/search`) — troca de esporte na tela refiltra a lista, nunca mistura times
 de esportes diferentes. `ListTeamsUseCase`/`ListTeamsService` mantêm o limite hexagonal (
 `adapter/in` nunca chama `port/out` direto), mesmo padrão de `SearchStatisticsUseCase`.
+
+## Vantagem e intervalos de confiança (`epic-053` da raiz, `feat-033`)
+
+As 9 queries que projetam `AggregateProjection` (geral, 6 segmentos, mensal e tipo de aposta)
+devolvem também `impliedProbability` (`AVG` de `1.0 / odd` das ganhas e perdidas com odd, porque
+`odd` é anulável desde `V20260910120000`), `Σprofit²`, `Σstake²` e `Σprofit·stake`. O
+`BetAggregate` carrega esses valores, e `CalculateMetricsService.toMetrics` calcula `edge` e os
+intervalos com `ConfidenceIntervals` (domínio puro: Wilson para a taxa de acerto, método delta
+para o ROI). Os 6 campos entram ao final de `BetMetrics`, sem mudar os existentes; o
+`ZERO_METRICS` de `GetDashboardMetricsService` os deixa `null`. Fórmulas e casos-limite em
+[[estatisticas]]; contrato em [[contratos-de-api]]. `GET /api/v1/statistics/search` ficou fora.
 
 ## Ver também
 

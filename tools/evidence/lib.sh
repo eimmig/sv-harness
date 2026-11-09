@@ -59,6 +59,10 @@ port_forward() {
 
 cleanup() {
   for pid in "${BG_PIDS[@]:-}"; do
+    # No Git Bash (Windows), kill nao encerra o kubectl.exe nativo; usa o PID do Windows.
+    if [ -r "/proc/$pid/winpid" ] && command -v taskkill >/dev/null 2>&1; then
+      taskkill //F //T //PID "$(cat "/proc/$pid/winpid")" >/dev/null 2>&1 || true
+    fi
     kill "$pid" 2>/dev/null || true
   done
 }
