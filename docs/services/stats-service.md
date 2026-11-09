@@ -81,6 +81,20 @@ partir do header `X-Tenant-Id` (ver [[contratos-de-api]]) tanto no consumo de ev
 envelope) quanto nas consultas de `GET /api/v1/statistics`, e migrado sob demanda antes de
 processar (Flyway lazy, ver [[convencoes]]).
 
+**Troca de schema por conexão (`stats-service feat-038`, 2026-11-09)**: o `SchemaMultiTenantConnectionProvider` lembra o
+schema de cada conexão física do pool e só executa `SET search_path` quando ele muda; não volta para `public`
+na devolução. O `SET` vai na conexão física (`unwrap`), para o Hikari não restaurar o schema. Antes, cada
+empréstimo fazia dois `SET` (organização e `public`): o diagnóstico com `pg_stat_statements` contou 78 mil `SET`
+para 20 mil apostas (`evidencias/20261109-diagnostico-bancos`). `JdbcFlywayTenantSchemaGateway.exists` responde
+sem consultar o `information_schema` quando o schema já foi migrado nesta instância. Cuidado: a conexão volta ao
+pool com o schema da última organização, então código que use o `DataSource` direto precisa qualificar os nomes.
+
+**Dimensões conhecidas (`feat-038`)**: `KnownDimensions` guarda, por schema, as dimensões já gravadas (casa,
+esporte, liga, mercado, tipster, data e time), e os `JpaDim*Repository` deixam de repetir o `INSERT ... ON
+CONFLICT DO NOTHING` e as buscas por data e time a cada evento (eram 35 mil inserts por dimensão para menos de 20
+linhas novas). A entrada só é registrada no `afterCommit`: dimensão de transação desfeita não existe no banco e
+violaria a FK do fato se fosse dada como conhecida.
+
 ## Modelo de dados (OLAP — esquema estrela, isolado por cliente, banco separado do OLTP)
 
 Ver [[modelo-de-dados]] para o ERD completo (Mermaid + PNG original do TCC1).

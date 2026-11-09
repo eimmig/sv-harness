@@ -659,6 +659,28 @@
       "status": "done",
       "harness": "apps/web",
       "evidence": "web v2.2.1 (feat-080) e v2.3.0 (feat-081, PRs #310-#312). evidencias/20261109-acessibilidade (5 ocorrencias de 2 regras), 20261109-acessibilidade-pos (so a regiao rolavel de Times) e 20261109-acessibilidade-final (0 violacoes nas 18 telas e 2 temas; 29 paradas de foco com indicador em login e registrar aposta). contrast.spec com 82 pares. Texto: cap-conclusoes subsec:tela_acessibilidade e consideracoes finais."
+    },
+    {
+      "id": "epic-058",
+      "name": "Menos instrucoes por aposta nos bancos (RNF06)",
+      "description": "Diagnostico de 2026-11-09 com pg_stat_statements numa carga de 20.000 apostas (C2, bancos em 2000m): 85,8 instrucoes por aposta no postgres-bets e 17,7 por evento no postgres-stats, dominadas por SET search_path a cada emprestimo de conexao (ida e volta para public), checagem do schema no information_schema por requisicao e, no stats, INSERT ON CONFLICT das dimensoes a cada evento. Corrigir sem mudar regra de negocio: bets-service feat-026 e stats-service feat-038. Definicao de pronto: em main e implantadas; carga de diagnostico repetida com reducao medida.",
+      "dependencies": [
+        "epic-056"
+      ],
+      "status": "done",
+      "harness": "multiplos: services/bets-service e services/stats-service",
+      "evidence": "bets v0.3.2 (feat-026, PRs #95-#97) e stats v0.5.2 (feat-038, PRs #125-#127). evidencias/20261109-diagnostico-bancos-pos/comparacao.txt: postgres-bets 1.715.283 -> 720.217 instrucoes (-58%, 85,8 -> 36,0 por aposta), tempo de execucao 56,4 -> 45,3 s; postgres-stats 687.336 -> 197.905 (-71%, 17,7 -> 5,1 por evento), 48,7 -> 31,6 s. Contagens PASS, DLQ vazia."
+    },
+    {
+      "id": "epic-059",
+      "name": "Bateria final na versao em producao (RNF06)",
+      "description": "O texto do TCC passa a mostrar so os resultados finais. A bateria de 2026-11-08 mediu uma versao anterior (banco analitico em 500m, sem somas diarias nem epic-058). Rodar C1 (uma replica) e C2 (HPA ate 4, bancos em 2000m), 3 rodadas cada, 100.000 apostas, 128 threads, com pg_stat_statements desligado; repetir 07-oltp-olap.sh. Definicao de pronto: evidencias/20261110-bateria-final com agregado; texto do cap-avaliacao reescrito com esses numeros e figuras de terminal regeneradas.",
+      "dependencies": [
+        "epic-058"
+      ],
+      "status": "in-progress",
+      "harness": "tools/evidence e texto",
+      "evidence": ""
     }
   ]
 }

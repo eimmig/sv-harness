@@ -23,6 +23,14 @@ serviço). Tenant = organização com múltiplos usuários (ver [[auth-service]]
 `X-User-Id`, ver [[contratos-de-api]]), e migrado sob demanda antes de atender a requisição (Flyway
 lazy, ver [[convencoes]] seção "Migrations").
 
+**Troca de schema por conexão (`bets-service feat-026`, 2026-11-09)**: o `SchemaMultiTenantConnectionProvider` lembra o
+schema de cada conexão física do pool e só executa `SET search_path` quando ele muda; não volta para `public`
+na devolução. O `SET` vai na conexão física (`unwrap`), para o Hikari não restaurar o schema. Antes, cada
+empréstimo fazia dois `SET` (organização e `public`): o diagnóstico com `pg_stat_statements` contou 394 mil `SET`
+para 20 mil apostas (`evidencias/20261109-diagnostico-bancos`). `JdbcFlywayTenantSchemaGateway.exists` responde
+sem consultar o `information_schema` quando o schema já foi migrado nesta instância. Cuidado: a conexão volta ao
+pool com o schema da última organização, então código que use o `DataSource` direto precisa qualificar os nomes.
+
 ## Provisionamento de tenant (rota admin)
 
 `POST /api/v1/admin/tenants` (`{"slug": "<slug>"}` → 201 `{"schema": "tenant_<slug>"}`), autenticada
