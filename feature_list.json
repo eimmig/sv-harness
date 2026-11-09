@@ -678,9 +678,9 @@
       "dependencies": [
         "epic-058"
       ],
-      "status": "in-progress",
+      "status": "done",
       "harness": "tools/evidence e texto",
-      "evidence": ""
+      "evidence": "2026-11-09. evidencias/20261110-bateria-final (bets v0.3.2, stats v0.5.2, pg_stat_statements desligado, bancos em 2000m; ambiente.txt): C1 109,7 +- 9,5 apostas/s, C2 125,4 +- 7,3 (+14%); atraso p95 0,6 s (C1) e 3,2 s (C2), fila maxima 757; no a 95,7% na C2 com bancos abaixo do limite (1.384 e 607 mCPU); reconciliacao PASS nas 6 rodadas, sem reinicio do RabbitMQ. evidencias/20261110-oltp-olap-final (41,9/55,6; 92,1/117,5; somas 1,6/5,4 ms), 20261110-cache-servidor (p95 256,5 ms) e 20261110-dashboard-filtrado. Texto do cap-avaliacao reescrito so com resultados finais (C1 e C2), figuras de terminal regeneradas da rodada C2-r2 (figuras-fonte/), consideracoes finais, resumo e abstract atualizados; compilar.ps1 exit 0."
     }
   ]
 }
