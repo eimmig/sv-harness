@@ -125,9 +125,11 @@ Desde `stats-service feat-036` (2026-11-09), duas camadas atendem o dashboard co
   dia, segmento (`OVERALL`, `SPORT`, `MARKET`, `HOUSE`, `LEAGUE`, `TIPSTER`, `TEAM`, `BET_TYPE`) e
   dimensão, com as somas e contagens de `BetAggregate` (a odd média vira `odd_sum / odd_count`, a
   implícita `implied_sum / decided_with_odd_count`). Um trigger em `fact_bet` marca em
-  `agg_dirty_day` o dia antigo e o novo de cada escrita; `DailyAggregateRefreshScheduler` (a cada 5 s,
-  em todas as réplicas) recalcula os dias marcados de cada organização sob
-  `pg_try_advisory_xact_lock`. `JpaFactBetRepository` só lê as somas quando o filtro tem apenas
+  `agg_dirty_day` o dia antigo e o novo de cada escrita; `DailyAggregateRefreshScheduler` (a cada 60 s,
+  em todas as réplicas) recalcula até 31 dias marcados de cada organização, os mais recentes primeiro,
+  sob `pg_try_advisory_xact_lock`. Na `feat-036` eram 5 s sem limite: a rodada c2-500m de 2026-11-09
+  mostrou o recálculo dos 366 dias da carga (5,5 s no banco de 500m) tomando metade do processador
+  do consumo, com atraso p95 de 1.573 s contra 625 s; a `feat-037` fixou intervalo e orçamento. `JpaFactBetRepository` só lê as somas quando o filtro tem apenas
   período e nenhum dia do intervalo está pendente; com filtro de dimensão, ou com dia pendente, a
   consulta vai a `fact_bet` e o resultado é o mesmo (`DailySegmentAggregateIntegrationTest` compara
   os dois caminhos nas nove agregações). Sob carga contínua, o dia corrente fica pendente e o

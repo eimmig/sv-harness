@@ -647,7 +647,7 @@
       ],
       "status": "done",
       "harness": "multiplos: infra e services/stats-service",
-      "evidence": "infra v0.3.2 (feat-014), stats v0.4.2 (feat-035) e v0.5.0 (feat-036, PRs #119-#121). evidencias/20261109-dashboard-filtrado: antes-v0.4.2.txt e caminhos-v0.5.0-n30.txt (30 req por periodo): p95 pelas somas diarias de 41,5 a 245,7 ms em 1 dia a 1 ano; pelo cache de 20,3 a 185,2 ms; tabela fato com filtro de esporte 106,5 a 234,2 ms ate 2 meses e 895,2 ms em 1 ano. Texto: cap-avaliacao (tab:dashboard_periodo), cap-conclusoes, cap-desenvolvimento, consideracoes finais, resumo e abstract."
+      "evidence": "infra v0.3.2 (feat-014), stats v0.4.2 (feat-035) e v0.5.0 (feat-036, PRs #119-#121). evidencias/20261109-dashboard-filtrado: antes-v0.4.2.txt e caminhos-v0.5.0-n30.txt (30 req por periodo): p95 pelas somas diarias de 41,5 a 245,7 ms em 1 dia a 1 ano; pelo cache de 20,3 a 185,2 ms; tabela fato com filtro de esporte 106,5 a 234,2 ms ate 2 meses e 895,2 ms em 1 ano. Texto: cap-avaliacao (tab:dashboard_periodo), cap-conclusoes, cap-desenvolvimento, consideracoes finais, resumo e abstract. Custo sob carga (feat-037, stats v0.5.1): rodada c2-500m com recalculo a cada 5 s elevou o atraso p95 das estatisticas de 625 para 1.573 s; com 31 dias por minuto, 811 s (evidencias/20261109-carga-somas e -v2). postgres-stats devolvido a 2000m."
     },
     {
       "id": "epic-057",
