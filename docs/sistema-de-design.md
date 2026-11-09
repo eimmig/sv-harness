@@ -173,6 +173,27 @@ papel admin e no link ativo da navegação. O teste compõe esses fundos do mesm
 | `positive` sobre ela mesma a 10% (valor do retorno potencial) | 5,09 | 5,93 |
 | `text-secondary` sobre `positive` a 10% (rótulo do retorno potencial) | 4,80 | 4,57 |
 | M3 `on-primary` sobre M3 `primary` (rótulo de botão preenchido) | 6,42 | 7,73 |
+| Badges won/lost/admin: texto = tom 80% + `text-primary`, sobre o tom a 16% composto em cada um dos 3 fundos (pior caso) | 5,00 | 5,02 |
+
+> **Corrigido em `apps/web feat-080` (2026-11-09)**: a auditoria com axe-core (WCAG 2.0 a 2.2, A e
+> AA, 18 telas, dois temas, `tools/evidence/10-acessibilidade.js`) achou o texto dos badges abaixo de
+> 4,5:1 sobre o fundo da linha do Histórico e do Usuários: o teste só compunha o tom de 16% sobre
+> `--color-surface`. O texto dos badges passou a misturar 80% do tom com `--color-text-primary`, e o
+> teste cobre os três fundos (82 pares no total).
+
+### Foco e navegação por teclado
+
+- `:where(button, a, [role='tab'], [tabindex]):focus-visible` desenha contorno de 2 px em
+  `--color-action-neutral` (especificidade zero, não briga com os componentes). Botões de ícone
+  (`.mat-mdc-icon-button`) e `mat-select` recebem o mesmo contorno com especificidade própria, porque
+  o Material só os marcava com a camada cinza de estado (`apps/web feat-081`). Campos de texto já
+  mostram o foco na borda do `mat-form-field`.
+- Listas de cadastro (`catalog-manager`, `team-manager`) são paginadas no cliente com
+  `shared/list-pager` (10 itens, Anterior/Próxima), em vez de rolar dentro do corpo do panel: uma
+  região rolável sem filho focável é inalcançável pelo teclado (axe `scrollable-region-focusable`), e
+  torná-la focável com `tabindex` conflita com a regra S6845 do SonarCloud (`feat-081`).
+- Auditoria final (2026-11-09, web v2.3.0): zero violações nas 18 telas, nos dois temas; 29 paradas
+  de Tab em login e registrar aposta, todas com indicador (`evidencias/20261109-acessibilidade-final`).
 
 Fora do teste, de propósito: `--color-disabled-text` (2,1 a 2,6:1), porque a WCAG isenta componente
 inativo; os tokens `-strong` e `--color-disabled-*`, que nenhum componente usa hoje; o logo e o

@@ -637,6 +637,28 @@
       "status": "done",
       "harness": "services/stats-service",
       "evidence": "stats-service feat-034 em main (v0.4.1) e implantado; 04-cache.sh no servidor: p50 87,2 ms, p95 187,2 ms, 441 acertos e 9 falhas (evidencias/20261108-cache-servidor/cache-pos-034); antes, v0.4.0: p50 277,9 e p95 302,2 ms."
+    },
+    {
+      "id": "epic-056",
+      "name": "Dashboard com periodo abaixo de 300 ms (RNF03 com filtros)",
+      "description": "Medicao de 2026-11-09 (deste PC, sessao HTTP reutilizada, organizacao de 100.000 apostas, stats v0.4.1): GET /api/v1/statistics sem filtros (cache) mediana 20 ms; com periodo de 2 meses mediana 685 ms e p95 750 ms; com 1 ano mediana 3,8 s. O dashboard sempre envia periodo, entao nunca usa o cache, e o RNF03 (< 300 ms nas consultas aos dashboards) nao era atendido. Log de duracao do PostgreSQL: as 9 agregacoes do caminho filtrado rodam em sequencia (22 a 151 ms cada, 584 ms no total); isoladas levam ~22 ms; o postgres-stats tem limite de 500 mCPU e foi estrangulado em 40% dos periodos do cgroup (cpu.stat). Experimento: limite de 2000 mCPU sozinho levou a mediana para 319 ms (2 meses) e 1,48 s (1 ano). Coluna de data gerada e indice em fact_bet(date_id) nao mudaram o tempo (seq scan de 100k linhas custa 12 ms). Corrigir: (1) infra: postgres-stats com requests 500m/1Gi e limits 2000m/2Gi (feat-014); (2) stats-service: as 9 agregacoes do caminho filtrado em paralelo, com o contexto da organizacao propagado (feat-035). Definicao de pronto: as duas em main e implantadas; medicao repetida com periodo de 2 meses e de 1 ano, texto atualizado com o resultado. Adendo 2026-11-09: com feat-014 e feat-035 em producao (stats v0.4.2) o paralelismo nao bastou - as 9 consultas simultaneas esgotavam os 2 cores do postgres-stats e os presets de 7 a 30 dias ficaram com p95 de 381 a 710 ms. Decisao do usuario: cache por filtro e agregacao para os periodos (feat-036: somas diarias por segmento em agg_daily_segment, recalculo agendado dos dias alterados, cache do dashboard por filtro com geracao por tenant).",
+      "dependencies": [
+        "epic-055"
+      ],
+      "status": "done",
+      "harness": "multiplos: infra e services/stats-service",
+      "evidence": "infra v0.3.2 (feat-014), stats v0.4.2 (feat-035) e v0.5.0 (feat-036, PRs #119-#121). evidencias/20261109-dashboard-filtrado: antes-v0.4.2.txt e caminhos-v0.5.0-n30.txt (30 req por periodo): p95 pelas somas diarias de 41,5 a 245,7 ms em 1 dia a 1 ano; pelo cache de 20,3 a 185,2 ms; tabela fato com filtro de esporte 106,5 a 234,2 ms ate 2 meses e 895,2 ms em 1 ano. Texto: cap-avaliacao (tab:dashboard_periodo), cap-conclusoes, cap-desenvolvimento, consideracoes finais, resumo e abstract."
+    },
+    {
+      "id": "epic-057",
+      "name": "Acessibilidade auditada com axe-core e teclado (RNF02)",
+      "description": "Devolutiva do TCC 2: so o contraste das cores declaradas tinha sido verificado. Auditoria automatica de 2026-11-09 (axe-core 4.10.2, regras WCAG 2.0/2.1/2.2 A e AA, 18 telas, temas claro e escuro, tools/evidence/10-acessibilidade.js): 4 achados - contraste do badge de papel em Usuarios (2 temas, 4,49:1), dos badges de situacao no Historico no tema claro (9 nos; o tom de 16% sobre o fundo da linha fica abaixo de 4,5:1), e regiao rolavel sem acesso por teclado em Times (corpo do panel compartilhado com overflow e sem filho focavel). Teste de teclado: botoes de icone (tema, recolher menu) com indicador de foco fraco. Corrigir no apps/web (feat-080). Definicao de pronto: auditoria repetida sem violacoes, contrast.spec cobrindo os badges sobre os tres fundos, texto do TCC atualizado. Adendo 2026-11-09: o tabindex no corpo do panel conflitou com a regra S6845 do SonarCloud; decisao do usuario: paginar as listas de cadastro (feat-081, app-list-pager, 10 por pagina). A captura de foco mostrou que os campos de texto ja tinham indicador (borda do mat-form-field), nao reconhecido pelo script; botoes de icone e mat-select ganharam outline.",
+      "dependencies": [
+        "epic-051"
+      ],
+      "status": "done",
+      "harness": "apps/web",
+      "evidence": "web v2.2.1 (feat-080) e v2.3.0 (feat-081, PRs #310-#312). evidencias/20261109-acessibilidade (5 ocorrencias de 2 regras), 20261109-acessibilidade-pos (so a regiao rolavel de Times) e 20261109-acessibilidade-final (0 violacoes nas 18 telas e 2 temas; 29 paradas de foco com indicador em login e registrar aposta). contrast.spec com 82 pares. Texto: cap-conclusoes subsec:tela_acessibilidade e consideracoes finais."
     }
   ]
 }

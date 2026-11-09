@@ -110,6 +110,32 @@ Chaves padronizadas (inglês, mesma decisão de nomenclatura técnica — ver [[
   (`stats-service feat-034`, 2026-11-08). Antes ela era recalculada no banco a cada
   `GET /api/v1/statistics`, mesmo com os outros agregados no cache; com 100.000 apostas, o p95 com
   cache quente ficou em 302 ms (RNF03 pede menos de 300). Apagada pelo mesmo `evict` dos eventos.
+
+Com filtros (o dashboard sempre manda período), nada passa pelo cache: as nove agregações vão ao
+banco. Desde `stats-service feat-035` (2026-11-09) elas rodam em paralelo, cada uma numa virtual
+thread com o schema da organização propagado (`TenantPropagatingConcurrentCalls`, porta
+`ConcurrentCalls` na camada application). Antes, em sequência, somavam 584 ms para um período de
+2 meses com 100.000 apostas; o limite do `postgres-stats` subiu junto para 2000m (`infra feat-014`).
+O paralelismo sozinho não bastou: cada agregação varria as 100 mil linhas de `fact_bet`, e as nove
+juntas esgotavam os 2 cores do banco (presets de 7 a 30 dias com p95 de 380 a 710 ms).
+
+Desde `stats-service feat-036` (2026-11-09), duas camadas atendem o dashboard com período:
+
+- **Somas diárias por segmento** (`agg_daily_segment`, migration `V20261109160000`): uma linha por
+  dia, segmento (`OVERALL`, `SPORT`, `MARKET`, `HOUSE`, `LEAGUE`, `TIPSTER`, `TEAM`, `BET_TYPE`) e
+  dimensão, com as somas e contagens de `BetAggregate` (a odd média vira `odd_sum / odd_count`, a
+  implícita `implied_sum / decided_with_odd_count`). Um trigger em `fact_bet` marca em
+  `agg_dirty_day` o dia antigo e o novo de cada escrita; `DailyAggregateRefreshScheduler` (a cada 5 s,
+  em todas as réplicas) recalcula os dias marcados de cada organização sob
+  `pg_try_advisory_xact_lock`. `JpaFactBetRepository` só lê as somas quando o filtro tem apenas
+  período e nenhum dia do intervalo está pendente; com filtro de dimensão, ou com dia pendente, a
+  consulta vai a `fact_bet` e o resultado é o mesmo (`DailySegmentAggregateIntegrationTest` compara
+  os dois caminhos nas nove agregações). Sob carga contínua, o dia corrente fica pendente e o
+  dashboard usa `fact_bet`. A migration criou também o índice `idx_fact_bet_date_id`.
+- **Cache por filtro**: `tenant:{slug}:dashboard:filtered:{geração}:{from}:{to}:{house}:{sport}:{league}:{market}:{tipster}`,
+  o `StatisticsDashboard` inteiro, TTL de 10 min. O `evict` dos eventos incrementa
+  `tenant:{slug}:dashboard:filtered:generation` em vez de apagar chaves; um cálculo que começou antes
+  grava na geração velha, que ninguém mais lê.
 - `tenant:{slug}:segment:{sport|market|house|league|tipster|team|byBetType}` — ranking de
   performance por segmento.
 

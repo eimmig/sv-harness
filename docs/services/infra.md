@@ -466,6 +466,14 @@ Resposta aos dois achados acima, em `k8s/`:
 
 Ordem de aplicação no cluster: PostgreSQL primeiro, esperar `kubectl rollout status` dos três, depois os 4 Java.
 
+### `postgres-stats` com 2000m de CPU (`infra/feat-014`, 2026-11-09)
+
+Com limite de 500m, o banco analítico foi estrangulado em 29.996 de 74.108 períodos do cgroup
+(`/sys/fs/cgroup/cpu.stat`), e o dashboard com período de 2 meses levava 685 ms de mediana (RNF03
+pede menos de 300). Passa a requests 500m e 1Gi e limits 2000m e 2Gi, igual ao `postgres-bets`.
+Sozinho, o ajuste levou a mediana a 319 ms; o resto vem das agregações em paralelo do
+`stats-service feat-035`. O Deployment já usa `strategy: Recreate` (`feat-012`).
+
 ### RabbitMQ com nome de nó estável (`infra/feat-013`, 2026-11-08)
 
 Achado da injeção de falhas pedida pela orientadora do TCC 2 (`tools/evidence/06-falhas.sh`, F1 apaga o pod do

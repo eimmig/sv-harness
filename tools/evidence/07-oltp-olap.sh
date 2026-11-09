@@ -34,6 +34,17 @@ OLAP_SPORT="SELECT s.id, s.name, SUM(f.stake), SUM(f.profit),
   FROM $B.fact_bet f JOIN $B.dim_date d ON d.id = f.date_id JOIN $B.dim_sport s ON s.id = f.sport_id
   WHERE f.status <> 'pending' AND make_date(d.year, d.month, d.day) BETWEEN DATE '1900-01-01' AND DATE '2100-12-31'
   GROUP BY s.id, s.name"
+# Somas diarias por segmento (stats-service feat-036, 2026-11-09): mesmo intervalo, lendo
+# agg_daily_segment em vez de fact_bet. So roda se a migration ja foi aplicada no tenant.
+AGG_OVERALL="SELECT SUM(a.total_staked), SUM(a.net_profit), SUM(a.won_count), SUM(a.lost_count),
+  SUM(a.void_count), SUM(a.odd_sum) / NULLIF(SUM(a.odd_count), 0), SUM(a.settled_count)
+  FROM $B.agg_daily_segment a
+  WHERE a.segment = 'OVERALL' AND a.day BETWEEN DATE '1900-01-01' AND DATE '2100-12-31'"
+AGG_SPORT="SELECT s.id, s.name, SUM(a.total_staked), SUM(a.net_profit), SUM(a.won_count), SUM(a.lost_count),
+  SUM(a.odd_sum) / NULLIF(SUM(a.odd_count), 0), SUM(a.settled_count)
+  FROM $B.agg_daily_segment a JOIN $B.dim_sport s ON s.id = CAST(a.dimension_key AS uuid)
+  WHERE a.segment = 'SPORT' AND a.day BETWEEN DATE '1900-01-01' AND DATE '2100-12-31'
+  GROUP BY s.id, s.name"
 
 measure() {
   local name="$1" db="$2" sql="$3"
@@ -51,6 +62,11 @@ measure oltp-geral psql_bets "$OLTP_OVERALL"
 measure olap-geral psql_stats "$OLAP_OVERALL"
 measure oltp-esporte psql_bets "$OLTP_SPORT"
 measure olap-esporte psql_stats "$OLAP_SPORT"
+if [ "$(psql_stats "SELECT to_regclass('$B.agg_daily_segment') IS NOT NULL")" = "t" ]; then
+  psql_stats "SELECT count(*) FROM $B.agg_daily_segment" >"$OUT/07-volume-somas.txt"
+  measure somas-geral psql_stats "$AGG_OVERALL"
+  measure somas-esporte psql_stats "$AGG_SPORT"
+fi
 
 awk '{ t[$1] = t[$1] " " $2 } END {
   for (k in t) {
