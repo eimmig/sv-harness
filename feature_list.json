@@ -681,6 +681,28 @@
       "status": "done",
       "harness": "tools/evidence e texto",
       "evidence": "2026-11-09. evidencias/20261110-bateria-final (bets v0.3.2, stats v0.5.2, pg_stat_statements desligado, bancos em 2000m; ambiente.txt): C1 109,7 +- 9,5 apostas/s, C2 125,4 +- 7,3 (+14%); atraso p95 0,6 s (C1) e 3,2 s (C2), fila maxima 757; no a 95,7% na C2 com bancos abaixo do limite (1.384 e 607 mCPU); reconciliacao PASS nas 6 rodadas, sem reinicio do RabbitMQ. evidencias/20261110-oltp-olap-final (41,9/55,6; 92,1/117,5; somas 1,6/5,4 ms), 20261110-cache-servidor (p95 256,5 ms) e 20261110-dashboard-filtrado. Texto do cap-avaliacao reescrito so com resultados finais (C1 e C2), figuras de terminal regeneradas da rodada C2-r2 (figuras-fonte/), consideracoes finais, resumo e abstract atualizados; compilar.ps1 exit 0."
+    },
+    {
+      "id": "epic-060",
+      "name": "Estimativa do periodo no banco analitico (RNF03)",
+      "description": "A consulta do ano inteiro em fact_bet subiu de 38,3 para 92,1 ms depois do idx_fact_bet_date_id porque o PostgreSQL estima 2 dias para o filtro make_date(...) BETWEEN em dim_date. stats-service feat-039 (estatistica sobre a expressao) e infra feat-015 (random_page_cost=1.1). Definicao de pronto: em main e implantadas; 07-oltp-olap.sh e dashboard com periodo medidos de novo; texto do TCC atualizado. Ampliado no mesmo dia com infra feat-016 (plan_cache_mode=force_custom_plan): o plano generico das consultas preparadas ignorava o periodo e os filtros opcionais.",
+      "dependencies": [
+        "epic-059"
+      ],
+      "status": "done",
+      "harness": "multiplos: services/stats-service e infra",
+      "evidence": "stats v0.6.0 (feat-039, PR #128), infra v0.4.0 (feat-015, PR #41) e feat-016 (PR #44). evidencias/20261110-oltp-olap-final: OLAP geral 92,1 -> 23,3 ms e por esporte 117,5 -> 32,2 ms, abaixo do OLTP (43,2 e 57,2). 20261110-dashboard-filtrado/caminhos-final-n30.txt: 1 ano com esporte pela tabela fato 819,4/965,5 -> 165,3/267,2 ms (mediana/p95), todos os casos abaixo de 300 ms no p95. 20261110-cache-servidor/cache-final: miss 1.712,5 -> 170,6 ms, p95 com cache 85,0 ms. Medicoes anteriores preservadas em *-antes-estatistica e cache-jvm-fria."
+    },
+    {
+      "id": "epic-061",
+      "name": "Ajuda nos cards de ROI, taxa de acerto e vantagem",
+      "description": "Pedido do usuario (2026-11-09): o IC 95% e a vantagem aparecem no dashboard sem explicacao de como ler. apps/web feat-082. Definicao de pronto: em main e implantado.",
+      "dependencies": [
+        "epic-053"
+      ],
+      "status": "done",
+      "harness": "apps/web",
+      "evidence": "web v2.4.0 (feat-082, PR #313) e v2.4.1 (feat-083, PR #316, layout do botao). Conferido em producao por captura Playwright: botao ? nos cards de ROI, taxa de acerto e vantagem abre o texto no proprio card."
     }
   ]
 }

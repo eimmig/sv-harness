@@ -466,6 +466,24 @@ Resposta aos dois achados acima, em `k8s/`:
 
 Ordem de aplicação no cluster: PostgreSQL primeiro, esperar `kubectl rollout status` dos três, depois os 4 Java.
 
+### `plan_cache_mode=force_custom_plan` no `postgres-stats` (`infra/feat-016`, 2026-11-09)
+
+As consultas do *dashboard* em `fact_bet` têm filtros opcionais (`$n IS NULL OR coluna = $m`) e o
+período como parâmetro. Depois de cinco execuções, o PostgreSQL passa ao plano genérico, que não
+conhece esses valores e volta a buscar o `idx_fact_bet_date_id` dia a dia: 59 ms contra 14 ms por
+consulta. Com as nove agregações em paralelo, o *dashboard* de um ano com esporte levava ~800 ms;
+com o plano sempre montado com os valores reais, 207 ms de mediana (teste ao vivo com
+`ALTER SYSTEM`, desfeito). Custo: as escritas do consumo de eventos também são planejadas a cada
+execução, décimos de milissegundo por instrução; a bateria de carga não foi repetida.
+
+### `random_page_cost=1.1` no `postgres-stats` (`infra/feat-015`, 2026-11-09)
+
+O disco do servidor é SSD. Com o padrão 4, que supõe disco giratório, e a estimativa certa de dias
+do `stats-service feat-039`, o planejador trocava o `idx_fact_bet_date_id` por leitura sequencial já
+no período de 30 dias (6,7 para 15,5 ms). Com 1.1, os períodos curtos voltam a usar o índice (30 dias
+em 5,5 ms) e o ano inteiro fica em leitura sequencial (23,6 ms). Teste em `BEGIN`/`ROLLBACK` com
+`SET LOCAL`; o parâmetro vai em `args` do container (k8s) e em `command` (compose).
+
 ### `postgres-stats` com 2000m de CPU (`infra/feat-014`, 2026-11-09)
 
 Com limite de 500m, o banco analítico foi estrangulado em 29.996 de 74.108 períodos do cgroup

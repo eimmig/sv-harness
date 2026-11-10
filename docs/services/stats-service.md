@@ -465,6 +465,16 @@ para o ROI). Os 6 campos entram ao final de `BetMetrics`, sem mudar os existente
 `ZERO_METRICS` de `GetDashboardMetricsService` os deixa `null`. Fórmulas e casos-limite em
 [[estatisticas]]; contrato em [[contratos-de-api]]. `GET /api/v1/statistics/search` ficou fora.
 
+## Estatística sobre a data de `dim_date` (`epic-060` da raiz, `feat-039`)
+
+O filtro de período em `fact_bet` monta a data com `make_date(year, month, day) BETWEEN ...`. Sem
+estatística sobre a expressão, o PostgreSQL estima 2 dias para qualquer intervalo e, desde o
+`idx_fact_bet_date_id` (`feat-036`), escolhia uma busca no índice por dia mesmo no ano inteiro
+(83,4 ms no tenant da bateria final). A migration `V20261109200000` cria
+`CREATE STATISTICS dim_date_day ON (make_date(year, month, day)) FROM dim_date`; com ela a
+estimativa segue os dias reais, e o ano inteiro volta a hash join (23,6 ms). Depende do
+`random_page_cost=1.1` do `infra feat-015`; sem ele, o período de 30 dias perde o índice.
+
 ## Ver também
 
 - [[bets-service]] — produtor de `BetCreated` e `BetSettled`.
