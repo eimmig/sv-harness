@@ -703,6 +703,17 @@
       "status": "done",
       "harness": "apps/web",
       "evidence": "web v2.4.0 (feat-082, PR #313) e v2.4.1 (feat-083, PR #316, layout do botao). Conferido em producao por captura Playwright: botao ? nos cards de ROI, taxa de acerto e vantagem abre o texto no proprio card."
+    },
+    {
+      "id": "epic-062",
+      "name": "Serie mensal em ordem cronologica no dashboard com filtro",
+      "description": "Bug achado na captura do dashboard com filtro de futebol (2026-11-09): meses fora de ordem no grafico depois que o PostgreSQL passou a agregar por hash (epic-060). services/stats-service feat-040.",
+      "dependencies": [
+        "epic-060"
+      ],
+      "status": "done",
+      "harness": "services/stats-service",
+      "evidence": "stats v0.6.1 (feat-040, PRs #131-#133). JpaFactBetRepositoryMonthOrderTest vermelho sem a correcao. ORDER BY custa 13 linhas ordenadas (12,9 ms contra 13,7 ms sem, mesmo plano por hash). Captura em producao com ago, set, out em ordem."
     }
   ]
 }
