@@ -54,7 +54,10 @@ como item de catálogo inexistente e respondia erro genérico ao usuário sem v�
    apostas) **ou uma mensagem de texto livre** ao bot — decisão de 2026-09-08, ver
    [[DECISIONS-LOG]] (nenhuma nota fixava o formato antes).
 2. n8n recebe o webhook do Telegram, normaliza o payload em JSON (texto ou referência da foto).
-3. Rotina Python roda OCR (Tesseract, via `pytesseract`) quando for foto, e aplica extração
+3. Rotina Python roda OCR (Tesseract, via `pytesseract`) quando for foto — ampliada 2x se tiver
+   menos de 1200 px de largura (`feat-017`: capturas de tela de bilhete têm 300 a 600 px, e sem a
+   ampliação o Tesseract perdia o ponto decimal e lia "R$" como "RS"; medição em
+   `tools/evidence/11-telegram-acuracia.py`) — e aplica extração
    heurística genérica (esporte, liga, mercado, odd, stake, casa de apostas, etc.) sobre o texto
    resultante — sem template por casa de apostas, sem garantia de acerto (não há amostra real de
    bilhete disponível pra validar contra o layout de nenhuma casa específica). Campo não
@@ -120,6 +123,17 @@ como item de catálogo inexistente e respondia erro genérico ao usuário sem v�
    anterior era reenviada.
 8. Resto do fluxo (evento `BetCreated`, consumo assíncrono por [[stats-service]]) é idêntico
    ao registro manual.
+
+## Regras de extração e limites medidos (`feat-017`)
+
+Valor apostado: depois de `R$` (prioridade), ou `N reais`, `valor N`, `apostei N`; esses valores
+saem do texto antes da busca da odd solta. Odd: palavra-chave (`odd`, `cotação`), `@`, ou o
+primeiro decimal com duas casas entre 1,01 e 1000, que pode vir seguido de vírgula ou ponto. Casa:
+nome da lista comparado sem espaços (`bet 365`). Limite conhecido, medido no conjunto de controle
+do script de acurácia (formas de escrita que não serviram para ajustar as regras): valor escrito de
+outro jeito (`stake 5,00`, `BRL 50,00`, `25,00 de stake`) não é reconhecido, e o número dele é
+tomado como odd **sem perguntar** (8 de 40); a palavra `stake` casa com a casa Stake. O fluxo não
+mostra os campos para confirmação antes do registro — é o que deixaria esses erros visíveis.
 
 ## Internacionalização (i18n)
 

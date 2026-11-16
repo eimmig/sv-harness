@@ -725,6 +725,17 @@
       "status": "done",
       "harness": "services/stats-service",
       "evidence": "stats-service v0.7.0 (feat-041, PRs #134, #135, #136). StudentT com tabela de 1 a 30 gl e Cornish-Fisher acima; exemplo de seis apostas do TCC passou de -76,84% a 102,84% para -104,83% a 130,83%. Deploy no servidor pendente (rollout manual)."
+    },
+    {
+      "id": "epic-064",
+      "name": "Ampliacao no OCR e regras de extracao do Telegram",
+      "description": "Devolutiva da orientadora de 2026-11-16 pediu medir a leitura do Telegram; a medicao mostrou odd lida em 1 de 5 fotos. telegram-integration feat-017 amplia imagens pequenas e corrige regras de extracao.",
+      "dependencies": [
+        "epic-063"
+      ],
+      "status": "done",
+      "harness": "services/telegram-integration",
+      "evidence": "telegram-integration v0.3.0 (feat-017, PRs #66, #67, #68), em producao desde 2026-11-16. Fotos: odd 1/5 -> 5/5, valor 4/5 -> 5/5, sem valor errado. Mensagens do gerador: 60/60 em todos os campos. Controle (40 formas novas): valor 0/40 antes e depois, odd errada 8/40 antes e depois -> feat-018 no backlog. Evidencias em D:/UTFPR/TCC/evidencias/20261116-telegram-pos-feat017."
     }
   ]
 }

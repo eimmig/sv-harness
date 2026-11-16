@@ -108,6 +108,41 @@ def gera_mensagens(n: int, semente: int) -> list[dict]:
     return mensagens
 
 
+def escreve_valor_novo(valor: float, rng: random.Random) -> str:
+    virgula = rng.random() < 0.5
+    texto = fmt_decimal(valor, virgula)
+    inteiro = str(int(valor)) if valor.is_integer() else texto
+    return rng.choice([f"stake {texto}", f"stake: {inteiro}", f"valendo {inteiro}", f"{inteiro} conto",
+                       f"BRL {texto}", f"aposta de {inteiro}", f"{inteiro},00 de stake", f"{inteiro}$"])
+
+
+def escreve_odd_nova(odd: float, rng: random.Random) -> str:
+    virgula = rng.random() < 0.5
+    texto = fmt_decimal(odd, virgula)
+    return rng.choice([f"{texto} de odd", f"ODD={texto}", f"x{texto}", f"pagando {texto}", f"odds {texto}",
+                       f"cotacao: {texto}", f"({texto})", f"a {texto}"])
+
+
+def gera_mensagens_controle(n: int, semente: int) -> list[dict]:
+    """Conjunto de controle (feat-017): formas de escrita que o gerador principal nao usa e que nao
+    serviram para ajustar as regras. Escrito antes de rodar a versao nova do extrator."""
+    rng = random.Random(semente)
+    casas = CASAS + [("Bet365", ["bet365.com"]), ("Betano", ["app da betano"])]
+    mensagens = []
+    for i in range(n):
+        odd = round(rng.uniform(1.15, 6.0), 2)
+        valor = rng.choice([5, 10, 20, 25, 50, 100, 12.5, 32.5, 7.8, 150])
+        casa, grafias = rng.choice(casas)
+        partes = [rng.choice(JOGOS), rng.choice(MERCADOS), escreve_odd_nova(odd, rng),
+                  escreve_valor_novo(float(valor), rng), rng.choice(["na ", "", "via "]) + rng.choice(grafias)]
+        esperado = {"odd": f"{odd:.2f}", "stake": f"{float(valor):.2f}",
+                    "betting_house": casa if casa != "Superbet" else None}
+        rng.shuffle(partes)
+        mensagens.append({"id": f"c{i + 1:02d}", "texto": rng.choice([", ", " ", " | ", "\n"]).join(partes),
+                          "esperado": esperado, "omitido": "nenhum", "casa_real": casa})
+    return mensagens
+
+
 def normaliza(campo: str, valor: str | None) -> str | None:
     if valor is None:
         return None
@@ -162,6 +197,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--n", type=int, default=60)
     parser.add_argument("--semente", type=int, default=20261116)
+    parser.add_argument("--n-controle", type=int, default=40)
     parser.add_argument("--bilhetes", type=Path)
     parser.add_argument("--saida", type=Path, required=True)
     args = parser.parse_args()
@@ -179,6 +215,18 @@ def main() -> None:
                        + [l["resultado"][c][k] for c in CAMPOS for k in ("esperado", "extraido", "classe")])
 
     saida = {"mensagens": resumo(linhas)}
+
+    controle = []
+    for m in gera_mensagens_controle(args.n_controle, args.semente + 1):
+        m["resultado"] = avalia(m["texto"], m["esperado"])
+        controle.append(m)
+    with open(args.saida / "mensagens-controle.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(["id", "texto"] + [f"{c}_{k}" for c in CAMPOS for k in ("esperado", "extraido", "classe")])
+        for l in controle:
+            w.writerow([l["id"], l["texto"].replace("\n", " / ")]
+                       + [l["resultado"][c][k] for c in CAMPOS for k in ("esperado", "extraido", "classe")])
+    saida["mensagens_controle"] = resumo(controle)
 
     if args.bilhetes:
         from telegram_integration.ocr import extract_text
