@@ -747,6 +747,17 @@
       "status": "done",
       "harness": "services/auth-service",
       "evidence": "bets v0.4.0 (feat-027), stats v0.8.0 (feat-042), auth v1.2.0 (feat-027), api-gateway v0.2.0 (feat-022), web v2.5.0 (feat-084), em producao em 2026-11-16. Teste de ponta a ponta pela API e pela interface em D:/UTFPR/TCC/evidencias/20261116-exclusao-organizacao: membro 403, admin 204, schemas 0 nos 3 bancos, 0 chaves no Redis, login 401 depois."
+    },
+    {
+      "id": "epic-066",
+      "name": "Regras mais gerais de valor e odd no Telegram",
+      "description": "Pedido do usuario em 2026-11-16 depois da medicao da feat-017: reduzir valores nao reconhecidos e odds erradas. Confirmacao dos campos (feat-018) fica como trabalho futuro, por decisao do usuario.",
+      "dependencies": [
+        "epic-064"
+      ],
+      "status": "done",
+      "harness": "services/telegram-integration",
+      "evidence": "telegram-integration v0.4.0 (feat-019, PRs #69, #70, #71), em producao em 2026-11-16. Controle 2, escrito antes da mudanca: odd gravada errada 11 -> 2 (v0.2.0 -> v0.4.0), odd perguntada 2 -> 15, valor perguntado 40 -> 40. Controle 1 (usado no ajuste): odd errada 8 -> 0, valor 0 -> 40. Evidencias em D:/UTFPR/TCC/evidencias/20261116-telegram-feat019 (v0.2.0, antes = v0.3.0, depois = v0.4.0)."
     }
   ]
 }

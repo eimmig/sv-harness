@@ -124,16 +124,21 @@ como item de catálogo inexistente e respondia erro genérico ao usuário sem v�
 8. Resto do fluxo (evento `BetCreated`, consumo assíncrono por [[stats-service]]) é idêntico
    ao registro manual.
 
-## Regras de extração e limites medidos (`feat-017`)
+## Regras de extração e limites medidos (`feat-017`, `feat-019`)
 
-Valor apostado: depois de `R$` (prioridade), ou `N reais`, `valor N`, `apostei N`; esses valores
-saem do texto antes da busca da odd solta. Odd: palavra-chave (`odd`, `cotação`), `@`, ou o
-primeiro decimal com duas casas entre 1,01 e 1000, que pode vir seguido de vírgula ou ponto. Casa:
-nome da lista comparado sem espaços (`bet 365`). Limite conhecido, medido no conjunto de controle
-do script de acurácia (formas de escrita que não serviram para ajustar as regras): valor escrito de
-outro jeito (`stake 5,00`, `BRL 50,00`, `25,00 de stake`) não é reconhecido, e o número dele é
-tomado como odd **sem perguntar** (8 de 40); a palavra `stake` casa com a casa Stake. O fluxo não
-mostra os campos para confirmação antes do registro — é o que deixaria esses erros visíveis.
+Valor apostado, nesta ordem: moeda antes (`R$ 50`, `BRL 50,00`, `$12`, o `$` não pode vir colado
+em número antes), palavra-chave antes (`stake`, `valor`, `aposta de`, `apostei`, `valendo`) ou
+depois (`reais`, `conto(s)`, `de stake`, `$`, `BRL`). Odd marcada: `N de odd` (primeiro, porque em
+`1,23 de odd 12.50$` a palavra vem depois da odd), palavra-chave antes (`odd(s)`, `cotação`,
+`pagando`), `@`, `x` colado (`x1,72`, `4,75x`). Sem marca, a odd é o único decimal de duas casas
+entre 1,01 e 1000 que sobra depois de tirar os valores; **mais de um valor diferente faz o bot
+perguntar** (antes, o primeiro era aceito, e um valor escrito de forma não prevista virava odd sem
+pergunta). Casa: nome da lista comparado sem espaços, depois de tirar os valores (`stake 5,00` não é
+a casa Stake). Medição em `tools/evidence/11-telegram-acuracia.py`: o controle 1 foi usado para
+ajustar a `feat-019`; o controle 2 foi escrito antes dela e não serve para ajuste. Limite medido no
+controle 2: valor em formas não previstas (`botei 7,80`, `7,80 pila`) não é reconhecido (o bot
+pergunta) e `N de cotação, M` pega `M` como odd (2 de 40). A confirmação dos campos antes do
+registro (`feat-018`) ficou como trabalho futuro, por decisão do usuário (2026-11-16).
 
 ## Internacionalização (i18n)
 
