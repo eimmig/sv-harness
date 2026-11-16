@@ -461,7 +461,7 @@ devolvem também `impliedProbability` (`AVG` de `1.0 / odd` das ganhas e perdida
 `odd` é anulável desde `V20260910120000`), `Σprofit²`, `Σstake²` e `Σprofit·stake`. O
 `BetAggregate` carrega esses valores, e `CalculateMetricsService.toMetrics` calcula `edge` e os
 intervalos com `ConfidenceIntervals` (domínio puro: Wilson para a taxa de acerto, método delta
-para o ROI). Os 6 campos entram ao final de `BetMetrics`, sem mudar os existentes; o
+para o ROI, com o quantil `t(0,975; n − 1)` de `StudentT` desde a `feat-041`). Os 6 campos entram ao final de `BetMetrics`, sem mudar os existentes; o
 `ZERO_METRICS` de `GetDashboardMetricsService` os deixa `null`. Fórmulas e casos-limite em
 [[estatisticas]]; contrato em [[contratos-de-api]]. `GET /api/v1/statistics/search` ficou fora.
 

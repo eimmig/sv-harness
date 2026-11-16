@@ -238,7 +238,7 @@ decididas            = ganhas + perdidas
 impliedProbability   = média de 1/oddᵢ das decididas com odd > 0        [devolvidas e odd nula ou zero fora]
 edge                 = winRate − impliedProbability
 winRateLower/Upper   = intervalo de Wilson de 95% para ganhas / decididas (z = 1,96)
-roiLower/Upper       = ROI ± 1,96 · EP,  ROI = Σlᵢ / Σsᵢ sobre as liquidadas (devolvidas dentro)
+roiLower/Upper       = ROI ± t(0,975; n − 1) · EP,  ROI = Σlᵢ / Σsᵢ sobre as liquidadas (devolvidas dentro)
 EP                   = sqrt( Σdᵢ² / (n − 1) / n ) / (Σsᵢ / n),   dᵢ = lᵢ − ROI · sᵢ
 Σdᵢ²                 = Σlᵢ² − 2 · ROI · Σlᵢsᵢ + ROI² · Σsᵢ²
 ```
@@ -248,6 +248,13 @@ melhor com poucas apostas e taxas extremas. O ROI é um estimador de razão (luc
 total apostado), por isso o erro padrão sai pelo método delta sobre os resíduos `dᵢ`, e não pela
 média simples dos retornos por aposta. As queries devolvem `Σlᵢ²`, `Σsᵢ²` e `Σlᵢsᵢ`, e o domínio
 (`ConfidenceIntervals`) calcula o intervalo sem reler as apostas.
+
+Quantil do ROI (`stats-service feat-041`, devolutiva de 2026-11-16): `t(0,975; n − 1)` de Student,
+não `z = 1,96`. Com poucas apostas a aproximação normal subestima a largura (seis apostas:
+`t = 2,5706`, intervalo 31% mais largo). `StudentT` usa a tabela padrão para 1 a 30 graus de
+liberdade e a expansão de Cornish-Fisher (Abramowitz e Stegun 26.7.5) acima disso, com erro menor
+que `1e-4`; sem dependência nova. Wilson continua com `z`: é um intervalo de escore para
+proporção, e o `t` não se aplica a ele.
 
 Casos-limite, todos `null`: sem decididas (implícita, vantagem e Wilson), nenhuma decidida com odd
 (implícita e vantagem), alguma decidida sem odd (vantagem: a taxa de acerto e a implícita teriam

@@ -714,6 +714,17 @@
       "status": "done",
       "harness": "services/stats-service",
       "evidence": "stats v0.6.1 (feat-040, PRs #131-#133). JpaFactBetRepositoryMonthOrderTest vermelho sem a correcao. ORDER BY custa 13 linhas ordenadas (12,9 ms contra 13,7 ms sem, mesmo plano por hash). Captura em producao com ago, set, out em ordem."
+    },
+    {
+      "id": "epic-063",
+      "name": "Intervalo do ROI com t de Student",
+      "description": "Devolutiva da orientadora de 2026-11-16: o intervalo do ROI usava z = 1,96, inadequado para poucas apostas. stats-service feat-041 troca por t(0,975; n - 1).",
+      "dependencies": [
+        "epic-053"
+      ],
+      "status": "done",
+      "harness": "services/stats-service",
+      "evidence": "stats-service v0.7.0 (feat-041, PRs #134, #135, #136). StudentT com tabela de 1 a 30 gl e Cornish-Fisher acima; exemplo de seis apostas do TCC passou de -76,84% a 102,84% para -104,83% a 130,83%. Deploy no servidor pendente (rollout manual)."
     }
   ]
 }
