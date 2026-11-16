@@ -371,6 +371,24 @@ o código-fonte do outro serviço.
   [[auth-service]] seção "Modelo de tenant" para o payload completo. `bets-service`/
   `stats-service` continuam com a rota standalone intacta (`feat-001.4`), só criando o schema,
   sem usuário/senha — ver [[bets-service]] seção "Provisionamento de tenant (rota admin)".
+- **Exclusão da organização pelo admin** (`epic-065`, 2026-11-16, LGPD art. 18, VI):
+  `DELETE /api/v1/organization` em `auth-service`, pelo [[api-gateway]] com PASETO (rota
+  `/api/v1/organization`, `api-gateway feat-022`). Só o admin da organização (`403
+  admin-role-required` para membro). Orquestração síncrona, como a criação: `auth-service` chama
+  `DELETE /api/v1/admin/tenants/{slug}` (com `X-Admin-Api-Key`) em `bets-service` e depois em
+  `stats-service`, e só então apaga `telegram_link` e `pending_telegram_link` da organização
+  (schema `public`) e o próprio schema. Se um serviço abaixo falhar, responde `502
+  organization-deletion-failed` e **não apaga nada no auth** — o admin continua entrando e pode
+  repetir, porque as rotas abaixo são idempotentes. Sucesso: `204`. As rotas admin de exclusão:
+  `bets-service` apaga o schema e as linhas da organização ainda pendentes em
+  `public.outbox_event`; `stats-service` apaga o schema, as dimensões em memória e as chaves
+  `tenant:{slug}:*` do Redis; as duas respondem `204` mesmo sem schema e `422
+  invalid-tenant-slug` para slug inválido. O schema é apagado com o `clean` do Flyway (que o
+  criou), não com SQL concatenado. Limites aceitos: outras réplicas guardam em memória que o
+  schema existia e respondem `500` a tokens antigos da organização até reiniciar (nenhum dado
+  volta, o schema só é criado pela rota admin); eventos em voo para o `stats-service` vão para a
+  DLQ; o histórico de execuções do n8n (até 14 dias) não é apagado. Interface: painel "Excluir
+  organização" na tela de Usuários ([[web]] `feat-084`).
 - **Confirmação de vínculo de conta Telegram** (`telegram-integration feat-003`, decisão de
   2026-09-08): `POST /api/v1/telegram-accounts` em `auth-service` também **não passa pelo
   `api-gateway`**, mesmo precedente das chamadas administrativas acima. Motivo diferente das

@@ -736,6 +736,17 @@
       "status": "done",
       "harness": "services/telegram-integration",
       "evidence": "telegram-integration v0.3.0 (feat-017, PRs #66, #67, #68), em producao desde 2026-11-16. Fotos: odd 1/5 -> 5/5, valor 4/5 -> 5/5, sem valor errado. Mensagens do gerador: 60/60 em todos os campos. Controle (40 formas novas): valor 0/40 antes e depois, odd errada 8/40 antes e depois -> feat-018 no backlog. Evidencias em D:/UTFPR/TCC/evidencias/20261116-telegram-pos-feat017."
+    },
+    {
+      "id": "epic-065",
+      "name": "Exclusao da organizacao pelo admin (LGPD art. 18 VI)",
+      "description": "Pedido do usuario em 2026-11-16, ligado a devolutiva da orientadora sobre LGPD. Rota admin de exclusao no bets e no stats, DELETE /api/v1/organization no auth (orquestra), rota no gateway e painel na tela de Usuarios.",
+      "dependencies": [
+        "epic-064"
+      ],
+      "status": "done",
+      "harness": "services/auth-service",
+      "evidence": "bets v0.4.0 (feat-027), stats v0.8.0 (feat-042), auth v1.2.0 (feat-027), api-gateway v0.2.0 (feat-022), web v2.5.0 (feat-084), em producao em 2026-11-16. Teste de ponta a ponta pela API e pela interface em D:/UTFPR/TCC/evidencias/20261116-exclusao-organizacao: membro 403, admin 204, schemas 0 nos 3 bancos, 0 chaves no Redis, login 401 depois."
     }
   ]
 }
